@@ -56,23 +56,29 @@ This skill orchestrates a rigorous evaluation of Pull Requests, branch diffs, in
 
 #### Pathway A: Gemini-Orchestrated Hybrid Review (Default)
 
-The cloud orchestrator acts as Planner, breaking the review into orthogonal inspection streams:
+The cloud orchestrator acts as Planner, breaking the review into orthogonal inspection streams across local engines and native test harnesses:
 
-1. **Subagent 1 (Pillar 2 — Logic & Boundary Edge Cases):**
-   Dispatched to local `qwen2.5-coder:14b` (fallback `qwen2.5:14b`) armed with the invariant dossier:
-   * Pries into 2–3 concrete boundary edge cases (empty inputs, bounds, state corruption).
-   * Verifies automated test coverage for invariants.
-2. **Subagent 2 (Pillar 6 — Comments & Documentation):**
-   Dispatched to local `mistral-nemo:12b`:
-   * Evaluates natural prose, architectural clarity, and heading blank lines.
-3. **Orchestrator Synthesis (Pillars 1, 3, 4, 5, 7, 8):**
-   Gemini applies architectural alignment, anti-bloat Occam's razor checks, test results, type safety, and British English enforcement.
+1. **Native Local Harness (Pillar 4 — Tests & Linters):**
+   Executes `./scripts/lint.sh`, `pytest`, `cargo test`, or `npm test` directly on the machine to establish baseline test coverage and zero linter warnings.
+2. **Local Subagent 1 — Code & Logic Stream (`qwen2.5-coder:14b`):**
+   Ingests code diffs and repository invariant dossiers to audit:
+   * **Pillar 2 (Functionality & Invariants):** Pries into 2–3 concrete boundary edge cases (empty inputs, bounds, state corruption) and asserts test coverage.
+   * **Pillar 3 (Complexity & Occam's Razor):** Flags unnecessary classes, wrappers, defensive boilerplate, or over-engineered abstractions.
+   * **Pillar 5 (Naming & Domain Clarity):** Audits domain vocabulary, boolean predicates, and identifier clarity.
+   * **Pillar 7 (Style & Type Safety):** Audits strict type annotations, unchecked casts, and language-specific idioms.
+3. **Local Subagent 2 — Architecture & Text Stream (`mistral-nemo:12b`):**
+   Ingests documentation, markdown files, and commit logs to audit:
+   * **Pillar 1 (Design & Architecture Alignment):** Verifies consistency against approved specifications in `docs/designs/` and global `AGENTS.md`.
+   * **Pillar 6 (Comments & Documentation):** Verifies explanatory comments (*why* vs *what*) and enforces mandatory heading blank lines.
+   * **Pillar 8 (Localisation & Governance):** Scans for 100% British English orthography and verifies human narrative sovereignty.
+4. **Cloud Orchestrator Synthesis (Gemini):**
+   Gemini receives the concise local findings, arbitrates disagreements, frames observations under Conventional Comments (`issue`, `suggestion`, `praise`), and generates the final structured verdict.
 
 #### Pathway B: Air-Gapped Offline Mode (`--local` or Privacy Directive)
 
 * Zero code or text leaves the local machine.
-* Logic evaluation (Pillar 2) runs on local `qwen2.5-coder:14b`.
-* Document evaluation and final 8-pillar report synthesis run on local `mistral-nemo:12b`.
+* Code analysis (Pillars 2, 3, 5, 7) runs on local `qwen2.5-coder:14b`.
+* Document, architectural, and governance evaluation (Pillars 1, 6, 8) and final 8-pillar report synthesis run on local `mistral-nemo:12b`.
 
 ### Step 5: Wave Teardown & Memory Purge
 

@@ -13,7 +13,7 @@ This specification defines the architectural design for **Milestone 2 (v1.3.0)**
 
 ### Goals
 
-* **Quota Conservation:** Automatically offload repetitive logic fuzzing (Pillar 2) and prose evaluations (Pillar 6) to local resident models (`qwen2.5-coder:14b` and `mistral-nemo:12b`) during reviews, saving up to 70% of cloud API tokens.
+* **Quota Conservation:** Automatically offload the entire 8-Pillar inspection suite to local resident engines (`qwen2.5-coder:14b` for Pillars 2, 3, 5, 7; `mistral-nemo:12b` for Pillars 1, 6, 8; local scripts for Pillar 4), reserving cloud tokens strictly for high-level planning and synthesis, saving up to 85% of cloud API tokens.
 * **Memory Lifecycle Sovereignty:** Provide zero-dependency host memory management (`scripts/check_ollama.py`) supporting sub-100ms health checks, wave leasing (`keep_alive: 5m`), and explicit memory purging (`unload --all`) to prevent RAM exhaustion on 16 GB Apple Silicon Macs.
 * **Universal Review Interface:** Consolidate `review-pr` and `local-review` into a single universal `/review` skill capable of inspecting PRs, branches, diffs, architectural specifications, or individual files.
 * **EGM Workshop Formalisation:** Formally enshrine Step 1A (Interactive Design Workshop Canvas) in `spec-egm` to prevent agents from bypassing human design alignment.
@@ -98,8 +98,17 @@ The system balances frontier cloud reasoning with local on-device execution:
 
 ### 3. Orthogonal Subagent Execution
 
-1. Subagent 1 probes Pillar 2 logic invariants using local Qwen.
-2. Subagent 2 evaluates Pillar 6 prose using local Mistral NeMo.
+1. Native local scripts execute **Pillar 4 (Tests & Linters)** via `./scripts/lint.sh`.
+2. Subagent 1 (`qwen2.5-coder:14b`) executes code-focused pillars:
+   * **Pillar 2 (Functionality & Invariants):** Probes boundary edge cases and state mutation safety.
+   * **Pillar 3 (Complexity & Occam's Razor):** Detects unnecessary wrappers and premature abstractions.
+   * **Pillar 5 (Naming & Domain Clarity):** Checks ubiquitous domain language and boolean clarity.
+   * **Pillar 7 (Style & Type Safety):** Audits strict type annotations and language conventions.
+3. Subagent 2 (`mistral-nemo:12b`) executes architectural and prose pillars:
+   * **Pillar 1 (Design Alignment):** Verifies adherence to `docs/designs/` and `AGENTS.md`.
+   * **Pillar 6 (Comments & Documentation):** Verifies comment quality and markdown heading cleanliness.
+   * **Pillar 8 (Localisation & Governance):** Audits 100% British English and narrative sovereignty.
+4. Cloud orchestrator (Gemini) collects concise local summaries and performs final synthesis.
 
 ### 4. Cache Purge
 
