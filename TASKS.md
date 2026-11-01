@@ -55,7 +55,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 ### Milestone 1: Governance, Wave Coordination & Verification (v1.2.0)
 
-- [x] `[AUTO]` **TASK-101**: Implement static governance harness (`./scripts/lint.sh`) auditing Markdown cleanliness, YAML frontmatter syntax, relative link resolution, and Core Diet line/word ceilings on `AGENTS.md` (140 lines) and `SKILL.md` (180 lines).
+- [x] `[AUTO]` **TASK-101**: Implement static governance harness (`./scripts/lint.sh`) with modular standalone Python linters (`lint_headings.py`, `lint_links.py`, `lint_frontmatter.py`) for direct cross-repository execution, auditing Markdown cleanliness, YAML frontmatter syntax, relative link resolution, and Core Diet line/word ceilings on `AGENTS.md` (140 lines) and `SKILL.md` (180 lines).
 - [x] `[AUTO]` **TASK-102**: Implement `scripts/build_review_dossier.py` to compile compact ($\le 40$-line) repository invariant digests, and wire it into `review-pr` and `local-review`.
 - [x] `[SEMI]` **TASK-103**: Implement `skills/spec-egm/` (promoted from `emergent`) and portable validator `scripts/validate_egm.py`.
 - [x] `[SEMI]` **TASK-104**: Implement `skills/coordinate-fronts/`, block contract templates, and the unified Decision Ledger (`scripts/check_decisions.py`).
