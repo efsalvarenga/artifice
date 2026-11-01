@@ -9,16 +9,19 @@ Use this skill when the user requests a comprehensive architectural review, long
 
 ## Procedure
 
-1. **Collate Context**:
-   Gather the relevant document, diff, or file contents. Benefit from Mistral NeMo's 128k native context window for multi-file reviews.
+1. **Collate Context & Invariant Dossier**:
+   Gather the relevant document, diff, or file contents. Compile the repository invariant dossier to prevent flagging deliberate constraints:
+   ```bash
+   python3 ~/Repos/artifice/scripts/build_review_dossier.py .
+   ```
 
 2. **Invoke Local Model**:
-   Query the local Ollama instance using the `ollama_chat` tool or directly via curl:
+   Query the local Ollama instance directly (via the `ollama` MCP server or HTTP API) using `mistral-nemo`:
    ```bash
    curl -s http://localhost:11434/api/chat -d '{
      "model": "mistral-nemo",
      "messages": [
-       {"role": "system", "content": "You are a senior systems architect. Provide thoughtful, well-structured architectural review and documentation in British English."},
+       {"role": "system", "content": "You are a senior systems architect. Directives: <REPO_DOSSIER>. Provide thoughtful, well-structured architectural review and documentation in British English."},
        {"role": "user", "content": "<PROMPT>"}
      ],
      "stream": false
@@ -26,4 +29,4 @@ Use this skill when the user requests a comprehensive architectural review, long
    ```
 
 3. **Synthesise Feedback**:
-   Format the resulting insights with clear headings, bullet points, and actionable next steps.
+   Format the resulting insights with clear headings, bullet points, and actionable next steps in British English.

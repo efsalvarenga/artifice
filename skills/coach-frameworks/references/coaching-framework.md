@@ -48,7 +48,7 @@ The coach has direct access to inspect adjacent repositories in `~/Repos/`. When
 
 ## 3. External Scouting via Web Search
 
-When scouting external open-source ecosystems, prioritize authoritative, modern sources:
+When scouting external open-source ecosystems, prioritise authoritative, modern sources:
 
 * Modern language and runtime specifications (TypeScript 5.x+, Python 3.12+, modern Rust/Go).
 * Functional and reactive design patterns (algebraic data types, optics, state charts).

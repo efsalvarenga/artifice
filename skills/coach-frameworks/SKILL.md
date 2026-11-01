@@ -1,6 +1,6 @@
 ---
 name: coach-frameworks
-version: 1.0.0
+version: 1.1.0
 description: >-
   Conducts strategic framework evaluations, developer ergonomics coaching, and
   cross-project scouting using the Principal Developer Coach ("The Catalyst")
@@ -26,6 +26,7 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 2. **Determine Engagement Mode:**
    * **Mode A: Framework Adherence Coaching ("Follow It Better"):** How to reduce friction and automate best practices within the existing architecture.
    * **Mode B: Evolutionary Framework Proposal ("Propose a Better Way"):** Evaluating new libraries or architectural patterns against current bottlenecks.
+   * **Mode C: Tooling Feedback & Inbox Promotion Triage:** Evaluating feedback items from `TASKS.md` (`## Incoming Feedback / Inbox`) for potential promotion into global rules or shared skills.
 
 ### Step 2: Conduct Ecosystem & Precedent Reconnaissance
 
@@ -43,11 +44,17 @@ This skill orchestrates a strategic framework evaluation, developer experience a
   3. `ARCHITECTURAL_ELEGANCE` — Flat, pure, comprehensible designs
   4. `PRAGMATIC_EVOLUTION` — Tangible velocity gains with phased migration plans
   5. `GOVERNANCE_HARMONISATION` — British English, Markdown cleanliness, type safety
+* **Apply the 4-Test Lesson Acceptance Gate (Default = DISCARD):**
+  When evaluating tooling feedback or proposed additions to `AGENTS.md` / `SKILL.md`:
+  1. *Measured Cost:* Stemmed from an actual failure or defect.
+  2. *Uncovered (`grep` First):* No existing broader rule already covers it.
+  3. *Generalises:* Applies across projects, not a one-off local quirk.
+  4. *Changes Decisions & Cannot Be Automated:* Prefer code, linters, or types over prose instructions.
 
 ### Step 4: Synthesise & Deliver Recommendations
 
 1. **Delivery Format (Adaptive Output):**
-   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an Antigravity artifact canvas.
+   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an Antigravity artefact canvas.
    * If the project contains a `docs/coaching/` or `docs/proposals/` directory (or if the user requests a committed RFC), draft a formal proposal file there.
 2. **Mandatory Provenance Signature:**
    Always conclude the advice with the formal provenance footer:
@@ -55,5 +62,5 @@ This skill orchestrates a strategic framework evaluation, developer experience a
    ```markdown
    ---
 
-   *Signed by: **Principal Developer Coach ("The Catalyst")** (`developer-coach`) · Model: **`<Model Name>`** · Skill: **`coach-frameworks v1.0.0`** · Date: `<YYYY-MM-DD>`*
+   *Signed by: **Principal Developer Coach ("The Catalyst")** (`developer-coach`) · Model: **`<Model Name>`** · Skill: **`coach-frameworks v1.1.0`** · Date: `<YYYY-MM-DD>`*
    ```

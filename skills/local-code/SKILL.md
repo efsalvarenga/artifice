@@ -13,7 +13,7 @@ Use this skill when the user requests an offline code analysis, complex refactor
    Identify the target source file, function block, or algorithmic problem to be analysed.
 
 2. **Invoke Local Model**:
-   Query the local Ollama instance using the `ollama_chat` tool or directly via curl:
+   Query the local Ollama instance directly (via the `ollama` MCP server or HTTP API) using `qwen2.5:14b`:
    ```bash
    curl -s http://localhost:11434/api/chat -d '{
      "model": "qwen2.5:14b",
@@ -25,5 +25,5 @@ Use this skill when the user requests an offline code analysis, complex refactor
    }'
    ```
 
-3. **Verify and Present**:
-   Validate that the generated code satisfies the project's architecture, test requirements, and style guidelines before presenting it to the user.
+3. **Pry into Boundary Edge Cases**:
+   When generating or refactoring code and unit tests, explicitly identify 2–3 boundary conditions (e.g. empty inputs, zero/negative bounds, capacity limits, concurrent access) and ensure dedicated unit tests explicitly cover them.

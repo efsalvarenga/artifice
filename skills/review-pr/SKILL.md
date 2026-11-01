@@ -48,12 +48,17 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 1. **Read Global & Local Rules:**
    * Ingest `~/.gemini/config/AGENTS.md`.
    * Check the project root for local rules: `AGENTS.md`, `GEMINI.md`, or `.agents/rules/*.md`.
-2. **Check for Privacy Directives:**
+2. **Compile Repository Invariant Dossier:**
+   Run the dossier compiler to assemble intentional project invariants for local reviewers:
+   ```bash
+   python3 ~/Repos/artifice/scripts/build_review_dossier.py .
+   ```
+3. **Check for Privacy Directives:**
    If `AGENTS.md` contains an on-device directive (e.g. `Privacy: on-device`, `Review: local-only`, or `Air-Gapped`), automatically switch to **Mode 2 (Air-Gapped / On-Device)** even if `--local` was not passed in the command line.
-3. **Execute Available Test Suites & Verification Scripts:**
-   Detect and run the project's verification commands:
-   * Verification scripts: `./scripts/verify*.sh` or `./scripts/test*.sh`
-   * Node/TypeScript: `npm test` or `pnpm test` or `bun test`
+4. **Execute Available Test Suites & Linters:**
+   Detect and run the project's native build, test, and lint commands:
+   * Linters & verification: `./scripts/lint*.sh`, `./scripts/verify*.sh`, or `./scripts/test*.sh`
+   * Node/TypeScript: `npm run build && npm test` or `pnpm test` or `bun test`
    * Python: `pytest`
    * Rust: `cargo test`
    Record all test results for inclusion in the review report.
@@ -66,12 +71,12 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 #### Pathway A: Dual-Model Consensus (Default)
 
 * Primary 8-Pillar audit driven by the active cloud orchestrator (Gemini).
-* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama:
+* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama (using the `ollama` MCP server or direct HTTP) armed with the compiled dossier:
   ```bash
   curl -s http://localhost:11434/api/chat -d '{
     "model": "qwen2.5:14b",
     "messages": [
-      {"role": "system", "content": "You are a compiler engineer and logic auditor. Identify uncaught edge cases, invariant breaches, or missing test cases for this diff in British English."},
+      {"role": "system", "content": "You are a compiler engineer and logic auditor. Invariant directives: <REPO_DOSSIER>. Identify 2–3 concrete boundary edge cases in this diff, pry into potential failure modes, and verify if tests cover them in British English."},
       {"role": "user", "content": "<CODE_DIFF_SNIPPET>"}
     ],
     "stream": false
@@ -82,13 +87,13 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 #### Pathway B: Air-Gapped / On-Device Mode (`--local` or Privacy Directive)
 
 * Zero code diffs leave the machine.
-* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama.
+* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama directly.
 
 ### Step 4: Generate & Sign the Review Report
 
 1. Format findings using Conventional Comments (`issue`, `suggestion`, `question`, `praise`).
 2. **Output Location:**
-   * Present the structured review directly in-chat or in an Antigravity artifact canvas.
+   * Present the structured review directly in-chat or in an Antigravity artefact canvas.
    * If the repository has a `docs/reviews/` directory (or the user requests a committed review), save the report to `docs/reviews/pr_<PR_NUMBER>_review.md`.
 3. **Mandatory Provenance Signature:**
    Always sign the review with the formal provenance footer reflecting the models used:
