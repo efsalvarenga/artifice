@@ -31,8 +31,10 @@ This skill coordinates multi-task execution waves, complex milestones, and unatt
    * **Quota Hygiene:** Do not include scarcity or token-saving phrasing inside subagent prompts.
 2. **Pilot Block Execution:**
    When running a homogeneous wave or a new workflow pattern, launch **Block 1 as a Pilot** via `invoke_subagent`. Audit it completely before releasing Blocks $2 \dots N$, resolving shared tool/spec friction once.
-3. **Batch Dispatch:**
-   Dispatch remaining blocks. Disjoint file sets run concurrently (up to 3 parallel subagents); overlapping modules run sequentially.
+3. **Batch Dispatch & Workspace Isolation:**
+   * **`Workspace: "inherit"` (Default):** Use for read-only scouting, single-subagent sequential tasks, or fast targeted patches where edits should land directly in the active working tree.
+   * **`Workspace: "share"` (Git Worktree) `[AUTO]`:** Use whenever launching $\ge 2$ concurrent mutating subagents on disjoint file sets to prevent git index and file clobbering.
+   * **Developer Confirmation `[SEMI]`:** If concurrent tasks risk touching overlapping modules or shared dependencies, prompt the developer via `ask_question` to choose between worktree parallelisation versus sequential execution.
 
 ### Step 3: Independent Coordinator Disk Audit (*"Autorrelato Não Se Aceita"*)
 
