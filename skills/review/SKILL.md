@@ -32,13 +32,17 @@ This skill orchestrates a rigorous evaluation of Pull Requests, branch diffs, in
 3. **Execute Native Baselines:**
    Run the repository's native test and lint commands (`./scripts/lint.sh`, `npm test`, `pytest`, `cargo test`) to record baseline pass/fail status.
 
-### Step 2: Ingest Invariants & Privacy Directives
+### Step 2: Ingest Invariants, Specifications & Privacy Directives
 
-1. Ingest `AGENTS.md` and compile project invariants:
+1. **Ingest Active EGM Specification:**
+   Inspect `docs/designs/` for the specification corresponding to this feature or milestone. If present, ingest its **State Schema**, **Invariants & Rules**, and **Edge Cases** as the authoritative source-of-truth contract.
+2. **Compile Repository Invariant Dossier:**
+   Run the dossier compiler to assemble intentional project invariants:
    ```bash
    python3 ~/Repos/artifice/scripts/build_review_dossier.py .
    ```
-2. If `AGENTS.md` contains an on-device privacy directive (e.g. `Privacy: on-device`), automatically engage **Offline Mode** (`--local`).
+3. **Check Privacy Directives:**
+   If `AGENTS.md` contains an on-device privacy directive (e.g. `Privacy: on-device`), automatically engage **Offline Mode** (`--local`).
 
 ### Step 3: Lifecycle Leasing & Model Selection
 
@@ -58,8 +62,11 @@ This skill orchestrates a rigorous evaluation of Pull Requests, branch diffs, in
 
 The cloud orchestrator acts as **Lead Architect, Quality Inspector, and Synthesiser**:
 
-1. **Gemini Direct Evaluation (Pillar 1 — Design & Architecture Alignment):**
-   Gemini directly conducts the holistic architectural audit: evaluating system boundaries, consistency against approved specifications in `docs/designs/`, interface cohesion, and absence of abstraction leaks.
+1. **Gemini Direct Evaluation (Pillar 1 — Design & Specification Contract Alignment):**
+   Gemini directly evaluates the PR diff against the active approved EGM specification in `docs/designs/`:
+   * **Contract Fulfillment:** Verifies that all state schemas, methods, and mutation rules match the specification 1:1.
+   * **Invariant Protection:** Confirms that all invariants declared in Section 4 of the specification are strictly upheld.
+   * **Drift Control:** Flags any unauthorised architectural expansion, speculative abstractions, or omitted capabilities as a blocking defect (`[issue] (blocking, DESIGN)`).
 2. **Native Local Harness (Pillar 4 — Tests & Linters):**
    Executes `./scripts/lint.sh`, `pytest`, `cargo test`, or `npm test` directly on the machine to establish baseline test coverage and zero linter warnings.
 3. **Local Subagent 1 — Code & Logic Stream (`qwen2.5-coder:14b`):**
