@@ -24,6 +24,21 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Actionable Remediation:** Formulate an operational guideline and dispatch contract in `rules/quota-guardrails` specifying criteria for offloading bounded micro-tasks (e.g. test boilerplate expansion, algorithmic syntax passes) to local/specialised models (`local-code` / Codestral) while keeping contract definitions and final PR verification strictly on frontier orchestrators.
   - **Status:** In Progress (Triaged into Milestone 2, TASK-205)
 
+* **[2026-11-01]** *(from `artifice` @ `agent/sovereign-quota-fortress`)*:
+  - **Autonomy Mode:** `[SEMI]`
+  - **Component:** `skills/spec-egm`, `rules/egm-governance`, `scripts/validate_egm.py`
+  - **Operational Context:** Scoping and launching Milestone 2 ("Sovereign Quota Fortress"). The developer requested an upfront interactive Design Workshop followed by plan building and autonomous execution.
+  - **Specific Friction & Defect:**
+    1. The agent conflated a conversational chat Q&A with the formal EGM design phase. It treated brief conversational agreement as license to execute immediately, completely omitting the formal, persistent Elephant Specification (`docs/designs/<NNN>_<feature>.md`).
+    2. The agent bypassed the adversarial zero-context Goldfish review (`docs/reviews/<NNN>_<feature>_review.md`), eliminating the contract-checking safety net.
+    3. `artifice` lacked the repository infrastructure for EGM (`docs/designs/`, `docs/reviews/`, and local pre-implementation enforcement), failing to dogfood its own `validate_egm.py` validator.
+    4. By jumping directly from chat into code modification, the developer was deprived of a formal, persistent architectural canvas to inspect, review, and refine before implementation started. In `emergent`, this phase was an explicit, unhurried, document-grounded step backed by `run_egm_cycle.sh`.
+  - **Actionable Remediation:**
+    1. **Dogfood EGM in `artifice`:** Scaffold `docs/designs/` and `docs/reviews/` in `artifice` and formally author `docs/designs/001_sovereign_quota_fortress.md` accompanied by an adversarial Goldfish review in `docs/reviews/001_sovereign_quota_fortress_review.md`.
+    2. **Enforce Pre-Implementation Gate in `lint.sh`:** Update `./scripts/lint.sh` to execute `python3 scripts/validate_egm.py .` as a mandatory static gate whenever `docs/designs/` is present, mechanically blocking PR creation unless EGM contracts are 100% green.
+    3. **Enshrine Procedural Invariant in `AGENTS.md` & `spec-egm`:** Clarify that chat Q&A is merely Step 1A (Workshop); Step 1B (formal spec document) and Step 2 (Goldfish review) must produce committed markdown artifacts *before* any implementation code or PR drafting is permitted.
+  - **Status:** Open
+
 * **[2026-11-01]** *(from `oude-mechanismen` @ `v0.1.1`)*:
   - **Autonomy Mode:** `[AUTO]`
   - **Component:** `skills/lint-wiki/SKILL.md`
