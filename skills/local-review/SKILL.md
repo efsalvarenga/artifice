@@ -15,10 +15,9 @@ Use this skill when the user requests a comprehensive architectural review, long
    python3 ~/Repos/artifice/scripts/build_review_dossier.py .
    ```
 
-2. **Invoke Local Model (under Heavy Lock)**:
-   Query the local Ollama instance protected by `heavy_lock.py` to prevent memory thrashing on Apple Silicon:
+2. **Invoke Local Model**:
+   Query the local Ollama instance directly (via the `ollama` MCP server or HTTP API) using `mistral-nemo`:
    ```bash
-   python3 ~/Repos/artifice/scripts/heavy_lock.py run --slot gpu --name "local-review" -- \
    curl -s http://localhost:11434/api/chat -d '{
      "model": "mistral-nemo",
      "messages": [

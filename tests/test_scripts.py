@@ -27,6 +27,16 @@ class TestArtificeScripts(unittest.TestCase):
             f"verify.sh failed:\n{res.stdout.decode()}\n{res.stderr.decode()}",
         )
 
+    def test_lint_script(self):
+        res = subprocess.run(
+            ["./scripts/lint.sh"], cwd=self.artifice_root, capture_output=True, text=True
+        )
+        self.assertEqual(
+            res.returncode,
+            0,
+            f"lint.sh failed:\n{res.stdout}\n{res.stderr}",
+        )
+
     def test_build_review_dossier(self):
         cmd = [
             "python3",
@@ -54,14 +64,6 @@ class TestArtificeScripts(unittest.TestCase):
             0,
             f"check_decisions failed:\n{res.stdout}\n{res.stderr}",
         )
-
-    def test_heavy_lock_status(self):
-        cmd = ["python3", "scripts/heavy_lock.py", "status"]
-        res = subprocess.run(
-            cmd, cwd=self.artifice_root, capture_output=True, text=True
-        )
-        self.assertEqual(res.returncode, 0)
-        self.assertIn("artifice Heavy Lock Status", res.stdout)
 
     def test_sabotage_check_probe(self):
         with tempfile.TemporaryDirectory() as tmpdir:

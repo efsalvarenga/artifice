@@ -56,7 +56,7 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 3. **Check for Privacy Directives:**
    If `AGENTS.md` contains an on-device directive (e.g. `Privacy: on-device`, `Review: local-only`, or `Air-Gapped`), automatically switch to **Mode 2 (Air-Gapped / On-Device)** even if `--local` was not passed in the command line.
 4. **Execute Available Test Suites & Verification Scripts:**
-   Detect and run the project's verification commands (wrapped in `heavy_lock.py` if heavy):
+   Detect and run the project's verification commands:
    * Verification scripts: `./scripts/verify*.sh` or `./scripts/test*.sh`
    * Node/TypeScript: `npm test` or `pnpm test` or `bun test`
    * Python: `pytest`
@@ -71,9 +71,8 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 #### Pathway A: Dual-Model Consensus (Default)
 
 * Primary 8-Pillar audit driven by the active cloud orchestrator (Gemini).
-* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama protected by `heavy_lock.py` and armed with the compiled dossier:
+* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama (using the `ollama` MCP server or direct HTTP) armed with the compiled dossier:
   ```bash
-  python3 ~/Repos/artifice/scripts/heavy_lock.py run --slot gpu --name "review-pr-qwen" -- \
   curl -s http://localhost:11434/api/chat -d '{
     "model": "qwen2.5:14b",
     "messages": [
@@ -88,7 +87,7 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 #### Pathway B: Air-Gapped / On-Device Mode (`--local` or Privacy Directive)
 
 * Zero code diffs leave the machine.
-* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama (both wrapped in `heavy_lock.py`).
+* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama directly.
 
 ### Step 4: Generate & Sign the Review Report
 

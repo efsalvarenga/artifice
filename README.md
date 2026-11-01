@@ -14,10 +14,10 @@ artifice/
 │   ├── code-reviewer/       # Principal Code Reviewer ("The Gatekeeper")
 │   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
 ├── scripts/
-│   ├── verify.sh            # Repository verification & Core Diet ceiling harness
+│   ├── lint.sh              # Static governance linter (Markdown, YAML, links, Core Diet)
+│   ├── verify.sh            # Continuous verification orchestrator (lint + unit tests)
 │   ├── validate_egm.py      # Portable EGM contract validator
 │   ├── check_decisions.py   # Decision ledger linter & active-only auditor
-│   ├── heavy_lock.py        # POSIX lock & Apple Silicon Unified Memory mutex
 │   ├── build_review_dossier.py # Compact repository invariant digest compiler
 │   └── sabotage_check.py    # Worktree-isolated mutation test verification
 ├── skills/
@@ -59,19 +59,19 @@ artifice/
 ### 5. `local-code`
 
 * **Trigger:** `/local-code`
-* **Backend:** Local `qwen2.5:14b` running via Ollama under `heavy_lock.py`.
+* **Backend:** Local `qwen2.5:14b` running via Ollama.
 * **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis paired with `sabotage_check.py` for test hardening.
 
 ### 6. `local-review`
 
 * **Trigger:** `/local-review`
-* **Backend:** Local `mistral-nemo:12b` running via Ollama under `heavy_lock.py`.
+* **Backend:** Local `mistral-nemo:12b` running via Ollama.
 * **Role:** Long-context architectural reviews, code diff evaluation, and technical documentation synthesis armed with `build_review_dossier.py`.
 
 ## Core Verification Scripts
 
-* `./scripts/verify.sh`: Enforces Markdown heading cleanliness, table formatting, YAML frontmatter syntax, relative link integrity, Core Diet ceilings (140 lines on global `AGENTS.md`, 180 lines on `SKILL.md`), and runs automated unit tests.
-* `./scripts/heavy_lock.py`: POSIX `fcntl.flock` mutex guarding GPU and test suites against memory exhaustion on Apple Silicon.
+* `./scripts/lint.sh`: Audits Markdown heading cleanliness, table formatting, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings (140 lines on global `AGENTS.md`, 180 lines on `SKILL.md`).
+* `./scripts/verify.sh`: Continuous verification orchestrator running `./scripts/lint.sh` and the automated Python unit test suite.
 * `./scripts/sabotage_check.py`: Applies targeted mutations to boundary conditions and asserts tests turn red (`KILLED`), exposing blind spots.
 * `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
 

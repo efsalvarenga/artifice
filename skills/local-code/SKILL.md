@@ -12,10 +12,9 @@ Use this skill when the user requests an offline code analysis, complex refactor
 1. **Extract Code Context**:
    Identify the target source file, function block, or algorithmic problem to be analysed.
 
-2. **Invoke Local Model (under Heavy Lock)**:
-   Query the local Ollama instance protected by `heavy_lock.py` to prevent memory thrashing on Apple Silicon:
+2. **Invoke Local Model**:
+   Query the local Ollama instance directly (via the `ollama` MCP server or HTTP API) using `qwen2.5:14b`:
    ```bash
-   python3 ~/Repos/artifice/scripts/heavy_lock.py run --slot gpu --name "local-code" -- \
    curl -s http://localhost:11434/api/chat -d '{
      "model": "qwen2.5:14b",
      "messages": [
