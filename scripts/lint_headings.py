@@ -71,7 +71,7 @@ def check_headings(target_dir: str, verbose: bool = True) -> int:
             if HEADING_PATTERN.match(line):
                 if i + 1 < len(lines):
                     next_line = lines[i + 1]
-                    if next_line.strip() != "" and not HEADING_PATTERN.match(next_line):
+                    if next_line.strip() != "":
                         print(
                             f"    {RED}Heading violation{NC} in {rel_path}:{i+1} -> '{line.strip()}' followed by non-blank: '{next_line.strip()}'"
                         )

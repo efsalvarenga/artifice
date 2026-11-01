@@ -47,7 +47,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 > 1. **Measured Cost:** Did an actual defect, stalled task, or rework occur? (Hypothetical issues are discarded).
 > 2. **Uncovered (`grep` First):** Does `grep` across existing rules/skills confirm no general rule already covers it? (If covered, sharpen existing triggers instead).
 > 3. **Generalises:** Does it apply across multiple projects and repositories? (Local quirks belong in local code or local linters).
-> 4. **Changes Decisions & Cannot Be Automated:** Does it alter what a competent model would do, and can it *not* be enforced via code, static types, or `verify.sh`? (*"Prefer code over prose"*).
+> 4. **Changes Decisions & Cannot Be Automated:** Does it alter what a competent model would do, and can it *not* be enforced via code, static types, or `lint.sh`? (*"Prefer code over prose"*).
 
 ---
 

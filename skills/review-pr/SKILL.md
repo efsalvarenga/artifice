@@ -93,7 +93,7 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 
 1. Format findings using Conventional Comments (`issue`, `suggestion`, `question`, `praise`).
 2. **Output Location:**
-   * Present the structured review directly in-chat or in an Antigravity artifact canvas.
+   * Present the structured review directly in-chat or in an Antigravity artefact canvas.
    * If the repository has a `docs/reviews/` directory (or the user requests a committed review), save the report to `docs/reviews/pr_<PR_NUMBER>_review.md`.
 3. **Mandatory Provenance Signature:**
    Always sign the review with the formal provenance footer reflecting the models used:

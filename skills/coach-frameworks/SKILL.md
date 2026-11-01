@@ -54,7 +54,7 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 ### Step 4: Synthesise & Deliver Recommendations
 
 1. **Delivery Format (Adaptive Output):**
-   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an Antigravity artifact canvas.
+   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an Antigravity artefact canvas.
    * If the project contains a `docs/coaching/` or `docs/proposals/` directory (or if the user requests a committed RFC), draft a formal proposal file there.
 2. **Mandatory Provenance Signature:**
    Always conclude the advice with the formal provenance footer:
