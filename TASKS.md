@@ -47,12 +47,12 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 ### Milestone 1: Governance, Wave Coordination & Verification (v1.2.0)
 
-- [x] `[AUTO]` **TASK-101**: Implement verification harness (`./scripts/verify.sh`) auditing Markdown cleanliness, YAML frontmatter syntax, relative link resolution, and Core Diet line/word ceilings on `AGENTS.md` (140 lines) and `SKILL.md` (180 lines).
+- [x] `[AUTO]` **TASK-101**: Implement static governance harness (`./scripts/lint.sh`) auditing Markdown cleanliness, YAML frontmatter syntax, relative link resolution, and Core Diet line/word ceilings on `AGENTS.md` (140 lines) and `SKILL.md` (180 lines).
 - [x] `[AUTO]` **TASK-102**: Implement `scripts/build_review_dossier.py` to compile compact ($\le 40$-line) repository invariant digests, and wire it into `review-pr` and `local-review`.
 - [x] `[SEMI]` **TASK-103**: Implement `skills/spec-egm/` (promoted from `emergent`) and portable validator `scripts/validate_egm.py`.
 - [x] `[SEMI]` **TASK-104**: Implement `skills/coordinate-fronts/`, block contract templates, and the unified Decision Ledger (`scripts/check_decisions.py`).
 - [x] `[SEMI]` **TASK-106**: Integrate active edge-case probing into `review-pr` (Pillar 2) and `local-code`, eliminating mechanical file mutation scripts in favour of analytical reviewer probing.
-- [x] `[SEMI]` **TASK-107**: Execute full verification (`verify.sh` + unit tests), run Gatekeeper PR review, and prepare companion slimming PR in `emergent` ([artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6), [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5)).
+- [x] `[SEMI]` **TASK-107**: Execute static verification (`lint.sh`), run Gatekeeper PR review, and prepare companion slimming PR in `emergent` ([artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6), [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5)).
 
 ### Soak Period Evaluation & Final Promotion (Execute After 9th November 2026 Only)
 
@@ -61,7 +61,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 * **`emergent` [PR #5](https://github.com/terra-campaigns/emergent/pull/5):** `agent/ecosystem-governance-slim` $\rightarrow$ `main` (Ecosystem de-duplication, slimmed `AGENTS.md`, and delegated EGM cycle).
 
 - [ ] `[SEMI]` **TASK-108**: Triage `## Incoming Feedback / Inbox` items logged during the soak period using the 4-Test Lesson Acceptance Gate.
-- [ ] `[AUTO]` **TASK-109**: Run full regression verification on `artifice` (`./scripts/lint.sh` and `./scripts/verify.sh`) on branch `agent/ecosystem-governance-and-coordination` ([PR #6](https://github.com/efsalvarenga/artifice/pull/6)).
+- [ ] `[AUTO]` **TASK-109**: Run full regression linting on `artifice` (`./scripts/lint.sh`) on branch `agent/ecosystem-governance-and-coordination` ([PR #6](https://github.com/efsalvarenga/artifice/pull/6)).
 - [ ] `[AUTO]` **TASK-110**: Run full regression verification on `emergent` (`./scripts/run_egm_cycle.sh validate` and `./scripts/verify_implementation.sh`) on branch `agent/ecosystem-governance-slim` ([PR #5](https://github.com/terra-campaigns/emergent/pull/5)).
 - [ ] `[AUTO]` **TASK-111**: Execute closing pre-merge Dual-Model Consensus audits (`review-pr`) across both PRs.
 - [ ] `[HUMAN]` **TASK-112**: Final human review and merge approval for [artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6) and [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5) into their respective `main` branches.

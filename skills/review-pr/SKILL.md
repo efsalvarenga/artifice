@@ -55,10 +55,10 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
    ```
 3. **Check for Privacy Directives:**
    If `AGENTS.md` contains an on-device directive (e.g. `Privacy: on-device`, `Review: local-only`, or `Air-Gapped`), automatically switch to **Mode 2 (Air-Gapped / On-Device)** even if `--local` was not passed in the command line.
-4. **Execute Available Test Suites & Verification Scripts:**
-   Detect and run the project's verification commands:
-   * Verification scripts: `./scripts/verify*.sh` or `./scripts/test*.sh`
-   * Node/TypeScript: `npm test` or `pnpm test` or `bun test`
+4. **Execute Available Test Suites & Linters:**
+   Detect and run the project's native build, test, and lint commands:
+   * Linters & verification: `./scripts/lint*.sh`, `./scripts/verify*.sh`, or `./scripts/test*.sh`
+   * Node/TypeScript: `npm run build && npm test` or `pnpm test` or `bun test`
    * Python: `pytest`
    * Rust: `cargo test`
    Record all test results for inclusion in the review report.

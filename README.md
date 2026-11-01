@@ -15,7 +15,6 @@ artifice/
 │   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
 ├── scripts/
 │   ├── lint.sh              # Static governance linter (Markdown, YAML, links, Core Diet)
-│   ├── verify.sh            # Continuous verification orchestrator (lint + unit tests)
 │   ├── validate_egm.py      # Portable EGM contract validator
 │   ├── check_decisions.py   # Decision ledger linter & active-only auditor
 │   └── build_review_dossier.py # Compact repository invariant digest compiler
@@ -26,8 +25,6 @@ artifice/
 │   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
 │   ├── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 14B
 │   └── local-review/        # Architectural review & prose via local Mistral NeMo 12B
-└── tests/
-    └── test_scripts.py      # Automated python unit test suite
 ```
 
 ## Available Skills
@@ -67,11 +64,12 @@ artifice/
 * **Backend:** Local `mistral-nemo:12b` running via Ollama.
 * **Role:** Long-context architectural reviews, code diff evaluation, and technical documentation synthesis armed with `build_review_dossier.py`.
 
-## Core Verification Scripts
+## Core Scripts
 
 * `./scripts/lint.sh`: Audits Markdown heading cleanliness, table formatting, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings (140 lines on global `AGENTS.md`, 180 lines on `SKILL.md`).
-* `./scripts/verify.sh`: Continuous verification orchestrator running `./scripts/lint.sh` and the automated Python unit test suite.
 * `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
+* `./scripts/build_review_dossier.py`: Extracts and formats intentional repository invariants for local review models.
+* `./scripts/check_decisions.py`: Lints 3-tier Decision Ledgers (`D`, `P`, `C`) for rationale formatting and active hygiene.
 
 ## Integration with Antigravity
 
