@@ -82,6 +82,10 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - Update `skills/spec-egm/SKILL.md` (Elephant Phase) and `skills/coordinate-fronts/SKILL.md` (Opening Roster) to mandate an interactive grilling session before implementation begins.
   - Require the agent to proactively interrogate the developer on all anticipated architectural trade-offs, qualitative preferences, third-party credentials, edge-case failure modes, and recovery fallbacks ahead of time.
   - Purpose: Maximise continuous autonomy during the execution phase by resolving all human-dependent decisions up front, enabling unattended execution once the developer's "OK" is given.
+- [ ] `[SEMI]` **TASK-116**: Audit, clarify, and consolidate the reviewing agents and evaluation skills portfolio:
+  - Review all evaluation tools (`review-pr`, `local-review`, `local-code`, `code-reviewer`, `developer-coach`, `coach-frameworks`) to eliminate ambiguity and overlapping responsibilities.
+  - Evaluate consolidating `local-review` directly into `review-pr` (e.g. as an on-device architecture/documentation review mode) to avoid parallel, redundant review entrypoints.
+  - Provide an unambiguous taxonomy defining exactly when each skill or persona should be invoked, merging or deprecating underutilised tools to reduce cognitive clutter and prompt footprint.
 
 ---
 
