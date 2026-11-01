@@ -73,6 +73,12 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - Eliminating defensive prose in `AGENTS.md` and `SKILL.md` that can be replaced by deterministic linters (`scripts/lint.sh`) or dropped entirely ("prefer code over prose").
   - Consolidating overlapping workflows across skills (`spec-egm`, `coordinate-fronts`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
 
+### Backlog & Operational Hardening
+
+- [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-wave handoff bridge:
+  - Add an explicit `Target Specification: docs/designs/<NNN>_<feature>.md` metadata field to `skills/coordinate-fronts/references/block-contract-template.md` (requiring validation by `validate_egm.py`).
+  - Add an explicit prerequisite in `skills/coordinate-fronts/SKILL.md` (Step 2) instructing coordinators to verify that `validate_egm.py` passes on the target specification before drafting block contracts for major architectural features.
+
 ---
 
 ## Completed Tasks
