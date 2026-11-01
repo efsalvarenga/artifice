@@ -75,11 +75,11 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 *Milestone 2 eliminates the dichotomy between all-cloud and all-local execution. It introduces transparent hybrid offloading to resident Ollama models on Apple Silicon, consolidates the review tools portfolio, and establishes a strict division of labour to conserve cloud API quota.*
 
-- [ ] `[AUTO]` **TASK-201**: Evaluate Apple Silicon RAM/VRAM constraints and benchmark `codestral:22b` vs `qwen2.5:14b` via Ollama for specialised FIM and code synthesis; document hardware boundaries.
-- [ ] `[AUTO]` **TASK-202**: Implement zero-dependency Ollama residency and healthcheck probe (`scripts/check_ollama.py`) with instant cloud `flash` fallback recommendation.
-- [ ] `[SEMI]` **TASK-203**: Consolidate review skills by folding standalone `skills/local-review/` directly into `skills/review-pr/` (supporting document/diff modes and air-gapped on-device execution), reducing skill bloat while preserving Core Diet limits ($\le 180$ lines).
-- [ ] `[SEMI]` **TASK-204**: Implement Gemini-orchestrated hybrid offloading in `skills/review-pr/SKILL.md` (automatic decomposition delegating Pillar 2 edge cases to Qwen/Codestral and Pillar 6 prose to Mistral NeMo).
-- [ ] `[SEMI]` **TASK-205**: Codify frontier-to-local division of labour guidelines in `skills/local-code/SKILL.md` and repository quota guardrails, defining concrete offloading contracts for test boilerplate and deterministic logic.
+- [x] `[AUTO]` **TASK-201**: Evaluate Apple Silicon RAM/VRAM constraints and benchmark `codestral:22b` vs `qwen2.5:14b` / `qwen2.5-coder:14b` via Ollama; documented hardware boundaries and 16 GB Metal GPU limits.
+- [x] `[AUTO]` **TASK-202**: Implement zero-dependency Ollama residency and lifecycle probe (`scripts/check_ollama.py`) with wave-leasing (`keep_alive: 5m`), explicit eviction (`unload --all`), and sub-100ms health checks.
+- [x] `[SEMI]` **TASK-203**: Consolidate review skills by folding standalone `local-review` and `review-pr` into a single universal `skills/review/` (supporting PR, branch, file, and design doc modes), reducing skill count while preserving Core Diet limits ($\le 180$ lines).
+- [x] `[SEMI]` **TASK-204**: Implement Gemini-orchestrated hybrid offloading in `skills/review/SKILL.md` (decomposing Pillar 2 edge cases to Qwen Coder and Pillar 6 prose to Mistral NeMo with explicit multi-model provenance footer).
+- [x] `[SEMI]` **TASK-205**: Codify frontier-to-local division of labour guidelines in `skills/local-code/SKILL.md` and enshrine Step 1A Interactive Design Workshop in `skills/spec-egm/SKILL.md`.
 - [ ] `[AUTO]` **TASK-206**: Execute full static verification (`./scripts/lint.sh`), run Gatekeeper pre-flight review, and prepare PR.
 
 ---

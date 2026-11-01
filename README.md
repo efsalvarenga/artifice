@@ -14,16 +14,16 @@ artifice/
 │   ├── code-reviewer/       # Principal Code Reviewer ("The Gatekeeper")
 │   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
 ├── scripts/
+│   ├── check_ollama.py      # Ollama residency, lifecycle & wave-leasing controller
 │   ├── lint.py              # Unified static governance linter (Markdown, YAML, links, Core Diet)
 │   ├── lint.sh              # Execution wrapper for lint.py
 │   ├── validate_egm.py      # Portable EGM contract validator
 │   └── build_review_dossier.py # Compact repository invariant digest compiler
 ├── skills/
-│   ├── spec-egm/            # Elephant-Goldfish Model specification workflow
-│   ├── review-pr/           # Universal 8-pillar code review & Conventional Comments
+│   ├── spec-egm/            # Elephant-Goldfish Model specification workflow & workshops
+│   ├── review/              # Universal code & architecture review (PR, branch, file, doc)
 │   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
-│   ├── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 14B
-│   └── local-review/        # Architectural review & prose via local Mistral NeMo 12B
+│   └── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 Coder
 ```
 
 ## Available Skills
@@ -31,14 +31,15 @@ artifice/
 ### 1. `spec-egm`
 
 * **Trigger:** `/spec-egm [init | review | validate]`
-* **Role:** Orchestrates the Elephant-Goldfish Model (EGM) specification-driven development workflow: pre-spec empirical reconnaissance, no-code Elephant design specs, zero-context Goldfish reviews, and contract validation.
+* **Role:** Orchestrates the Elephant-Goldfish Model (EGM) specification-driven development workflow: pre-spec empirical reconnaissance, collaborative interactive Design Workshops, no-code Elephant design specs, zero-context Goldfish reviews, and automated contract validation.
 
-### 2. `review-pr`
+### 2. `review`
 
-* **Trigger:** `/review-pr [--local] [PR or branch]`
+* **Trigger:** `/review [--local] [PR_NUMBER | branch | <file_or_doc_path>]`
 * **Persona:** Principal Code Reviewer ("The Gatekeeper")
-* **Role:** Universal Pull Request and branch diff code review combining Google Engineering Practices, Conventional Comments, automated verification execution, and dynamic ingestion of project-local `AGENTS.md` rules.
-* **Dual-Model Consensus & Privacy:** Employs Gemini for global architectural synthesis while delegating dense algorithmic fuzzing to local Qwen 2.5 14B and prose review to local Mistral NeMo 12B. Supports 100% on-device air-gapped reviews via the `--local` flag or repository privacy directives.
+* **Role:** Universal evaluation of Pull Requests, branch diffs, single files, or architectural design specifications using the 8-Pillar Framework and Conventional Comments.
+* **Hybrid Offloading:** Orchestrated by Gemini, decomposing the review into orthogonal streams: delegating Pillar 2 logic fuzzing to local `qwen2.5-coder:14b` and Pillar 6 documentation review to local `mistral-nemo:12b` via wave-leased Ollama memory.
+* **Offline Privacy Mode:** Supports 100% on-device air-gapped review via the `--local` flag or repository privacy directives.
 
 ### 3. `coach-frameworks`
 
@@ -49,17 +50,12 @@ artifice/
 ### 4. `local-code`
 
 * **Trigger:** `/local-code`
-* **Backend:** Local `qwen2.5:14b` running via Ollama.
-* **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis with active boundary edge-case probing.
-
-### 5. `local-review`
-
-* **Trigger:** `/local-review`
-* **Backend:** Local `mistral-nemo:12b` running via Ollama.
-* **Role:** Long-context architectural reviews, code diff evaluation, and technical documentation synthesis armed with `build_review_dossier.py`.
+* **Backend:** Local `qwen2.5-coder:14b` (fallback `qwen2.5:14b`) running via Ollama.
+* **Role:** Deep algorithmic refactoring, unit test generation, Fill-in-the-Middle (FIM) synthesis, and boundary edge-case probing with wave-leased memory management.
 
 ## Core Scripts
 
+* `./scripts/check_ollama.py`: Ollama lifecycle and residency manager providing sub-100ms health checks, model selection, wave-leasing (`keep_alive: 5m`), and memory cache flushing.
 * `./scripts/lint.py`: Unified static governance linter auditing Markdown heading cleanliness, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings across repositories.
 * `./scripts/lint.sh`: Execution wrapper delegating directly to `lint.py`.
 * `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
