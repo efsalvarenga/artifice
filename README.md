@@ -9,19 +9,38 @@ A curated, version-controlled collection of global agent skills, procedures, and
 ```text
 artifice/
 ├── README.md
+├── agents/
+│   ├── code-reviewer/       # Principal Code Reviewer ("The Gatekeeper")
+│   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
 └── skills/
-    ├── local-code/       # Algorithmic refactoring & tests via local Qwen 2.5 14B
-    └── local-review/     # Architectural review & prose via local Mistral NeMo 12B
+    ├── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 14B
+    ├── local-review/        # Architectural review & prose via local Mistral NeMo 12B
+    ├── review-pr/           # Universal 8-pillar code review & Conventional Comments
+    └── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
 ```
 
 ## Available Skills
 
-### 1. `local-code`
+### 1. `review-pr`
+
+* **Trigger:** `/review-pr`
+* **Persona:** Principal Code Reviewer ("The Gatekeeper")
+* **Role:** Universal Pull Request and branch diff code review combining Google Engineering Practices, Conventional Comments, automated verification execution, and dynamic ingestion of project-local `AGENTS.md` rules.
+
+### 2. `coach-frameworks`
+
+* **Trigger:** `/coach-frameworks`
+* **Persona:** Principal Developer Coach ("The Catalyst")
+* **Role:** Strategic framework evaluation, ecosystem scouting across `~/Repos/*`, and developer ergonomics coaching. Delivers adaptive recommendations in chat, Antigravity artifact canvases, or structured RFC proposals.
+
+### 3. `local-code`
+
 * **Trigger:** `/local-code`
 * **Backend:** Local `qwen2.5:14b` running via Ollama.
 * **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis.
 
-### 2. `local-review`
+### 4. `local-review`
+
 * **Trigger:** `/local-review`
 * **Backend:** Local `mistral-nemo:12b` running via Ollama.
 * **Role:** Long-context architectural reviews, code diff evaluation, and technical documentation synthesis.
