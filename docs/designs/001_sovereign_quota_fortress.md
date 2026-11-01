@@ -96,19 +96,22 @@ The system balances frontier cloud reasoning with local on-device execution:
 1. The orchestrator calls `scripts/check_ollama.py warm <model> --lease 5m`.
 2. Ollama loads the weights into Metal GPU memory.
 
-### 3. Orthogonal Subagent Execution
+### 3. Orthogonal Subagent Execution & Gemini Quality Audit
 
-1. Native local scripts execute **Pillar 4 (Tests & Linters)** via `./scripts/lint.sh`.
-2. Subagent 1 (`qwen2.5-coder:14b`) executes code-focused pillars:
+1. **Gemini Direct Evaluation (Pillar 1 — Design):** Cloud Gemini directly conducts the overarching architectural alignment audit against specifications in `docs/designs/` and repository invariants.
+2. **Native Local Harness (Pillar 4 — Tests & Linters):** Runs `./scripts/lint.sh` and test suites natively on-device with zero token consumption.
+3. **Subagent 1 — Code Stream (`qwen2.5-coder:14b`):**
    * **Pillar 2 (Functionality & Invariants):** Probes boundary edge cases and state mutation safety.
    * **Pillar 3 (Complexity & Occam's Razor):** Detects unnecessary wrappers and premature abstractions.
    * **Pillar 5 (Naming & Domain Clarity):** Checks ubiquitous domain language and boolean clarity.
    * **Pillar 7 (Style & Type Safety):** Audits strict type annotations and language conventions.
-3. Subagent 2 (`mistral-nemo:12b`) executes architectural and prose pillars:
-   * **Pillar 1 (Design Alignment):** Verifies adherence to `docs/designs/` and `AGENTS.md`.
+4. **Subagent 2 — Prose Stream (`mistral-nemo:12b`):**
    * **Pillar 6 (Comments & Documentation):** Verifies comment quality and markdown heading cleanliness.
    * **Pillar 8 (Localisation & Governance):** Audits 100% British English and narrative sovereignty.
-4. Cloud orchestrator (Gemini) collects concise local summaries and performs final synthesis.
+5. **Gemini Quality Gate & Blind-Spot Verification:**
+   * Gemini scrutinises the diff against the local findings to catch any subtle defects or edge cases missed by the local workers.
+   * Filters out false positives and hallucinations against intentional repository invariants.
+   * Authors the final synthesis report and Conventional Comments.
 
 ### 4. Cache Purge
 

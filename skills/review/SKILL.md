@@ -56,23 +56,27 @@ This skill orchestrates a rigorous evaluation of Pull Requests, branch diffs, in
 
 #### Pathway A: Gemini-Orchestrated Hybrid Review (Default)
 
-The cloud orchestrator acts as Planner, breaking the review into orthogonal inspection streams across local engines and native test harnesses:
+The cloud orchestrator acts as **Lead Architect, Quality Inspector, and Synthesiser**:
 
-1. **Native Local Harness (Pillar 4 — Tests & Linters):**
+1. **Gemini Direct Evaluation (Pillar 1 — Design & Architecture Alignment):**
+   Gemini directly conducts the holistic architectural audit: evaluating system boundaries, consistency against approved specifications in `docs/designs/`, interface cohesion, and absence of abstraction leaks.
+2. **Native Local Harness (Pillar 4 — Tests & Linters):**
    Executes `./scripts/lint.sh`, `pytest`, `cargo test`, or `npm test` directly on the machine to establish baseline test coverage and zero linter warnings.
-2. **Local Subagent 1 — Code & Logic Stream (`qwen2.5-coder:14b`):**
+3. **Local Subagent 1 — Code & Logic Stream (`qwen2.5-coder:14b`):**
    Ingests code diffs and repository invariant dossiers to audit:
    * **Pillar 2 (Functionality & Invariants):** Pries into 2–3 concrete boundary edge cases (empty inputs, bounds, state corruption) and asserts test coverage.
    * **Pillar 3 (Complexity & Occam's Razor):** Flags unnecessary classes, wrappers, defensive boilerplate, or over-engineered abstractions.
    * **Pillar 5 (Naming & Domain Clarity):** Audits domain vocabulary, boolean predicates, and identifier clarity.
    * **Pillar 7 (Style & Type Safety):** Audits strict type annotations, unchecked casts, and language-specific idioms.
-3. **Local Subagent 2 — Architecture & Text Stream (`mistral-nemo:12b`):**
+4. **Local Subagent 2 — Prose & Governance Stream (`mistral-nemo:12b`):**
    Ingests documentation, markdown files, and commit logs to audit:
-   * **Pillar 1 (Design & Architecture Alignment):** Verifies consistency against approved specifications in `docs/designs/` and global `AGENTS.md`.
    * **Pillar 6 (Comments & Documentation):** Verifies explanatory comments (*why* vs *what*) and enforces mandatory heading blank lines.
    * **Pillar 8 (Localisation & Governance):** Scans for 100% British English orthography and verifies human narrative sovereignty.
-4. **Cloud Orchestrator Synthesis (Gemini):**
-   Gemini receives the concise local findings, arbitrates disagreements, frames observations under Conventional Comments (`issue`, `suggestion`, `praise`), and generates the final structured verdict.
+5. **Gemini Quality Gate & Blind-Spot Verification:**
+   Before authoring the final review, Gemini cross-audits the local models' findings against the diff:
+   * **Overlooked Defect Inspection:** Scrutinises the diff to identify subtle bugs, concurrency hazards, or edge cases missed by the local workers.
+   * **False-Positive Filtering:** Validates reported defects against intentional repository invariants to eliminate hallucinations.
+   * **Executive Synthesis & Verdict:** Unifies findings under Conventional Comments (`issue`, `suggestion`, `praise`) and issues the structured verdict.
 
 #### Pathway B: Air-Gapped Offline Mode (`--local` or Privacy Directive)
 
