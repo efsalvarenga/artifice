@@ -272,6 +272,25 @@ def lint_repository(target_dir: str) -> int:
         print(f"  {RED}✗{NC} Core Diet budget exceeded on {diet_errors} file(s).")
         total_errors += diet_errors
 
+    # Gate 5: EGM Specification Contracts (if docs/designs exists)
+    designs_dir = os.path.join(target_dir, "docs", "designs")
+    if os.path.isdir(designs_dir):
+        print(f"\n{BOLD}5. Validating EGM Specification Contracts...{NC}")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        if script_dir not in sys.path:
+            sys.path.insert(0, script_dir)
+        try:
+            import validate_egm
+            egm_res = validate_egm.validate_repo(target_dir)
+            if egm_res != 0:
+                print(f"  {RED}✗{NC} EGM specification contract validation failed.")
+                total_errors += 1
+            else:
+                print(f"  {GREEN}✓{NC} All active EGM specification contracts and Goldfish reviews pass.")
+        except Exception as e:
+            print(f"  {RED}✗{NC} Could not execute validate_egm: {e}")
+            total_errors += 1
+
     print("\n========================================================")
     if total_errors == 0:
         print(f"{GREEN}{BOLD}✓ ALL STATIC GOVERNANCE LINTERS PASSED CLEANLY.{NC}")

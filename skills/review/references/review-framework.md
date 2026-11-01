@@ -7,11 +7,14 @@ This reference defines the formal evaluation rubric used by the **Principal Code
 ### Pillar 1: Design & Architecture Alignment (`DESIGN`)
 
 * **What to Check:**
-  * Does the change align with existing architecture and design documents?
+  * **EGM Specification Compliance:** Does the implementation faithfully fulfil the active approved specification in `docs/designs/`?
+  * Are all state schemas, invariants, and edge cases defined in the specification implemented?
   * Are module boundaries respected (e.g. headless core separated from UI/client)?
   * Is the interface minimal, cohesive, and decoupled?
 * **Blocking Triggers:**
-  * Unauthorised architectural drift or leaking abstractions.
+  * Architectural drift or deviation from the approved `docs/designs/` specification.
+  * Omission of promised specification invariants or edge cases.
+  * Unauthorised scope expansion beyond the approved specification.
   * Direct coupling between domain engines and presentation layers.
 
 ### Pillar 2: Functionality & Invariants (`FUNCTIONALITY`)
