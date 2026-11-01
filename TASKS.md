@@ -14,7 +14,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Operational Context:** Evaluating developer tooling and sovereign model tiers for Antigravity 2.0 workflows.
   - **Specific Friction & Defect / Enhancement:** The current local execution roster relies on `qwen2.5:14b` (`local-code`) and `mistral-nemo:12b` (`local-review`). `codestral:22b` provides specialised Fill-in-the-Middle (FIM) and code synthesis across 80+ programming languages, which could improve code generation and mutation test verification while keeping execution 100% on-device and preserving API quota. Need to evaluate RAM/VRAM footprint on Apple Silicon and inference latency via Ollama.
   - **Actionable Remediation:** Pull and benchmark `codestral:22b` via Ollama (`ollama pull codestral:22b`). Compare latency, memory pressure, and task fidelity against `qwen2.5:14b` on representative refactoring and test-generation tasks; if favourable, update `skills/local-code/SKILL.md` to support `codestral:22b` as an option.
-  - **Status:** In Progress (Triaged into Milestone 2, TASK-201)
+  - **Status:** Closed (Delivered in Milestone 2, PR #7)
 
 * **[2026-11-01]** *(from `antigravity` @ `main`)*:
   - **Autonomy Mode:** `[SEMI]`
@@ -22,7 +22,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Operational Context:** Architecting model tiering and division of labour between frontier agents and local coding models in Antigravity 2.0.
   - **Specific Friction & Defect / Enhancement:** High-tier frontier model quota is frequently consumed on repetitive unit test boilerplate, syntax adjustments, and brute-force refactoring passes during multi-wave goals, accelerating quota burn (5-hour and weekly limits). A structured division of labour is needed where the orchestrating frontier model delegates bounded execution micro-passes to local engines (Codestral/Mistral via Ollama or low-cost API) while retaining high-level planning, Elephant-Goldfish specs, multi-agent coordination, and Git/PR drafting.
   - **Actionable Remediation:** Formulate an operational guideline and dispatch contract in `rules/quota-guardrails` specifying criteria for offloading bounded micro-tasks (e.g. test boilerplate expansion, algorithmic syntax passes) to local/specialised models (`local-code` / Codestral) while keeping contract definitions and final PR verification strictly on frontier orchestrators.
-  - **Status:** In Progress (Triaged into Milestone 2, TASK-205)
+  - **Status:** Closed (Delivered in Milestone 2, PR #7)
 
 * **[2026-11-01]** *(from `artifice` @ `agent/sovereign-quota-fortress`)*:
   - **Autonomy Mode:** `[SEMI]`
@@ -37,7 +37,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
     1. **Dogfood EGM in `artifice`:** Scaffold `docs/designs/` and `docs/reviews/` in `artifice` and formally author `docs/designs/001_sovereign_quota_fortress.md` accompanied by an adversarial Goldfish review in `docs/reviews/001_sovereign_quota_fortress_review.md`.
     2. **Enforce Pre-Implementation Gate in `lint.sh`:** Update `./scripts/lint.sh` to execute `python3 scripts/validate_egm.py .` as a mandatory static gate whenever `docs/designs/` is present, mechanically blocking PR creation unless EGM contracts are 100% green.
     3. **Enshrine Procedural Invariant in `AGENTS.md` & `spec-egm`:** Clarify that chat Q&A is merely Step 1A (Workshop); Step 1B (formal spec document) and Step 2 (Goldfish review) must produce committed markdown artifacts *before* any implementation code or PR drafting is permitted.
-  - **Status:** Open
+  - **Status:** Closed (Delivered in Milestone 2, PR #7)
 
 * **[2026-11-01]** *(from `oude-mechanismen` @ `v0.1.1`)*:
   - **Autonomy Mode:** `[AUTO]`
@@ -86,9 +86,9 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 ---
 
-### Milestone 2: Sovereign Quota Fortress — Automated Hybrid Offloading (v1.3.0)
+### Milestone 2: Sovereign Quota Fortress — Automated Hybrid Offloading (v1.3.0) [COMPLETED]
 
-*Milestone 2 eliminates the dichotomy between all-cloud and all-local execution. It introduces transparent hybrid offloading to resident Ollama models on Apple Silicon, consolidates the review tools portfolio, and establishes a strict division of labour to conserve cloud API quota.*
+*Milestone 2 established sovereign hybrid execution, wave-leased host memory management, the unified /review skill, and EGM Gate 5 validation. Merged to `main` via [artifice PR #7](https://github.com/efsalvarenga/artifice/pull/7).*
 
 - [x] `[AUTO]` **TASK-201**: Evaluate Apple Silicon RAM/VRAM constraints and benchmark `codestral:22b` vs `qwen2.5:14b` / `qwen2.5-coder:14b` via Ollama; documented hardware boundaries and 16 GB Metal GPU limits.
 - [x] `[AUTO]` **TASK-202**: Implement zero-dependency Ollama residency and lifecycle probe (`scripts/check_ollama.py`) with wave-leasing (`keep_alive: 5m`), explicit eviction (`unload --all`), and sub-100ms health checks.
@@ -139,3 +139,5 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 * **[2026-11-01]** `feat(core): bootstrap artifice repository with code-reviewer and developer-coach` ([PR #1](https://github.com/efsalvarenga/artifice/pull/1))
 * **[2026-11-01]** `feat(tools): migrate developer-coach and coach-frameworks from emergent` ([PR #2](https://github.com/efsalvarenga/artifice/pull/2))
 * **[2026-11-01]** `feat(review): establish dual-model consensus and on-device air-gapped review modes` ([PR #3](https://github.com/efsalvarenga/artifice/pull/3))
+* **[2026-11-01]** `feat(governance): integrate wave coordination, EGM, and anti-bloat verification` ([PR #6](https://github.com/efsalvarenga/artifice/pull/6))
+* **[2026-11-01]** `feat(review): establish sovereign hybrid offloading and unified review skill` ([PR #7](https://github.com/efsalvarenga/artifice/pull/7))
