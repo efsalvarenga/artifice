@@ -78,6 +78,10 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-wave handoff bridge:
   - Add an explicit `Target Specification: docs/designs/<NNN>_<feature>.md` metadata field to `skills/coordinate-fronts/references/block-contract-template.md` (requiring validation by `validate_egm.py`).
   - Add an explicit prerequisite in `skills/coordinate-fronts/SKILL.md` (Step 2) instructing coordinators to verify that `validate_egm.py` passes on the target specification before drafting block contracts for major architectural features.
+- [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and `coordinate-fronts` / `/goal` workflows:
+  - Update `skills/spec-egm/SKILL.md` (Elephant Phase) and `skills/coordinate-fronts/SKILL.md` (Opening Roster) to mandate an interactive grilling session before implementation begins.
+  - Require the agent to proactively interrogate the developer on all anticipated architectural trade-offs, qualitative preferences, third-party credentials, edge-case failure modes, and recovery fallbacks ahead of time.
+  - Purpose: Maximise continuous autonomy during the execution phase by resolving all human-dependent decisions up front, enabling unattended execution once the developer's "OK" is given.
 
 ---
 
