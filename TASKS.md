@@ -66,6 +66,13 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [ ] `[AUTO]` **TASK-111**: Execute closing pre-merge Dual-Model Consensus audits (`review-pr`) across both PRs.
 - [ ] `[HUMAN]` **TASK-112**: Final human review and merge approval for [artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6) and [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5) into their respective `main` branches.
 
+### Future Milestones: Slimming & De-Engineering (December 2026)
+
+- [ ] `[SEMI]` **TASK-113**: Comprehensive ecosystem audit to slim the repository of overlapping, redundant, and over-engineered processes across `artifice` and consuming repositories. Focus on:
+  - Reviewing actual operational usage across the ecosystem to prune ceremonial gates, unused templates, and speculative abstractions.
+  - Eliminating defensive prose in `AGENTS.md` and `SKILL.md` that can be replaced by deterministic linters (`scripts/lint.sh`) or dropped entirely ("prefer code over prose").
+  - Consolidating overlapping workflows across skills (`spec-egm`, `coordinate-fronts`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
+
 ---
 
 ## Completed Tasks
