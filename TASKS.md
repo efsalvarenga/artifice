@@ -18,10 +18,10 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 * **[2026-11-01]** *(from `antigravity` @ `main`)*:
   - **Autonomy Mode:** `[SEMI]`
-  - **Component:** `rules/quota-guardrails`, `skills/coordinate-fronts`, `skills/local-code`
+  - **Component:** `rules/quota-guardrails`, `skills/local-code`
   - **Operational Context:** Architecting model tiering and division of labour between frontier agents and local coding models in Antigravity 2.0.
   - **Specific Friction & Defect / Enhancement:** High-tier frontier model quota is frequently consumed on repetitive unit test boilerplate, syntax adjustments, and brute-force refactoring passes during multi-wave goals, accelerating quota burn (5-hour and weekly limits). A structured division of labour is needed where the orchestrating frontier model delegates bounded execution micro-passes to local engines (Codestral/Mistral via Ollama or low-cost API) while retaining high-level planning, Elephant-Goldfish specs, multi-agent coordination, and Git/PR drafting.
-  - **Actionable Remediation:** Formulate an operational guideline and dispatch contract in `rules/quota-guardrails` (or as a coordination pattern in `skills/coordinate-fronts`) specifying criteria for offloading bounded micro-tasks (e.g. test boilerplate expansion, algorithmic syntax passes) to local/specialised models (`local-code` / Codestral) while keeping contract definitions and final PR verification strictly on frontier orchestrators.
+  - **Actionable Remediation:** Formulate an operational guideline and dispatch contract in `rules/quota-guardrails` specifying criteria for offloading bounded micro-tasks (e.g. test boilerplate expansion, algorithmic syntax passes) to local/specialised models (`local-code` / Codestral) while keeping contract definitions and final PR verification strictly on frontier orchestrators.
   - **Status:** Open
 
 * **[2026-11-01]** *(from `oude-mechanismen` @ `v0.1.1`)*:
@@ -58,7 +58,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [x] `[AUTO]` **TASK-101**: Implement unified static governance linter (`./scripts/lint.py` with `lint.sh` wrapper) for direct cross-repository execution, auditing Markdown cleanliness, YAML frontmatter syntax, relative link resolution, and Core Diet line/word ceilings on `AGENTS.md` (140 lines) and `SKILL.md` (180 lines).
 - [x] `[AUTO]` **TASK-102**: Implement `scripts/build_review_dossier.py` to compile compact ($\le 40$-line) repository invariant digests, and wire it into `review-pr` and `local-review`.
 - [x] `[SEMI]` **TASK-103**: Implement `skills/spec-egm/` (promoted from `emergent`) and portable validator `scripts/validate_egm.py`.
-- [x] `[SEMI]` **TASK-104**: Implement streamlined `skills/coordinate-fronts/` focusing on in-memory pilot block dispatch, independent disk audits, and native Antigravity UI decision resolution; pruned obsolete file-based decision ledgers and `check_decisions.py`.
+- [x] `[SEMI]` **TASK-104**: Absorbed core subagent orchestration rules (pilot-first execution, worktree isolation, independent verification) directly into global `AGENTS.md`; pruned obsolete `skills/coordinate-fronts/` and file-based decision ledgers.
 - [x] `[SEMI]` **TASK-106**: Integrate active edge-case probing into `review-pr` (Pillar 2) and `local-code`, eliminating mechanical file mutation scripts in favour of analytical reviewer probing.
 - [x] `[SEMI]` **TASK-107**: Execute static verification (`lint.sh`), run Gatekeeper PR review, and prepare companion slimming PR in `emergent` ([artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6), [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5)).
 
@@ -79,14 +79,14 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [ ] `[SEMI]` **TASK-113**: Comprehensive ecosystem audit to slim the repository of overlapping, redundant, and over-engineered processes across `artifice` and consuming repositories. Focus on:
   - Reviewing actual operational usage across the ecosystem to prune ceremonial gates, unused templates, and speculative abstractions.
   - Eliminating defensive prose in `AGENTS.md` and `SKILL.md` that can be replaced by deterministic linters (`scripts/lint.sh`) or dropped entirely ("prefer code over prose").
-  - Consolidating overlapping workflows across skills (`spec-egm`, `coordinate-fronts`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
+  - Consolidating overlapping workflows across skills (`spec-egm`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
 
 ### Backlog & Operational Hardening
 
-- [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-wave handoff bridge:
-  - Add an explicit prerequisite in `skills/coordinate-fronts/SKILL.md` (Step 2) instructing coordinators to verify that `validate_egm.py` passes on the target specification before dispatching implementation subagents for major architectural features.
-- [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and `coordinate-fronts` / `/goal` workflows:
-  - Update `skills/spec-egm/SKILL.md` (Elephant Phase) and `skills/coordinate-fronts/SKILL.md` (Opening Roster) to mandate an interactive grilling session before implementation begins.
+- [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
+  - Add an explicit check ensuring that `validate_egm.py` passes on the target specification before dispatching implementation subagents for major architectural features.
+- [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
+  - Update `skills/spec-egm/SKILL.md` (Elephant Phase) to mandate an interactive grilling session before implementation begins.
   - Require the agent to proactively interrogate the developer on all anticipated architectural trade-offs, qualitative preferences, third-party credentials, edge-case failure modes, and recovery fallbacks ahead of time.
   - Purpose: Maximise continuous autonomy during the execution phase by resolving all human-dependent decisions up front, enabling unattended execution once the developer's "OK" is given.
 - [ ] `[SEMI]` **TASK-116**: Audit, clarify, and consolidate the reviewing agents and evaluation skills portfolio:

@@ -20,7 +20,6 @@ artifice/
 │   └── build_review_dossier.py # Compact repository invariant digest compiler
 ├── skills/
 │   ├── spec-egm/            # Elephant-Goldfish Model specification workflow
-│   ├── coordinate-fronts/   # Multi-front wave coordination & pilot dispatch
 │   ├── review-pr/           # Universal 8-pillar code review & Conventional Comments
 │   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
 │   ├── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 14B
@@ -34,31 +33,26 @@ artifice/
 * **Trigger:** `/spec-egm [init | review | validate]`
 * **Role:** Orchestrates the Elephant-Goldfish Model (EGM) specification-driven development workflow: pre-spec empirical reconnaissance, no-code Elephant design specs, zero-context Goldfish reviews, and contract validation.
 
-### 2. `coordinate-fronts`
-
-* **Trigger:** `/coordinate-fronts [plan | status | audit]`
-* **Role:** Multi-front wave coordinator activated when 3+ independent tasks stack up or an autonomous wave begins. Features upfront alignment, in-memory pilot block dispatch, independent disk audits (*autorrelato não se aceita*), native UI decision resolution, pairwise seam audits, and closing review passes.
-
-### 3. `review-pr`
+### 2. `review-pr`
 
 * **Trigger:** `/review-pr [--local] [PR or branch]`
 * **Persona:** Principal Code Reviewer ("The Gatekeeper")
 * **Role:** Universal Pull Request and branch diff code review combining Google Engineering Practices, Conventional Comments, automated verification execution, and dynamic ingestion of project-local `AGENTS.md` rules.
 * **Dual-Model Consensus & Privacy:** Employs Gemini for global architectural synthesis while delegating dense algorithmic fuzzing to local Qwen 2.5 14B and prose review to local Mistral NeMo 12B. Supports 100% on-device air-gapped reviews via the `--local` flag or repository privacy directives.
 
-### 4. `coach-frameworks`
+### 3. `coach-frameworks`
 
 * **Trigger:** `/coach-frameworks`
 * **Persona:** Principal Developer Coach ("The Catalyst")
 * **Role:** Strategic framework evaluation, ecosystem scouting across `~/Repos/*`, developer ergonomics coaching, and tooling inbox triage using the 4-Test Lesson Acceptance Gate.
 
-### 5. `local-code`
+### 4. `local-code`
 
 * **Trigger:** `/local-code`
 * **Backend:** Local `qwen2.5:14b` running via Ollama.
 * **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis with active boundary edge-case probing.
 
-### 6. `local-review`
+### 5. `local-review`
 
 * **Trigger:** `/local-review`
 * **Backend:** Local `mistral-nemo:12b` running via Ollama.
