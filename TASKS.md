@@ -80,7 +80,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [x] `[SEMI]` **TASK-203**: Consolidate review skills by folding standalone `local-review` and `review-pr` into a single universal `skills/review/` (supporting PR, branch, file, and design doc modes), reducing skill count while preserving Core Diet limits ($\le 180$ lines).
 - [x] `[SEMI]` **TASK-204**: Implement Gemini-orchestrated hybrid offloading in `skills/review/SKILL.md` (decomposing Pillar 2 edge cases to Qwen Coder and Pillar 6 prose to Mistral NeMo with explicit multi-model provenance footer).
 - [x] `[SEMI]` **TASK-205**: Codify frontier-to-local division of labour guidelines in `skills/local-code/SKILL.md` and enshrine Step 1A Interactive Design Workshop in `skills/spec-egm/SKILL.md`.
-- [ ] `[AUTO]` **TASK-206**: Execute full static verification (`./scripts/lint.sh`), run Gatekeeper pre-flight review, and prepare PR.
+- [x] `[AUTO]` **TASK-206**: Execute full static verification (`./scripts/lint.sh`), run Gatekeeper pre-flight review, and prepare PR ([artifice PR #7](https://github.com/efsalvarenga/artifice/pull/7)).
 
 ---
 
