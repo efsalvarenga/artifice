@@ -14,10 +14,8 @@ artifice/
 │   ├── code-reviewer/       # Principal Code Reviewer ("The Gatekeeper")
 │   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
 ├── scripts/
-│   ├── lint.sh              # Static governance orchestrator (Markdown, YAML, links, Core Diet)
-│   ├── lint_headings.py     # Universal: Markdown heading blank-line validator
-│   ├── lint_links.py        # Universal: Markdown relative & file link resolver
-│   ├── lint_frontmatter.py  # Universal: YAML frontmatter validator for skills & agents
+│   ├── lint.py              # Unified static governance linter (Markdown, YAML, links, Core Diet)
+│   ├── lint.sh              # Execution wrapper for lint.py
 │   ├── validate_egm.py      # Portable EGM contract validator
 │   └── build_review_dossier.py # Compact repository invariant digest compiler
 ├── skills/
@@ -68,10 +66,8 @@ artifice/
 
 ## Core Scripts
 
-* `./scripts/lint.sh`: Static governance orchestrator auditing Markdown heading cleanliness, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings across repositories.
-* `./scripts/lint_headings.py`: Standalone CLI validator enforcing mandatory blank lines beneath Markdown headings.
-* `./scripts/lint_links.py`: Standalone CLI resolver ensuring local Markdown relative and `file://` links resolve on disk.
-* `./scripts/lint_frontmatter.py`: Standalone CLI validator for `SKILL.md` and `agent.md` YAML frontmatter headers.
+* `./scripts/lint.py`: Unified static governance linter auditing Markdown heading cleanliness, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings across repositories.
+* `./scripts/lint.sh`: Execution wrapper delegating directly to `lint.py`.
 * `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
 * `./scripts/build_review_dossier.py`: Extracts and formats intentional repository invariants for local review models.
 
