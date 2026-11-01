@@ -86,6 +86,10 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - Review all evaluation tools (`review-pr`, `local-review`, `local-code`, `code-reviewer`, `developer-coach`, `coach-frameworks`) to eliminate ambiguity and overlapping responsibilities.
   - Evaluate consolidating `local-review` directly into `review-pr` (e.g. as an on-device architecture/documentation review mode) to avoid parallel, redundant review entrypoints.
   - Provide an unambiguous taxonomy defining exactly when each skill or persona should be invoked, merging or deprecating underutilised tools to reduce cognitive clutter and prompt footprint.
+- [ ] `[SEMI]` **TASK-117**: Architect parallel subagent dispatch for orthogonal code review dimensions:
+  - Decompose large PR reviews into parallel subagent passes across orthogonal review slices (e.g. concurrent boundary edge-case probing, independent pillar audits like logic vs documentation, or disjoint file diffs).
+  - Evaluate Apple Silicon Unified Memory constraints: determine whether concurrent local Ollama calls against the resident model (`qwen2.5:14b`) perform safely without memory thrashing, versus serialising calls when multiple distinct models are invoked.
+  - Design an adaptive dispatch strategy: run orthogonal review subagents fully in parallel under cloud mode (`flash`), but coordinate local on-device passes to respect Ollama model residency and prevent VRAM eviction.
 
 ---
 
