@@ -98,6 +98,14 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Per-Task Subagent Dispatch:** Spawn dedicated subagents per planned task (defaulting to `flash` or local `qwen2.5:14b`), collecting their focused findings before Gemini performs the closing 8-Pillar synthesis and conventional comments sign-off.
   - **Memory-Aware Local Bounds:** Evaluate Apple Silicon Unified Memory constraints: verify that concurrent local Ollama calls against the single resident model (`qwen2.5:14b`) execute safely within Ollama's queue, while serialising invocations if multiple distinct models are requested.
   - **Adaptive Execution:** Run orthogonal review subagents fully in parallel under cloud mode (`flash`), while coordinating local on-device passes to respect Ollama model residency and prevent VRAM eviction.
+- [ ] `[SEMI]` **TASK-118**: Architect and configure dedicated Code Authoring Agent (`code-author`) and Implementation Protocol:
+  - **Dedicated Author Persona:** Define the Principal Code Author ("The Craftsman") agent persona in `agents/code-author/agent.md`, establishing an explicit division of labour between feature authoring and the Gatekeeper (`code-reviewer`).
+  - **Specification-Driven TDD Workflow:** Codify the implementation workflow following EGM specification approval:
+    - Ingest approved design specifications (`docs/designs/*.md`) and repository invariants via `build_review_dossier.py`.
+    - Adopt a strict contract-first test-driven approach: write failing boundary tests covering invariants before writing production logic.
+    - Implement minimal, pure, deterministic code to turn tests green.
+  - **Model Tiering & Local Offloading:** Establish operational guidelines for delegating bounded authoring tasks (e.g. test boilerplate, state reducer logic) to local coding models (`qwen2.5:14b` or `codestral:22b` via Ollama) or `flash`, while retaining architectural coordination on frontier models.
+  - **Pre-Review Local Baseline Gate:** Mandate that authoring subagents run the repository's native test and lint suites (`./scripts/lint.sh`) locally to establish a 100% green baseline before requesting Gatekeeper review (`review-pr`) or drafting PRs.
 
 ---
 
