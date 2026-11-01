@@ -51,13 +51,13 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [x] `[AUTO]` **TASK-102**: Implement `scripts/build_review_dossier.py` to compile compact ($\le 40$-line) repository invariant digests, and wire it into `review-pr` and `local-review`.
 - [x] `[SEMI]` **TASK-103**: Implement `skills/spec-egm/` (promoted from `emergent`) and portable validator `scripts/validate_egm.py`.
 - [x] `[SEMI]` **TASK-104**: Implement `skills/coordinate-fronts/`, block contract templates, and the unified Decision Ledger (`scripts/check_decisions.py`).
-- [x] `[SEMI]` **TASK-106**: Implement targeted test sabotage and mutation verification probe (`scripts/sabotage_check.py`) with worktree isolation, wired into `local-code` and `review-pr`.
+- [x] `[SEMI]` **TASK-106**: Integrate active edge-case probing into `review-pr` (Pillar 2) and `local-code`, eliminating mechanical file mutation scripts in favour of analytical reviewer probing.
 - [x] `[SEMI]` **TASK-107**: Execute full verification (`verify.sh` + unit tests), run Gatekeeper PR review, and prepare companion slimming PR in `emergent` ([artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6), [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5)).
 
 ### Soak Period Evaluation & Final Promotion (Execute After 9th November 2026 Only)
 
 *The new orchestration framework, skills, and linters are currently under an operational soak across active workspaces. The PRs evaluated in this soak are:*
-* **`artifice` [PR #6](https://github.com/efsalvarenga/artifice/pull/6):** `agent/ecosystem-governance-and-coordination` $\rightarrow$ `main` (Multi-front coordination, EGM, anti-bloat linters, dossier compiler, and mutation test probe).
+* **`artifice` [PR #6](https://github.com/efsalvarenga/artifice/pull/6):** `agent/ecosystem-governance-and-coordination` $\rightarrow$ `main` (Multi-front coordination, EGM, anti-bloat linters, and invariant dossier compiler).
 * **`emergent` [PR #5](https://github.com/terra-campaigns/emergent/pull/5):** `agent/ecosystem-governance-slim` $\rightarrow$ `main` (Ecosystem de-duplication, slimmed `AGENTS.md`, and delegated EGM cycle).
 
 - [ ] `[SEMI]` **TASK-108**: Triage `## Incoming Feedback / Inbox` items logged during the soak period using the 4-Test Lesson Acceptance Gate.

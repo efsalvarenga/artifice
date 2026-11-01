@@ -20,6 +20,9 @@ This reference defines the formal evaluation rubric used by the **Principal Code
   * Are state transitions safe, correct, and idempotent where required?
   * Are boundary conditions (null/empty inputs, capacity limits, collections) protected?
   * Are operations deterministic across environments (no unseeded randomness or clock drift in core logic)?
+* **Active Edge-Case Probing ("Pry There"):**
+  * Explicitly identify 2–3 concrete boundary edge cases in the changed code (e.g. empty collections, zero/negative inputs, capacity limits, race conditions, or unhandled exceptions).
+  * Pry into how the implementation behaves on those inputs and assert whether automated tests explicitly cover them.
 * **Blocking Triggers:**
   * Data corruption, uncaught edge cases, or unintentional state mutation.
 

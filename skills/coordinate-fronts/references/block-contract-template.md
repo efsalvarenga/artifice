@@ -51,8 +51,7 @@ Do not assume state from prior conversation turns. Verify and record the empiric
 ```bash
 # Verification commands to execute before delivering the closing report:
 
-[e.g. ./scripts/verify_implementation.sh]
-[e.g. python3 ~/Repos/artifice/scripts/sabotage_check.py run --cases tests/sabotage_cases.json]
+[e.g. ./scripts/verify.sh or ./scripts/verify_implementation.sh]
 ```
 
 ---

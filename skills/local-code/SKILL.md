@@ -25,13 +25,5 @@ Use this skill when the user requests an offline code analysis, complex refactor
    }'
    ```
 
-3. **Verify with Targeted Sabotage Probe**:
-   When generating new unit tests, verify they catch boundary errors using `sabotage_check.py`:
-   ```bash
-   python3 ~/Repos/artifice/scripts/sabotage_check.py probe \
-     --file <target_file> \
-     --old "<boundary_guard>" \
-     --new "<mutated_guard>" \
-     --test-cmd "<test_command>"
-   ```
-   Confirm that the test turns red on mutated logic (mutant is `KILLED`) before declaring the test complete.
+3. **Pry into Boundary Edge Cases**:
+   When generating or refactoring code and unit tests, explicitly identify 2–3 boundary conditions (e.g. empty inputs, zero/negative bounds, capacity limits, concurrent access) and ensure dedicated unit tests explicitly cover them.

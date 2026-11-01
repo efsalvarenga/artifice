@@ -18,8 +18,7 @@ artifice/
 │   ├── verify.sh            # Continuous verification orchestrator (lint + unit tests)
 │   ├── validate_egm.py      # Portable EGM contract validator
 │   ├── check_decisions.py   # Decision ledger linter & active-only auditor
-│   ├── build_review_dossier.py # Compact repository invariant digest compiler
-│   └── sabotage_check.py    # Worktree-isolated mutation test verification
+│   └── build_review_dossier.py # Compact repository invariant digest compiler
 ├── skills/
 │   ├── spec-egm/            # Elephant-Goldfish Model specification workflow
 │   ├── coordinate-fronts/   # Multi-front wave coordination & decision ledgers
@@ -60,7 +59,7 @@ artifice/
 
 * **Trigger:** `/local-code`
 * **Backend:** Local `qwen2.5:14b` running via Ollama.
-* **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis paired with `sabotage_check.py` for test hardening.
+* **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis with active boundary edge-case probing.
 
 ### 6. `local-review`
 
@@ -72,7 +71,6 @@ artifice/
 
 * `./scripts/lint.sh`: Audits Markdown heading cleanliness, table formatting, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings (140 lines on global `AGENTS.md`, 180 lines on `SKILL.md`).
 * `./scripts/verify.sh`: Continuous verification orchestrator running `./scripts/lint.sh` and the automated Python unit test suite.
-* `./scripts/sabotage_check.py`: Applies targeted mutations to boundary conditions and asserts tests turn red (`KILLED`), exposing blind spots.
 * `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
 
 ## Integration with Antigravity

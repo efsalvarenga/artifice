@@ -76,7 +76,7 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
   curl -s http://localhost:11434/api/chat -d '{
     "model": "qwen2.5:14b",
     "messages": [
-      {"role": "system", "content": "You are a compiler engineer and logic auditor. Invariant directives: <REPO_DOSSIER>. Identify uncaught edge cases, invariant breaches, or missing test cases for this diff in British English."},
+      {"role": "system", "content": "You are a compiler engineer and logic auditor. Invariant directives: <REPO_DOSSIER>. Identify 2–3 concrete boundary edge cases in this diff, pry into potential failure modes, and verify if tests cover them in British English."},
       {"role": "user", "content": "<CODE_DIFF_SNIPPET>"}
     ],
     "stream": false
