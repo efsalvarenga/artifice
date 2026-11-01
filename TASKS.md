@@ -14,6 +14,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Operational Context:** `<what task was underway>`
   - **Specific Friction & Defect:** `<exact issue or edge case>`
   - **Actionable Remediation:** `<concrete proposal to implement>`
+  - **Status:** Open | Triaged | Resolved
 -->
 
 ---
