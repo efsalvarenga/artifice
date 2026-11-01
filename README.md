@@ -19,11 +19,10 @@ artifice/
 │   ├── lint_links.py        # Universal: Markdown relative & file link resolver
 │   ├── lint_frontmatter.py  # Universal: YAML frontmatter validator for skills & agents
 │   ├── validate_egm.py      # Portable EGM contract validator
-│   ├── check_decisions.py   # Decision ledger linter & active-only auditor
 │   └── build_review_dossier.py # Compact repository invariant digest compiler
 ├── skills/
 │   ├── spec-egm/            # Elephant-Goldfish Model specification workflow
-│   ├── coordinate-fronts/   # Multi-front wave coordination & decision ledgers
+│   ├── coordinate-fronts/   # Multi-front wave coordination & pilot dispatch
 │   ├── review-pr/           # Universal 8-pillar code review & Conventional Comments
 │   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
 │   ├── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 14B
@@ -40,7 +39,7 @@ artifice/
 ### 2. `coordinate-fronts`
 
 * **Trigger:** `/coordinate-fronts [plan | status | audit]`
-* **Role:** Multi-front wave coordinator activated when 3+ independent tasks stack up or an autonomous wave begins. Features upfront opening rosters (*pauta de abertura*), pilot block dispatch, independent disk audits (*autorrelato não se aceita*), 3-tier decision ledgers, pairwise seam audits, and closing review passes.
+* **Role:** Multi-front wave coordinator activated when 3+ independent tasks stack up or an autonomous wave begins. Features upfront alignment, in-memory pilot block dispatch, independent disk audits (*autorrelato não se aceita*), native UI decision resolution, pairwise seam audits, and closing review passes.
 
 ### 3. `review-pr`
 
@@ -75,7 +74,6 @@ artifice/
 * `./scripts/lint_frontmatter.py`: Standalone CLI validator for `SKILL.md` and `agent.md` YAML frontmatter headers.
 * `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
 * `./scripts/build_review_dossier.py`: Extracts and formats intentional repository invariants for local review models.
-* `./scripts/check_decisions.py`: Lints 3-tier Decision Ledgers (`D`, `P`, `C`) for rationale formatting and active hygiene.
 
 ## Integration with Antigravity
 

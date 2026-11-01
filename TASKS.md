@@ -58,7 +58,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 - [x] `[AUTO]` **TASK-101**: Implement static governance harness (`./scripts/lint.sh`) with modular standalone Python linters (`lint_headings.py`, `lint_links.py`, `lint_frontmatter.py`) for direct cross-repository execution, auditing Markdown cleanliness, YAML frontmatter syntax, relative link resolution, and Core Diet line/word ceilings on `AGENTS.md` (140 lines) and `SKILL.md` (180 lines).
 - [x] `[AUTO]` **TASK-102**: Implement `scripts/build_review_dossier.py` to compile compact ($\le 40$-line) repository invariant digests, and wire it into `review-pr` and `local-review`.
 - [x] `[SEMI]` **TASK-103**: Implement `skills/spec-egm/` (promoted from `emergent`) and portable validator `scripts/validate_egm.py`.
-- [x] `[SEMI]` **TASK-104**: Implement `skills/coordinate-fronts/`, block contract templates, and the unified Decision Ledger (`scripts/check_decisions.py`).
+- [x] `[SEMI]` **TASK-104**: Implement streamlined `skills/coordinate-fronts/` focusing on in-memory pilot block dispatch, independent disk audits, and native Antigravity UI decision resolution; pruned obsolete file-based decision ledgers and `check_decisions.py`.
 - [x] `[SEMI]` **TASK-106**: Integrate active edge-case probing into `review-pr` (Pillar 2) and `local-code`, eliminating mechanical file mutation scripts in favour of analytical reviewer probing.
 - [x] `[SEMI]` **TASK-107**: Execute static verification (`lint.sh`), run Gatekeeper PR review, and prepare companion slimming PR in `emergent` ([artifice PR #6](https://github.com/efsalvarenga/artifice/pull/6), [emergent PR #5](https://github.com/terra-campaigns/emergent/pull/5)).
 
@@ -84,8 +84,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 ### Backlog & Operational Hardening
 
 - [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-wave handoff bridge:
-  - Add an explicit `Target Specification: docs/designs/<NNN>_<feature>.md` metadata field to `skills/coordinate-fronts/references/block-contract-template.md` (requiring validation by `validate_egm.py`).
-  - Add an explicit prerequisite in `skills/coordinate-fronts/SKILL.md` (Step 2) instructing coordinators to verify that `validate_egm.py` passes on the target specification before drafting block contracts for major architectural features.
+  - Add an explicit prerequisite in `skills/coordinate-fronts/SKILL.md` (Step 2) instructing coordinators to verify that `validate_egm.py` passes on the target specification before dispatching implementation subagents for major architectural features.
 - [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and `coordinate-fronts` / `/goal` workflows:
   - Update `skills/spec-egm/SKILL.md` (Elephant Phase) and `skills/coordinate-fronts/SKILL.md` (Opening Roster) to mandate an interactive grilling session before implementation begins.
   - Require the agent to proactively interrogate the developer on all anticipated architectural trade-offs, qualitative preferences, third-party credentials, edge-case failure modes, and recovery fallbacks ahead of time.
