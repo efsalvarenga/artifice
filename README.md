@@ -22,21 +22,25 @@ artifice/
 ## Available Skills
 
 ### 1. `review-pr`
+
 * **Trigger:** `/review-pr`
 * **Persona:** Principal Code Reviewer ("The Gatekeeper")
 * **Role:** Universal Pull Request and branch diff code review combining Google Engineering Practices, Conventional Comments, automated verification execution, and dynamic ingestion of project-local `AGENTS.md` rules.
 
 ### 2. `coach-frameworks`
+
 * **Trigger:** `/coach-frameworks`
 * **Persona:** Principal Developer Coach ("The Catalyst")
 * **Role:** Strategic framework evaluation, ecosystem scouting across `~/Repos/*`, and developer ergonomics coaching. Delivers adaptive recommendations in chat, Antigravity artifact canvases, or structured RFC proposals.
 
 ### 3. `local-code`
+
 * **Trigger:** `/local-code`
 * **Backend:** Local `qwen2.5:14b` running via Ollama.
 * **Role:** Deep algorithmic refactoring, unit test generation, and complex logical analysis.
 
 ### 4. `local-review`
+
 * **Trigger:** `/local-review`
 * **Backend:** Local `mistral-nemo:12b` running via Ollama.
 * **Role:** Long-context architectural reviews, code diff evaluation, and technical documentation synthesis.
