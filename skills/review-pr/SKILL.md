@@ -1,16 +1,18 @@
 ---
 name: review-pr
-version: 1.0.0
+version: 1.1.0
 description: >-
   Conducts a formal Pull Request or git diff code review using the Principal Code
   Reviewer ("The Gatekeeper") persona and the 8-Pillar Code Review Framework
-  (Google Engineering Practices + Conventional Comments + Project Rules). Use
-  whenever asked to review a PR, audit a branch diff, or evaluate code changes.
+  (Google Engineering Practices + Conventional Comments + Project Rules).
+  Supports Dual-Model Consensus and 100% On-Device execution via --local or
+  repository Privacy Directives.
+argument-hint: "[--local] [PR_NUMBER or branch]"
 ---
 
 # Pull Request Code Review Skill (`review-pr`)
 
-This skill orchestrates a formal, structured Pull Request code review in any project using the **Principal Code Reviewer ("The Gatekeeper")** persona and the **8-Pillar Code Review Framework**.
+This skill orchestrates a formal, structured Pull Request code review in any project using the **Principal Code Reviewer ("The Gatekeeper")** persona, the **8-Pillar Code Review Framework**, and flexible cloud-local model delegation.
 
 ## Reference Materials
 
@@ -19,15 +21,18 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 
 ## Step-by-Step Review Procedure
 
-### Step 1: Identify Scope & Target Diff
+### Step 1: Identify Scope & Arguments
 
-1. Inspect open GitHub Pull Requests or local branch diffs against `main`:
+1. Parse arguments for:
+   * **`--local` flag:** Forces 100% on-device review via local Ollama models.
+   * **Target PR or Branch:** Explicit PR number or branch name.
+2. Inspect open GitHub Pull Requests or local branch diffs against `main`:
    ```bash
    gh pr list
    git status
    git log main..HEAD --oneline
    ```
-2. If a PR number or branch is specified, inspect its metadata and changed files:
+3. If a PR number or branch is specified, inspect its metadata and changed files:
    ```bash
    gh pr view <PR_NUMBER>
    gh pr diff <PR_NUMBER>
@@ -38,12 +43,14 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
    git diff main...HEAD
    ```
 
-### Step 2: Ingest Local Governance & Verification Gates
+### Step 2: Ingest Local Governance & Privacy Directives
 
 1. **Read Global & Local Rules:**
    * Ingest `~/.gemini/config/AGENTS.md`.
    * Check the project root for local rules: `AGENTS.md`, `GEMINI.md`, or `.agents/rules/*.md`.
-2. **Execute Available Test Suites & Verification Scripts:**
+2. **Check for Privacy Directives:**
+   If `AGENTS.md` contains an on-device directive (e.g. `Privacy: on-device`, `Review: local-only`, or `Air-Gapped`), automatically switch to **Mode 2 (Air-Gapped / On-Device)** even if `--local` was not passed in the command line.
+3. **Execute Available Test Suites & Verification Scripts:**
    Detect and run the project's verification commands:
    * Verification scripts: `./scripts/verify*.sh` or `./scripts/test*.sh`
    * Node/TypeScript: `npm test` or `pnpm test` or `bun test`
@@ -51,18 +58,31 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
    * Rust: `cargo test`
    Record all test results for inclusion in the review report.
 
-### Step 3: Dispatch or Execute the `code-reviewer` Evaluation
+### Step 3: Dispatch or Execute the Review
 
-* Adopt the **Principal Code Reviewer ("The Gatekeeper")** persona (or dispatch the subagent defined in [`../../agents/code-reviewer/agent.md`](../../agents/code-reviewer/agent.md)).
-* Systematically evaluate every changed file across all **8 Pillars**:
-  1. `DESIGN` — Architecture & Specification Alignment
-  2. `FUNCTIONALITY` — Invariants, Correctness & Edge Cases
-  3. `COMPLEXITY` — Simplicity & Maintainability
-  4. `TESTS` — Automated Test Coverage & Verification Results
-  5. `NAMING` — Domain Language Clarity
-  6. `COMMENTS_DOCS` — Explaining Why & Markdown Cleanliness
-  7. `STYLE_TYPES` — Type Strictness & Git Hygiene
-  8. `LORE_LOCALISATION` — British English & Narrative Sovereignty
+* Adopt the **Principal Code Reviewer ("The Gatekeeper")** persona.
+* Choose the execution pathway based on privacy requirements:
+
+#### Pathway A: Dual-Model Consensus (Default)
+
+* Primary 8-Pillar audit driven by the active cloud orchestrator (Gemini).
+* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama:
+  ```bash
+  curl -s http://localhost:11434/api/chat -d '{
+    "model": "qwen2.5:14b",
+    "messages": [
+      {"role": "system", "content": "You are a compiler engineer and logic auditor. Identify uncaught edge cases, invariant breaches, or missing test cases for this diff in British English."},
+      {"role": "user", "content": "<CODE_DIFF_SNIPPET>"}
+    ],
+    "stream": false
+  }'
+  ```
+* **Local Mistral NeMo 12B Consultation (Pillar 6):** For long-form documentation, ADRs, or READMEs, call local Mistral for natural prose evaluation.
+
+#### Pathway B: Air-Gapped / On-Device Mode (`--local` or Privacy Directive)
+
+* Zero code diffs leave the machine.
+* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama.
 
 ### Step 4: Generate & Sign the Review Report
 
@@ -71,10 +91,18 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
    * Present the structured review directly in-chat or in an Antigravity artifact canvas.
    * If the repository has a `docs/reviews/` directory (or the user requests a committed review), save the report to `docs/reviews/pr_<PR_NUMBER>_review.md`.
 3. **Mandatory Provenance Signature:**
-   Always sign the review with the formal provenance footer:
+   Always sign the review with the formal provenance footer reflecting the models used:
 
+   *For Dual-Model Consensus:*
    ```markdown
    ---
 
-   *Signed by: **Principal Code Reviewer ("The Gatekeeper")** (`code-reviewer`) · Model: **`<Model Name>`** · Skill: **`review-pr v1.0.0`** · Date: `<YYYY-MM-DD>`*
+   *Signed by: **Principal Code Reviewer ("The Gatekeeper")** (`code-reviewer`) · Models: **Gemini 3.8 Flash + Qwen 2.5 14B (Dual-Model Consensus)** · Skill: **`review-pr v1.1.0`** · Date: `<YYYY-MM-DD>`*
+   ```
+
+   *For 100% On-Device Mode:*
+   ```markdown
+   ---
+
+   *Signed by: **Principal Code Reviewer ("The Gatekeeper")** (`code-reviewer`) · Models: **Mistral NeMo 12B + Qwen 2.5 14B (100% On-Device Offline)** · Skill: **`review-pr v1.1.0`** · Date: `<YYYY-MM-DD>`*
    ```
