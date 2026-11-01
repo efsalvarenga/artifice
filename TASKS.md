@@ -110,6 +110,13 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Global Rules Migration (`AGENTS.md`):** Evaluate transferring canonical ownership of the 10 core governance rules in `~/.gemini/config/AGENTS.md` (Git operations, Launchd, Markdown cleanliness, British English, Narrative Sovereignty, Feedback pipeline, Guido autonomy tags, Pre-flight recon, Quota & workspace guardrails, and Post-PR review trigger) into version-controlled `artifice` (e.g. `rules/global-agents.md` or `config/AGENTS.md`), symlinking or syncing them to `~/.gemini/config/AGENTS.md`.
   - **Config & Script Audit:** Review untracked files in `~/.gemini/config/` (such as `scripts/backup.sh`, custom sidecars, and MCP server templates in `mcp_config.json`) to determine which utilities belong in `artifice` as reproducible repository assets.
   - **Bootstrap & Dotfiles Harness:** Provide a one-command setup or symlink installer in `artifice/scripts/` (e.g. `./scripts/bootstrap_config.sh`) allowing an engineer on a fresh machine to clone `artifice` and instantly link skills, agents, and global governance rules into their local Antigravity environment.
+- [ ] `[SEMI]` **TASK-120**: Analyse and codify the "Ruthless Occam's Razor" philosophy across the agentic ecosystem:
+  - **Operational Analysis:** Evaluate the ecosystem to determine where the "ruthless Occam's razor" philosophy (anti-accretion, native runtime first, minimal sufficient implementation) should be formally codified to prevent premature abstractions and file sprawl.
+  - **Target Checkpoints for Implementation:**
+    1. *Specification Gate (`spec-egm`):* Prune speculative schemas and premature generality during Elephant drafting and Goldfish reviews.
+    2. *Code Review Gate (`review-pr` / `code-reviewer` Pillar 3):* Sharpen the Gatekeeper rubric to explicitly challenge unnecessary classes, wrappers, and file proliferation in PR diffs.
+    3. *Tooling Gate (`scripts/`):* Mandate single unified scripts and native in-memory runtime primitives over file-based IPC and multi-file satellite sprawl.
+    4. *Global Governance (`AGENTS.md`):* Formulate a compact rule enshrining the 4 Razor Questions (*Native First*, *Observed vs Hypothetical*, *Consolidation*, *Code Over Prose*).
 
 ---
 
