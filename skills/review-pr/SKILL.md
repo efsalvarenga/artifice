@@ -48,10 +48,15 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 1. **Read Global & Local Rules:**
    * Ingest `~/.gemini/config/AGENTS.md`.
    * Check the project root for local rules: `AGENTS.md`, `GEMINI.md`, or `.agents/rules/*.md`.
-2. **Check for Privacy Directives:**
+2. **Compile Repository Invariant Dossier:**
+   Run the dossier compiler to assemble intentional project invariants for local reviewers:
+   ```bash
+   python3 ~/Repos/artifice/scripts/build_review_dossier.py .
+   ```
+3. **Check for Privacy Directives:**
    If `AGENTS.md` contains an on-device directive (e.g. `Privacy: on-device`, `Review: local-only`, or `Air-Gapped`), automatically switch to **Mode 2 (Air-Gapped / On-Device)** even if `--local` was not passed in the command line.
-3. **Execute Available Test Suites & Verification Scripts:**
-   Detect and run the project's verification commands:
+4. **Execute Available Test Suites & Verification Scripts:**
+   Detect and run the project's verification commands (wrapped in `heavy_lock.py` if heavy):
    * Verification scripts: `./scripts/verify*.sh` or `./scripts/test*.sh`
    * Node/TypeScript: `npm test` or `pnpm test` or `bun test`
    * Python: `pytest`
@@ -66,12 +71,13 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 #### Pathway A: Dual-Model Consensus (Default)
 
 * Primary 8-Pillar audit driven by the active cloud orchestrator (Gemini).
-* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama:
+* **Local Qwen 2.5 14B Consultation (Pillar 2):** For dense mathematical logic, state reducers, or boundary conditions, call local Qwen via Ollama protected by `heavy_lock.py` and armed with the compiled dossier:
   ```bash
+  python3 ~/Repos/artifice/scripts/heavy_lock.py run --slot gpu --name "review-pr-qwen" -- \
   curl -s http://localhost:11434/api/chat -d '{
     "model": "qwen2.5:14b",
     "messages": [
-      {"role": "system", "content": "You are a compiler engineer and logic auditor. Identify uncaught edge cases, invariant breaches, or missing test cases for this diff in British English."},
+      {"role": "system", "content": "You are a compiler engineer and logic auditor. Invariant directives: <REPO_DOSSIER>. Identify uncaught edge cases, invariant breaches, or missing test cases for this diff in British English."},
       {"role": "user", "content": "<CODE_DIFF_SNIPPET>"}
     ],
     "stream": false
@@ -82,7 +88,7 @@ This skill orchestrates a formal, structured Pull Request code review in any pro
 #### Pathway B: Air-Gapped / On-Device Mode (`--local` or Privacy Directive)
 
 * Zero code diffs leave the machine.
-* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama.
+* The Gatekeeper evaluates code invariants using local `qwen2.5:14b` and synthesises the final review report using local `mistral-nemo:12b` via Ollama (both wrapped in `heavy_lock.py`).
 
 ### Step 4: Generate & Sign the Review Report
 

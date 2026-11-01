@@ -12,9 +12,10 @@ Use this skill when the user requests an offline code analysis, complex refactor
 1. **Extract Code Context**:
    Identify the target source file, function block, or algorithmic problem to be analysed.
 
-2. **Invoke Local Model**:
-   Query the local Ollama instance using the `ollama_chat` tool or directly via curl:
+2. **Invoke Local Model (under Heavy Lock)**:
+   Query the local Ollama instance protected by `heavy_lock.py` to prevent memory thrashing on Apple Silicon:
    ```bash
+   python3 ~/Repos/artifice/scripts/heavy_lock.py run --slot gpu --name "local-code" -- \
    curl -s http://localhost:11434/api/chat -d '{
      "model": "qwen2.5:14b",
      "messages": [
@@ -25,5 +26,13 @@ Use this skill when the user requests an offline code analysis, complex refactor
    }'
    ```
 
-3. **Verify and Present**:
-   Validate that the generated code satisfies the project's architecture, test requirements, and style guidelines before presenting it to the user.
+3. **Verify with Targeted Sabotage Probe**:
+   When generating new unit tests, verify they catch boundary errors using `sabotage_check.py`:
+   ```bash
+   python3 ~/Repos/artifice/scripts/sabotage_check.py probe \
+     --file <target_file> \
+     --old "<boundary_guard>" \
+     --new "<mutated_guard>" \
+     --test-cmd "<test_command>"
+   ```
+   Confirm that the test turns red on mutated logic (mutant is `KILLED`) before declaring the test complete.
