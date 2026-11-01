@@ -95,3 +95,19 @@ Every review finding must follow the structured Conventional Comments pattern:
 | `thought` | Shares a perspective or architectural idea for future consideration. | `non-blocking` |
 | `nitpick` | Small stylistic preference that does not block merging. | `non-blocking` |
 | `praise` | Celebrates elegant code, robust tests, or excellent abstractions. | `non-blocking` |
+
+## 3. Dual-Model Consensus & Privacy Directives
+
+The code review framework supports two cooperative execution topologies:
+
+### A. Dual-Model Consensus Protocol
+
+* **Primary Architect (Gemini):** Performs whole-repository architectural review, multi-file coherence checks, and synthesises findings across all 8 pillars.
+* **Algorithmic Oracle (Local Qwen 2.5 14B):** Cross-examines state transitions, pure mathematical functions, parser state machines, and edge-case boundary conditions under Pillar 2.
+* **Prose & Cadence Oracle (Local Mistral NeMo 12B):** Audits human readability, documentation cadence, and explanatory clarity under Pillar 6.
+
+### B. Air-Gapped Privacy Protocol
+
+* **Trigger:** `--local` flag in CLI or `Privacy: on-device` directive in project-local `AGENTS.md`.
+* **Security Guarantee:** Completely air-gaps the code review process. No source code diffs or metadata leave your local workstation.
+* **On-Device Execution:** Local Qwen 2.5 14B performs code invariant checks, while local Mistral NeMo 12B synthesises the structured review report and Conventional Comments directly on your Apple Silicon GPU.

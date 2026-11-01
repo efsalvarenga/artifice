@@ -23,9 +23,10 @@ artifice/
 
 ### 1. `review-pr`
 
-* **Trigger:** `/review-pr`
+* **Trigger:** `/review-pr [--local]`
 * **Persona:** Principal Code Reviewer ("The Gatekeeper")
 * **Role:** Universal Pull Request and branch diff code review combining Google Engineering Practices, Conventional Comments, automated verification execution, and dynamic ingestion of project-local `AGENTS.md` rules.
+* **Dual-Model Consensus & Privacy:** Employs Gemini for global architectural synthesis while delegating dense algorithmic fuzzing to local Qwen 2.5 14B and prose review to local Mistral NeMo 12B. Supports 100% on-device air-gapped reviews via the `--local` flag or repository privacy directives.
 
 ### 2. `coach-frameworks`
 
