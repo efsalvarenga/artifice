@@ -24,6 +24,14 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Actionable Remediation:** Formulate an operational guideline and dispatch contract in `rules/quota-guardrails` (or as a coordination pattern in `skills/coordinate-fronts`) specifying criteria for offloading bounded micro-tasks (e.g. test boilerplate expansion, algorithmic syntax passes) to local/specialised models (`local-code` / Codestral) while keeping contract definitions and final PR verification strictly on frontier orchestrators.
   - **Status:** Open
 
+* **[2026-11-01]** *(from `oude-mechanismen` @ `v0.1.1`)*:
+  - **Autonomy Mode:** `[AUTO]`
+  - **Component:** `skills/lint-wiki/SKILL.md`
+  - **Operational Context:** Structural auditing and diagnostic reporting across narrative campaign lore and static site notes.
+  - **Specific Friction & Defect / Enhancement:** Running `lint-wiki` across extensive campaign vaults consumes high-tier cloud API quota for routine advisory checks (dead links, orphan pages, stubs, image references). Because this audit is advisory and non-blocking, it should be executed entirely on-device using local Ollama models (`qwen2.5:14b` or `mistral-nemo:12b`) paired with fast local Python scripts, preserving cloud quota for frontier coding tasks.
+  - **Actionable Remediation:** Update `skills/lint-wiki/SKILL.md` in `oude-mechanismen` to target local Ollama models, offload deterministic checks to a local Python script, and run 100% on-device. Logged task in `oude-mechanismen/TASKS.md`.
+  - **Status:** Open
+
 <!-- Incoming entries are appended here following the format:
 * **[YYYY-MM-DD]** *(from `<project>` @ `<branch>`)*:
   - **Component:** `<agent/skill/rule>`
