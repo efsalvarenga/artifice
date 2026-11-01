@@ -117,6 +117,16 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
     2. *Code Review Gate (`review-pr` / `code-reviewer` Pillar 3):* Sharpen the Gatekeeper rubric to explicitly challenge unnecessary classes, wrappers, and file proliferation in PR diffs.
     3. *Tooling Gate (`scripts/`):* Mandate single unified scripts and native in-memory runtime primitives over file-based IPC and multi-file satellite sprawl.
     4. *Global Governance (`AGENTS.md`):* Formulate a compact rule enshrining the 4 Razor Questions (*Native First*, *Observed vs Hypothetical*, *Consolidation*, *Code Over Prose*).
+- [ ] `[SEMI]` **TASK-121**: Design and implement automatic local model offloading to conserve API quota:
+  - **Operational Objective:** Eliminate the dichotomy between all-cloud and all-local (`--local`) execution by introducing automatic hybrid offloading: automatically delegate routine, repetitive, or computationally dense sub-tasks to resident local Ollama models (`qwen2.5:14b`, `mistral-nemo:12b`, and potentially `codestral:22b`) by default, reserving frontier cloud API tokens for high-level architectural planning and final synthesis.
+  - **Review Workflow Offloading (`review-pr` / `code-reviewer`):**
+    - Automatically delegate Pillar 2 (concrete edge-case probing & logic fuzzing) to local Qwen 2.5 14B armed with `build_review_dossier.py` instead of requiring manual prompting or explicit flags.
+    - Automatically offload initial Markdown/prose evaluation (Pillar 6) and diff summarisation to local Mistral NeMo 12B.
+  - **Authoring & Refactoring Offloading (`code-author` / `local-code`):**
+    - Route test boilerplate generation, pure deterministic function extraction, and AST/regex verification to local models before surfacing changes to the cloud orchestrator.
+  - **Graceful Fallback & Model Warmth:**
+    - Verify Ollama daemon availability and model residency (`curl -s http://localhost:11434/api/tags`) with instantaneous fallback to cloud `flash` if Ollama is offline or unheated, preventing task disruption.
+
 
 ---
 
