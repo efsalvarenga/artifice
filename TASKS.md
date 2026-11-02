@@ -99,18 +99,15 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 ---
 
-### Backlog & Future Milestones
+### Milestone 3: The Craftsman & TDD Pipeline — Sovereign Code Authoring (v1.4.0) [IN PROGRESS]
 
-- [ ] `[SEMI]` **TASK-113**: Comprehensive ecosystem audit to slim the repository of overlapping, redundant, and over-engineered processes across `artifice` and consuming repositories. Focus on:
-  - Reviewing actual operational usage across the ecosystem to prune ceremonial gates, unused templates, and speculative abstractions.
-  - Eliminating defensive prose in `AGENTS.md` and `SKILL.md` that can be replaced by deterministic linters (`scripts/lint.sh`) or dropped entirely ("prefer code over prose").
-  - Consolidating overlapping workflows across skills (`spec-egm`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
+*Milestone 3 completes the agent triumvirate (Catalyst -> Craftsman -> Gatekeeper) by introducing the dedicated Code Authoring Agent (`code-author`), codifying the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm`, and hardening the EGM contract handoff bridge.*
+
 - [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
-  - Add an explicit check ensuring that `validate_egm.py` passes on the target specification before dispatching implementation subagents for major architectural features.
+  - Add an explicit check in `scripts/validate_egm.py` ensuring that target specifications pass with `Approved` reviews before dispatching implementation subagents for major architectural features.
 - [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
-  - Update `skills/spec-egm/SKILL.md` (Elephant Phase) to mandate an interactive grilling session before implementation begins.
-  - Require the agent to proactively interrogate the developer on all anticipated architectural trade-offs, qualitative preferences, third-party credentials, edge-case failure modes, and recovery fallbacks ahead of time.
-  - Purpose: Maximise continuous autonomy during the execution phase by resolving all human-dependent decisions up front, enabling unattended execution once the developer's "OK" is given.
+  - Update `skills/spec-egm/SKILL.md` (Elephant Phase Step 1A) to mandate an interactive grilling session before drafting the specification.
+  - Require the agent to proactively interrogate the developer on architectural trade-offs, schemas, credentials, and failure fallbacks ahead of time to maximise continuous unattended autonomy during execution.
 - [ ] `[SEMI]` **TASK-118**: Architect and configure dedicated Code Authoring Agent (`code-author`) and Implementation Protocol:
   - **Dedicated Author Persona:** Define the Principal Code Author ("The Craftsman") agent persona in `agents/code-author/agent.md`, establishing an explicit division of labour between feature authoring and the Gatekeeper (`code-reviewer`).
   - **Specification-Driven TDD Workflow:** Codify the implementation workflow following EGM specification approval:
@@ -118,7 +115,16 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
     - Adopt a strict contract-first test-driven approach: write failing boundary tests covering invariants before writing production logic.
     - Implement minimal, pure, deterministic code to turn tests green.
   - **Model Tiering & Local Offloading:** Establish operational guidelines for delegating bounded authoring tasks (e.g. test boilerplate, state reducer logic) to local coding models (`qwen2.5:14b` or `codestral:22b` via Ollama) or `flash`, while retaining architectural coordination on frontier models.
-  - **Pre-Review Local Baseline Gate:** Mandate that authoring subagents run the repository's native test and lint suites (`./scripts/lint.sh`) locally to establish a 100% green baseline before requesting Gatekeeper review (`review-pr`) or drafting PRs.
+  - **Pre-Review Local Baseline Gate:** Mandate that authoring subagents run the repository's native test and lint suites (`./scripts/lint.sh`) locally to establish a 100% green baseline before requesting Gatekeeper review (`review`) or drafting PRs.
+
+---
+
+### Backlog & Future Milestones
+
+- [ ] `[SEMI]` **TASK-113**: Comprehensive ecosystem audit to slim the repository of overlapping, redundant, and over-engineered processes across `artifice` and consuming repositories. Focus on:
+  - Reviewing actual operational usage across the ecosystem to prune ceremonial gates, unused templates, and speculative abstractions.
+  - Eliminating defensive prose in `AGENTS.md` and `SKILL.md` that can be replaced by deterministic linters (`scripts/lint.sh`) or dropped entirely ("prefer code over prose").
+  - Consolidating overlapping workflows across skills (`spec-egm`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
 - [ ] `[SEMI]` **TASK-119**: Audit and migrate versionable governance, global rules, and configuration from local Gemini config (`~/.gemini/config/`) into `artifice`:
   - **Global Rules Migration (`AGENTS.md`):** Evaluate transferring canonical ownership of the 10 core governance rules in `~/.gemini/config/AGENTS.md` (Git operations, Launchd, Markdown cleanliness, British English, Narrative Sovereignty, Feedback pipeline, Guido autonomy tags, Pre-flight recon, Quota & workspace guardrails, and Post-PR review trigger) into version-controlled `artifice` (e.g. `rules/global-agents.md` or `config/AGENTS.md`), symlinking or syncing them to `~/.gemini/config/AGENTS.md`.
   - **Config & Script Audit:** Review untracked files in `~/.gemini/config/` (such as `scripts/backup.sh`, custom sidecars, and MCP server templates in `mcp_config.json`) to determine which utilities belong in `artifice` as reproducible repository assets.
