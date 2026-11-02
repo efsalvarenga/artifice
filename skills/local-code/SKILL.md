@@ -1,16 +1,17 @@
 ---
 name: local-code
-version: 1.2.0
+version: 1.3.0
 description: Delegate deep algorithmic refactoring, logic analysis, FIM synthesis, or unit test generation to local Qwen 2.5 Coder 14B running via Ollama.
 ---
 
 # Local Code Refactoring & Logic with Qwen 2.5 Coder
 
-Use this skill when delegating bounded code generation, complex refactoring, test suite synthesis, or Fill-in-the-Middle (FIM) operations to local `qwen2.5-coder:14b` (with fallback to `qwen2.5:14b`).
+Use this skill when delegating bounded code generation, complex refactoring, test suite synthesis, or Fill-in-the-Middle (FIM) operations to local `qwen2.5-coder:14b` (with fallback to `qwen2.5:14b`). Integrates natively with `code-author` ("The Craftsman") during specification-driven TDD workflows.
 
 ## Reference Materials
 
 * **Ollama Residency & Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
+* **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
 
 ## Step-by-Step Procedure
 
@@ -39,11 +40,13 @@ curl -s http://localhost:11434/api/chat -d '{
 }'
 ```
 
-### 3. Boundary Edge-Case Probing
+### 3. Boundary Edge-Case Probing & TDD Contracts
 
-When synthesizing code or expanding test suites:
+When synthesising code or expanding test suites under `code-author`:
 * Explicitly identify 2–3 boundary conditions (e.g. empty collections, zero/negative bounds, capacity limits).
 * Generate dedicated contract tests asserting invariants against these edge cases.
+* If committing code synthesised by local models, attribute the model in Git trailers:
+  `Co-authored-by: Qwen 2.5 Coder 14B <qwen2.5-coder@ollama.local>`.
 
 ### 4. Teardown & Purge
 

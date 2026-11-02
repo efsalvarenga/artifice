@@ -11,13 +11,17 @@ artifice/
 ├── README.md
 ├── TASKS.md                 # Roadmap board & incoming tooling feedback inbox
 ├── agents/
+│   ├── code-author/         # Principal Code Author ("The Craftsman")
 │   ├── code-reviewer/       # Principal Code Reviewer ("The Gatekeeper")
 │   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
+├── docs/
+│   ├── designs/             # Elephant design specifications (001_*, 002_*)
+│   └── reviews/             # Adversarial Goldfish reviews
 ├── scripts/
 │   ├── check_ollama.py      # Ollama residency, lifecycle & wave-leasing controller
 │   ├── lint.py              # Unified static governance linter (Markdown, YAML, links, Core Diet)
 │   ├── lint.sh              # Execution wrapper for lint.py
-│   ├── validate_egm.py      # Portable EGM contract validator
+│   ├── validate_egm.py      # Portable EGM contract validator (--spec support)
 │   └── build_review_dossier.py # Compact repository invariant digest compiler
 ├── skills/
 │   ├── spec-egm/            # Elephant-Goldfish Model specification workflow & workshops
@@ -25,6 +29,23 @@ artifice/
 │   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
 │   └── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 Coder
 ```
+
+## Available Agents
+
+### 1. `code-author`
+
+* **Persona:** Principal Code Author ("The Craftsman")
+* **Role:** Primary implementation agent adhering to contract-first Test-Driven Development (TDD), minimal deterministic code, model-attributed Git commits, and pre-review green baseline gating.
+
+### 2. `code-reviewer`
+
+* **Persona:** Principal Code Reviewer ("The Gatekeeper")
+* **Role:** Universal evaluation of Pull Requests, branch diffs, single files, or architectural design specifications using the 8-Pillar Framework, Conventional Comments, and hybrid offloading.
+
+### 3. `developer-coach`
+
+* **Persona:** Principal Developer Coach ("The Catalyst")
+* **Role:** Strategic framework evaluation, ecosystem scouting across `~/Repos/*`, developer ergonomics coaching, and tooling inbox triage using the 4-Test Lesson Acceptance Gate.
 
 ## Available Skills
 
@@ -58,7 +79,7 @@ artifice/
 * `./scripts/check_ollama.py`: Ollama lifecycle and residency manager providing sub-100ms health checks, model selection, wave-leasing (`keep_alive: 5m`), and memory cache flushing.
 * `./scripts/lint.py`: Unified static governance linter auditing Markdown heading cleanliness, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings across repositories.
 * `./scripts/lint.sh`: Execution wrapper delegating directly to `lint.py`.
-* `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts.
+* `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts with targeted `--spec` validation.
 * `./scripts/build_review_dossier.py`: Extracts and formats intentional repository invariants for local review models.
 
 ## Integration with Antigravity

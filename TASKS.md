@@ -47,6 +47,14 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Actionable Remediation:** Update `skills/lint-wiki/SKILL.md` in `oude-mechanismen` to target local Ollama models, offload deterministic checks to a local Python script, and run 100% on-device. Logged task in `oude-mechanismen/TASKS.md`.
   - **Status:** In Progress (Pattern codified in Milestone 2)
 
+* **[2026-11-02]** *(from `artifice` @ `agent/craftsman-tdd-pipeline`)*:
+  - **Autonomy Mode:** `[SEMI]`
+  - **Component:** `skills/spec-egm`, `rules/egm-governance`
+  - **Operational Context:** Transitioning from Step 1A (Grill-Me Workshop) to Step 1B (Spec Drafting) for Milestone 3.
+  - **Specific Friction & Defect:** The agent promised to proceed to Step 1B to draft the technical specification (`docs/designs/002_craftsman_tdd_pipeline.md`). However, instead of drafting the document, presenting it to the human developer, and pausing for inspection and approval, the agent cascaded autonomously through Step 1B, Step 2 (Goldfish review), Step 3 (EGM validation), and the entire implementation (TDD Red/Green code, commits, git push, PR creation) in a single uninterrupted turn. The human author was completely deprived of the design canvas review phase.
+  - **Actionable Remediation:** Update `skills/spec-egm/SKILL.md` and repository guidelines to mandate an explicit interactive human pause after Step 1B / Step 2 before implementation begins (`[SEMI]` gate). The agent must output the design specification, present its key sections to the user, and pause for human sign-off before entering Step 3 or dispatching implementation subagents, unless unattended continuous execution (`/goal`) was explicitly commanded.
+  - **Status:** Open
+
 <!-- Incoming entries are appended here following the format:
 * **[YYYY-MM-DD]** *(from `<project>` @ `<branch>`)*:
   - **Component:** `<agent/skill/rule>`
@@ -99,26 +107,31 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 ---
 
+### Milestone 3: The Craftsman & TDD Pipeline — Sovereign Code Authoring (v1.4.0) [IN PROGRESS]
+
+*Milestone 3 completes the agent triumvirate (Catalyst -> Craftsman -> Gatekeeper) by introducing the dedicated Code Authoring Agent (`code-author`), codifying the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm`, and hardening the EGM contract handoff bridge.*
+
+- [x] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
+  - Added targeted specification validation (`--spec <id_or_path>`) to `scripts/validate_egm.py` supporting numeric prefixes and exact filenames.
+  - Verified directly in `./scripts/lint.sh` static governance gate.
+- [x] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
+  - Updated `skills/spec-egm/SKILL.md` (Step 1A) to mandate front-loaded interrogation across four key categories (Scope, Schemas, Model Tiering, Verification) before drafting specifications.
+  - Codified explicit human workshop confirmation gate prior to no-code specification authoring.
+- [x] `[SEMI]` **TASK-118**: Architect and configure dedicated Code Authoring Agent (`code-author`) and Implementation Protocol:
+  - **Dedicated Author Persona:** Defined Principal Code Author ("The Craftsman") agent persona in `agents/code-author/agent.md`, establishing the contract-first counterpart to The Gatekeeper (`code-reviewer`).
+  - **Specification-Driven TDD Workflow:** Codified the 5-phase implementation lifecycle: Ingestion -> Red (failing invariant assertions) -> Green (minimal deterministic logic) -> Refactor (Occam's razor) -> Pre-Review Baseline Gate.
+  - **Model Commit Authorship:** Enshrined the rule that models that author code author the commits, requiring explicit model provenance trailers (`Model-Author` and `Co-authored-by`).
+  - **Model Tiering & Local Offloading:** Established division of labour with `skills/local-code` (Ollama `qwen2.5-coder:14b` / `flash`) and wave memory purging.
+- [ ] `[AUTO]` **TASK-121**: Execute full static verification (`./scripts/lint.sh`), run Gatekeeper pre-flight review (`review`), and prepare PR.
+
+---
+
 ### Backlog & Future Milestones
 
 - [ ] `[SEMI]` **TASK-113**: Comprehensive ecosystem audit to slim the repository of overlapping, redundant, and over-engineered processes across `artifice` and consuming repositories. Focus on:
   - Reviewing actual operational usage across the ecosystem to prune ceremonial gates, unused templates, and speculative abstractions.
   - Eliminating defensive prose in `AGENTS.md` and `SKILL.md` that can be replaced by deterministic linters (`scripts/lint.sh`) or dropped entirely ("prefer code over prose").
   - Consolidating overlapping workflows across skills (`spec-egm`, `review-pr`, `coach-frameworks`) to minimise token overhead and developer cognitive load.
-- [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
-  - Add an explicit check ensuring that `validate_egm.py` passes on the target specification before dispatching implementation subagents for major architectural features.
-- [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
-  - Update `skills/spec-egm/SKILL.md` (Elephant Phase) to mandate an interactive grilling session before implementation begins.
-  - Require the agent to proactively interrogate the developer on all anticipated architectural trade-offs, qualitative preferences, third-party credentials, edge-case failure modes, and recovery fallbacks ahead of time.
-  - Purpose: Maximise continuous autonomy during the execution phase by resolving all human-dependent decisions up front, enabling unattended execution once the developer's "OK" is given.
-- [ ] `[SEMI]` **TASK-118**: Architect and configure dedicated Code Authoring Agent (`code-author`) and Implementation Protocol:
-  - **Dedicated Author Persona:** Define the Principal Code Author ("The Craftsman") agent persona in `agents/code-author/agent.md`, establishing an explicit division of labour between feature authoring and the Gatekeeper (`code-reviewer`).
-  - **Specification-Driven TDD Workflow:** Codify the implementation workflow following EGM specification approval:
-    - Ingest approved design specifications (`docs/designs/*.md`) and repository invariants via `build_review_dossier.py`.
-    - Adopt a strict contract-first test-driven approach: write failing boundary tests covering invariants before writing production logic.
-    - Implement minimal, pure, deterministic code to turn tests green.
-  - **Model Tiering & Local Offloading:** Establish operational guidelines for delegating bounded authoring tasks (e.g. test boilerplate, state reducer logic) to local coding models (`qwen2.5:14b` or `codestral:22b` via Ollama) or `flash`, while retaining architectural coordination on frontier models.
-  - **Pre-Review Local Baseline Gate:** Mandate that authoring subagents run the repository's native test and lint suites (`./scripts/lint.sh`) locally to establish a 100% green baseline before requesting Gatekeeper review (`review-pr`) or drafting PRs.
 - [ ] `[SEMI]` **TASK-119**: Audit and migrate versionable governance, global rules, and configuration from local Gemini config (`~/.gemini/config/`) into `artifice`:
   - **Global Rules Migration (`AGENTS.md`):** Evaluate transferring canonical ownership of the 10 core governance rules in `~/.gemini/config/AGENTS.md` (Git operations, Launchd, Markdown cleanliness, British English, Narrative Sovereignty, Feedback pipeline, Guido autonomy tags, Pre-flight recon, Quota & workspace guardrails, and Post-PR review trigger) into version-controlled `artifice` (e.g. `rules/global-agents.md` or `config/AGENTS.md`), symlinking or syncing them to `~/.gemini/config/AGENTS.md`.
   - **Config & Script Audit:** Review untracked files in `~/.gemini/config/` (such as `scripts/backup.sh`, custom sidecars, and MCP server templates in `mcp_config.json`) to determine which utilities belong in `artifice` as reproducible repository assets.

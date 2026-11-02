@@ -6,6 +6,7 @@ requirements, possess a corresponding zero-context Goldfish review in
 docs/reviews/, and have achieved an Approved verdict.
 """
 
+import argparse
 import os
 import re
 import sys
@@ -24,7 +25,7 @@ REQUIRED_SECTIONS = [
 ]
 
 
-def validate_repo(repo_root: str) -> int:
+def validate_repo(repo_root: str, target_spec: str = None) -> int:
     designs_dir = os.path.join(repo_root, "docs", "designs")
     reviews_dir = os.path.join(repo_root, "docs", "reviews")
 
@@ -35,18 +36,51 @@ def validate_repo(repo_root: str) -> int:
     print(f"{BOLD}{BLUE}=== Validating EGM Specification Contracts ==={NC}\n")
     print(f"Target repository: {repo_root}")
 
-    spec_files = [
+    all_spec_files = [
         f
         for f in os.listdir(designs_dir)
         if f.endswith(".md") and f != "TEMPLATE.md"
     ]
 
-    if not spec_files:
+    if not all_spec_files:
         print(f"No active specifications found in {designs_dir}.")
         return 0
 
-    errors = 0
     num_pattern = re.compile(r"^(\d+)")
+
+    if target_spec:
+        filtered_specs = []
+        clean_target = target_spec.strip()
+        target_num = int(clean_target) if clean_target.isdigit() else None
+
+        for sf in all_spec_files:
+            if sf == clean_target or sf == f"{clean_target}.md":
+                filtered_specs.append(sf)
+                continue
+            match = num_pattern.match(sf)
+            if match:
+                spec_num_str = match.group(1)
+                if clean_target == spec_num_str:
+                    filtered_specs.append(sf)
+                    continue
+                if target_num is not None and int(spec_num_str) == target_num:
+                    filtered_specs.append(sf)
+                    continue
+
+        if not filtered_specs:
+            print(
+                f"{RED}Error: Target specification '{target_spec}' not found in {designs_dir}.{NC}"
+            )
+            print("Available specifications:")
+            for sf in sorted(all_spec_files):
+                print(f"  - {sf}")
+            return 1
+
+        spec_files = filtered_specs
+    else:
+        spec_files = all_spec_files
+
+    errors = 0
 
     for spec_name in sorted(spec_files):
         spec_path = os.path.join(designs_dir, spec_name)
@@ -103,8 +137,10 @@ def validate_repo(repo_root: str) -> int:
                 )
                 spec_approved = spec_status_match and "approved" in spec_status_match.group(1).lower()
 
-                if review_approved or spec_approved:
-                    status_note = "Review Approved" if review_approved else f"Spec Status: {spec_status_match.group(1).strip()}"
+                if review_approved:
+                    status_note = "Review Approved"
+                    if spec_approved:
+                        status_note += ", Spec Status: Approved"
                     print(
                         f"  {GREEN}✓{NC} Review '{review_match}' verified ({status_note})."
                     )
@@ -114,8 +150,13 @@ def validate_repo(repo_root: str) -> int:
                         if verdict_match
                         else "Unknown"
                     )
+                    spec_status_str = (
+                        spec_status_match.group(1).strip()
+                        if spec_status_match
+                        else "Unknown"
+                    )
                     print(
-                        f"  {RED}✗{NC} Specification is not approved (Review: {verdict_str}, Spec Status: {spec_status_match.group(1).strip() if spec_status_match else 'Unknown'})"
+                        f"  {RED}✗{NC} Specification is not approved (Review: {verdict_str}, Spec Status: {spec_status_str})"
                     )
                     errors += 1
 
@@ -131,9 +172,24 @@ def validate_repo(repo_root: str) -> int:
 
 
 def main():
-    target = sys.argv[1] if len(sys.argv) > 1 else "."
-    abs_target = os.path.abspath(target)
-    sys.exit(validate_repo(abs_target))
+    parser = argparse.ArgumentParser(
+        description="Portable Elephant-Goldfish Model (EGM) Contract Validator."
+    )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=".",
+        help="Path to target repository (default: current directory).",
+    )
+    parser.add_argument(
+        "--spec",
+        dest="target_spec",
+        default=None,
+        help="Optional specific design specification to validate (numeric prefix or filename).",
+    )
+    args = parser.parse_args()
+    abs_target = os.path.abspath(args.target)
+    sys.exit(validate_repo(abs_target, args.target_spec))
 
 
 if __name__ == "__main__":
