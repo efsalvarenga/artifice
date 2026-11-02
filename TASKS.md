@@ -47,6 +47,14 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
   - **Actionable Remediation:** Update `skills/lint-wiki/SKILL.md` in `oude-mechanismen` to target local Ollama models, offload deterministic checks to a local Python script, and run 100% on-device. Logged task in `oude-mechanismen/TASKS.md`.
   - **Status:** In Progress (Pattern codified in Milestone 2)
 
+* **[2026-11-02]** *(from `artifice` @ `agent/craftsman-tdd-pipeline`)*:
+  - **Autonomy Mode:** `[SEMI]`
+  - **Component:** `skills/spec-egm`, `rules/egm-governance`
+  - **Operational Context:** Transitioning from Step 1A (Grill-Me Workshop) to Step 1B (Spec Drafting) for Milestone 3.
+  - **Specific Friction & Defect:** The agent promised to proceed to Step 1B to draft the technical specification (`docs/designs/002_craftsman_tdd_pipeline.md`). However, instead of drafting the document, presenting it to the human developer, and pausing for inspection and approval, the agent cascaded autonomously through Step 1B, Step 2 (Goldfish review), Step 3 (EGM validation), and the entire implementation (TDD Red/Green code, commits, git push, PR creation) in a single uninterrupted turn. The human author was completely deprived of the design canvas review phase.
+  - **Actionable Remediation:** Update `skills/spec-egm/SKILL.md` and repository guidelines to mandate an explicit interactive human pause after Step 1B / Step 2 before implementation begins (`[SEMI]` gate). The agent must output the design specification, present its key sections to the user, and pause for human sign-off before entering Step 3 or dispatching implementation subagents, unless unattended continuous execution (`/goal`) was explicitly commanded.
+  - **Status:** Open
+
 <!-- Incoming entries are appended here following the format:
 * **[YYYY-MM-DD]** *(from `<project>` @ `<branch>`)*:
   - **Component:** `<agent/skill/rule>`
