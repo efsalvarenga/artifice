@@ -103,19 +103,18 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 *Milestone 3 completes the agent triumvirate (Catalyst -> Craftsman -> Gatekeeper) by introducing the dedicated Code Authoring Agent (`code-author`), codifying the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm`, and hardening the EGM contract handoff bridge.*
 
-- [ ] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
-  - Add an explicit check in `scripts/validate_egm.py` ensuring that target specifications pass with `Approved` reviews before dispatching implementation subagents for major architectural features.
-- [ ] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
-  - Update `skills/spec-egm/SKILL.md` (Elephant Phase Step 1A) to mandate an interactive grilling session before drafting the specification.
-  - Require the agent to proactively interrogate the developer on architectural trade-offs, schemas, credentials, and failure fallbacks ahead of time to maximise continuous unattended autonomy during execution.
-- [ ] `[SEMI]` **TASK-118**: Architect and configure dedicated Code Authoring Agent (`code-author`) and Implementation Protocol:
-  - **Dedicated Author Persona:** Define the Principal Code Author ("The Craftsman") agent persona in `agents/code-author/agent.md`, establishing an explicit division of labour between feature authoring and the Gatekeeper (`code-reviewer`).
-  - **Specification-Driven TDD Workflow:** Codify the implementation workflow following EGM specification approval:
-    - Ingest approved design specifications (`docs/designs/*.md`) and repository invariants via `build_review_dossier.py`.
-    - Adopt a strict contract-first test-driven approach: write failing boundary tests covering invariants before writing production logic.
-    - Implement minimal, pure, deterministic code to turn tests green.
-  - **Model Tiering & Local Offloading:** Establish operational guidelines for delegating bounded authoring tasks (e.g. test boilerplate, state reducer logic) to local coding models (`qwen2.5:14b` or `codestral:22b` via Ollama) or `flash`, while retaining architectural coordination on frontier models.
-  - **Pre-Review Local Baseline Gate:** Mandate that authoring subagents run the repository's native test and lint suites (`./scripts/lint.sh`) locally to establish a 100% green baseline before requesting Gatekeeper review (`review`) or drafting PRs.
+- [x] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
+  - Added targeted specification validation (`--spec <id_or_path>`) to `scripts/validate_egm.py` supporting numeric prefixes and exact filenames.
+  - Wired automated test discovery and execution into `scripts/lint.py` (Gate 6) with 100% green test assertions in `tests/test_validate_egm.py`.
+- [x] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
+  - Updated `skills/spec-egm/SKILL.md` (Step 1A) to mandate front-loaded interrogation across four key categories (Scope, Schemas, Model Tiering, Verification) before drafting specifications.
+  - Codified explicit human workshop confirmation gate prior to no-code specification authoring.
+- [x] `[SEMI]` **TASK-118**: Architect and configure dedicated Code Authoring Agent (`code-author`) and Implementation Protocol:
+  - **Dedicated Author Persona:** Defined Principal Code Author ("The Craftsman") agent persona in `agents/code-author/agent.md`, establishing the contract-first counterpart to The Gatekeeper (`code-reviewer`).
+  - **Specification-Driven TDD Workflow:** Codified the 5-phase implementation lifecycle: Ingestion -> Red (failing invariant assertions) -> Green (minimal deterministic logic) -> Refactor (Occam's razor) -> Pre-Review Baseline Gate.
+  - **Model Commit Authorship:** Enshrined the rule that models that author code author the commits, requiring explicit model provenance trailers (`Model-Author` and `Co-authored-by`).
+  - **Model Tiering & Local Offloading:** Established division of labour with `skills/local-code` (Ollama `qwen2.5-coder:14b` / `flash`) and wave memory purging.
+- [ ] `[AUTO]` **TASK-121**: Execute full static verification (`./scripts/lint.sh`), run Gatekeeper pre-flight review (`review`), and prepare PR.
 
 ---
 
