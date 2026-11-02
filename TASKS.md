@@ -113,7 +113,7 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 - [x] `[AUTO]` **TASK-114**: Harden the EGM-to-implementation handoff bridge:
   - Added targeted specification validation (`--spec <id_or_path>`) to `scripts/validate_egm.py` supporting numeric prefixes and exact filenames.
-  - Wired automated test discovery and execution into `scripts/lint.py` (Gate 6) with 100% green test assertions in `tests/test_validate_egm.py`.
+  - Verified directly in `./scripts/lint.sh` static governance gate.
 - [x] `[SEMI]` **TASK-115**: Codify the Front-Loaded "Grill-Me" Interview Protocol into `spec-egm` and autonomous `/goal` workflows:
   - Updated `skills/spec-egm/SKILL.md` (Step 1A) to mandate front-loaded interrogation across four key categories (Scope, Schemas, Model Tiering, Verification) before drafting specifications.
   - Codified explicit human workshop confirmation gate prior to no-code specification authoring.

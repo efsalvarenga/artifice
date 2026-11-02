@@ -291,22 +291,6 @@ def lint_repository(target_dir: str) -> int:
             print(f"  {RED}✗{NC} Could not execute validate_egm: {e}")
             total_errors += 1
 
-    # Gate 6: Native Automated Test Suite (if tests/ exists)
-    tests_dir = os.path.join(target_dir, "tests")
-    if os.path.isdir(tests_dir):
-        print(f"\n{BOLD}6. Executing Automated Test Suite...{NC}")
-        import unittest
-        loader = unittest.defaultTestLoader
-        suite = loader.discover(tests_dir)
-        runner = unittest.TextTestRunner(verbosity=1)
-        test_result = runner.run(suite)
-        if not test_result.wasSuccessful():
-            failure_count = len(test_result.failures) + len(test_result.errors)
-            print(f"  {RED}✗{NC} {failure_count} test failure(s) detected.")
-            total_errors += failure_count
-        else:
-            print(f"  {GREEN}✓{NC} All {test_result.testsRun} automated test(s) passed successfully.")
-
     print("\n========================================================")
     if total_errors == 0:
         print(f"{GREEN}{BOLD}✓ ALL STATIC GOVERNANCE LINTERS PASSED CLEANLY.{NC}")

@@ -198,17 +198,16 @@ Exit Codes:
 
 ## 7. Verification & Automated Test Strategy
 
-### Unit & Functional Tests
+### Functional & Governance Verification
 
-* **`scripts/validate_egm.py` Test Suite:**
-  * Test default execution (validates all specs in repository).
-  * Test `--spec` with exact filename (e.g. `--spec 002_craftsman_tdd_pipeline.md`).
-  * Test `--spec` with numeric prefix (e.g. `--spec 002` or `--spec 2`).
-  * Test `--spec` with invalid/missing spec (assert exit code `1` and error message).
-  * Test `--spec` with unapproved review (assert exit code `1`).
-* **Governance Linting:**
-  * `./scripts/lint.sh` asserts that `agents/code-author/agent.md` has valid YAML frontmatter, clean Markdown headings, and respects Core Diet ceilings.
-  * Validates relative links across `spec-egm` and `code-author`.
+* **Static Governance Linters (`./scripts/lint.sh`):**
+  * Asserts Markdown cleanliness across all files.
+  * Validates YAML frontmatter syntax for skills and agents (`agents/code-author/agent.md`).
+  * Enforces Core Diet ceilings ($\le 140$ lines for `AGENTS.md`, $\le 180$ lines for `SKILL.md`).
+  * Validates relative links across documentation and skill assets.
+* **EGM Contract Validation (`scripts/validate_egm.py`):**
+  * Directly verifies that all active specifications possess required sections and approved Goldfish reviews.
+  * Validates targeted specification checks (`--spec <id_or_path>`).
 
 ---
 

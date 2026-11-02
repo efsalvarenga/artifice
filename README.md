@@ -28,8 +28,6 @@ artifice/
 │   ├── review/              # Universal code & architecture review (PR, branch, file, doc)
 │   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
 │   └── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 Coder
-└── tests/
-    └── test_validate_egm.py # Automated unit tests for EGM contract validation
 ```
 
 ## Available Agents

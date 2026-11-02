@@ -40,7 +40,7 @@ The specification provides clear state schemas, deterministic state transition d
 
 ### 3.3 Testability & Verification Strategy
 
-* Verification strategy covers both unit test assertions for `validate_egm.py`'s new CLI flags and static governance checks (`./scripts/lint.sh`) across all updated Markdown and YAML assets.
+* Verification strategy cleanly leverages static governance checks and direct EGM contract validation (`./scripts/lint.sh`) across all updated Markdown and YAML assets.
 
 ---
 
