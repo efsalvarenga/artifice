@@ -20,33 +20,41 @@ All additions strictly adhere to repository invariants, British English, Markdow
 ## 8-Pillar Evaluation
 
 ### 1. Design & Architecture Alignment (`DESIGN`)
+
 * `[praise]` Completes the agent triumvirate (**The Catalyst** $\rightarrow$ **The Craftsman** $\rightarrow$ **The Gatekeeper**) with clear, decoupled roles.
 * `[praise]` The EGM bridge hardening (`validate_egm.py --spec`) eliminates premature implementation dispatch by mechanically blocking authoring subagents if design specifications lack an approved Goldfish review.
 
 ### 2. Functionality & Invariants (`FUNCTIONALITY`)
+
 * `[praise]` `validate_egm.py` handles numeric prefixes (`002`), exact filenames (`002_craftsman_tdd_pipeline.md`), missing specs (clean error exit code 1), and unapproved reviews with high fidelity.
 * `[praise]` Gate 6 in `scripts/lint.py` automatically discovers and runs unit tests via the standard library `unittest` loader with zero external dependencies.
 
 ### 3. Complexity & Maintainability (`COMPLEXITY`)
+
 * `[praise]` Ruthless Occam's Razor: Zero third-party dependencies introduced. All test discovery and CLI argument parsing leverage Python standard library (`unittest`, `argparse`).
 * `[praise]` Control flow in `validate_egm.py` remains flat and readable.
 
 ### 4. Automated Tests & Verification (`TESTS`)
+
 * `[praise]` Introduced `tests/test_validate_egm.py` with 5 automated test cases covering valid multi-spec validation, targeted numeric prefix, targeted exact filename, missing specification rejection, and unapproved review rejection.
 * `[praise]` Followed contract-first TDD: Red phase confirmed non-zero failure before Green implementation.
 
 ### 5. Naming & Domain Clarity (`NAMING`)
+
 * `[praise]` Clean domain language across all artifacts: `code-author` ("The Craftsman"), Red/Green/Refactor/Gate phases, and `Model-Author` / `Agent-Role` git trailers.
 
 ### 6. Comments & Documentation (`COMMENTS_DOCS`)
+
 * `[praise]` Comprehensive design specification in `docs/designs/002_craftsman_tdd_pipeline.md` and zero-context Goldfish review in `docs/reviews/002_craftsman_tdd_pipeline_review.md`.
 * `[praise]` `README.md` and `TASKS.md` fully updated. Markdown cleanliness strictly maintained (blank lines following all headings).
 
 ### 7. Style, Type Safety & Git Hygiene (`STYLE_TYPES`)
+
 * `[praise]` Commits adhere strictly to Conventional Commits with atomic Red and Green staging.
 * `[praise]` Model commit authorship demonstrated across every commit with transparent metadata (`Model-Author: Gemini 3.8 Flash`, `Co-authored-by`).
 
 ### 8. Localisation & Governance Compliance (`LORE_LOCALISATION`)
+
 * `[praise]` 100% British English verified across code comments, commit messages, and documentation (*behaviour*, *synchronise*, *prioritise*, *artefact*, *optimise*).
 * `[praise]` Core Diet ceilings fully respected: `AGENTS.md` (99/140 lines), `spec-egm` (75/180 lines), `local-code` (56/180 lines), `review` (109/180 lines), `coach-frameworks` (66/180 lines).
 
