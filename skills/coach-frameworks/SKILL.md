@@ -15,8 +15,14 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 
 ## Reference Materials
 
-* **Developer Coach Agent Definition:** [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)
+* **Developer Coach Agent Definition:** Read `agents/developer-coach/agent.md` under the resolved Artifice root and apply its Markdown body, not its Antigravity tool metadata.
 * **Detailed 5-Pillar Rubric & Reconnaissance Guide:** [`references/coaching-framework.md`](./references/coaching-framework.md)
+
+### Resource Resolution & Permissions
+
+Use `$HOME/.local/share/artifice` when present; resolve it physically and validate its `agents`, `skills`, and `scripts` directories. A broken or invalid anchor is an error. Only when absent, resolve this definition's containing directory physically before ascending two directories. Validate the checkout and requested resource; stop and request repair if unavailable. Bind the absolute path as `ARTIFICE_ROOT` for each relevant command, quoting it and keeping target repositories separate; do not assume shell state persists.
+
+Keep global governance client-specific; Copilot does not import Gemini configuration. Require explicit operation-specific permission for branch changes, staging, commits, pushes, and PR publication. Present material designs and pause for human approval before implementation; a generic autonomous goal does not waive approval.
 
 ## Step-by-Step Coaching Procedure
 
@@ -31,13 +37,13 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 ### Step 2: Conduct Ecosystem & Precedent Reconnaissance
 
 1. **Sibling Ecosystem Reconnaissance:**
-   Inspect sibling projects in `~/Repos/*` to identify battle-tested patterns, reusable scripts, and shared tooling.
+   Inspect sibling projects adjacent to the confirmed target repository to identify battle-tested patterns, reusable scripts, and shared tooling.
 2. **External State-of-the-Art Scouting:**
-   If the internal ecosystem lacks a proven solution, perform targeted searches using `search_web` to review modern best practices and library releases.
+   If the internal ecosystem lacks a proven solution, perform targeted web searches with the current client's available tools to review modern best practices and library releases.
 
 ### Step 3: Dispatch or Execute the `developer-coach` Evaluation
 
-* Adopt the **Principal Developer Coach ("The Catalyst")** persona (or dispatch the subagent defined in [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)).
+* Apply the **Principal Developer Coach ("The Catalyst")** role body read above, or delegate to the registered coach with the current client's supported mechanism.
 * Filter all findings and proposals through the **5 Coaching Pillars**:
   1. `ECOSYSTEM_SCOUTING` — Proven precedents over reinvented wheels
   2. `ERGONOMICS_AUTOMATION` — Guardrails as paths of least resistance

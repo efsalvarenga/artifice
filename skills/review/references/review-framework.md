@@ -108,7 +108,7 @@ The code review framework supports two cooperative execution topologies:
 
 ### A. Dual-Model Consensus Protocol
 
-* **Primary Architect (Gemini):** Performs whole-repository architectural review, multi-file coherence checks, and synthesises findings across all 8 pillars.
+* **Primary Architect (Current Orchestrator):** Performs whole-repository architectural review, multi-file coherence checks, and synthesises findings across all 8 pillars; the client selects the model.
 * **Algorithmic Oracle (Local Qwen 2.5 14B):** Cross-examines state transitions, pure mathematical functions, parser state machines, and edge-case boundary conditions under Pillar 2.
 * **Prose & Cadence Oracle (Local Mistral NeMo 12B):** Audits human readability, documentation cadence, and explanatory clarity under Pillar 6.
 

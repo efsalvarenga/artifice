@@ -28,7 +28,7 @@ When auditing existing frameworks or evaluating proposed alternatives, the coach
 
 ### Dimension 5: Ecosystem Harmony & Portability (`PORTABILITY`)
 
-* **Assessment:** Can utilities, scripts, and architectural concepts be shared cleanly across sibling repositories in `~/Repos/*`?
+* **Assessment:** Can utilities, scripts, and architectural concepts be shared cleanly across sibling repositories adjacent to the confirmed target?
 * **Scouting Indicators:** Shared script standards, consistent configuration conventions, and modular interoperability.
 
 ### Dimension 6: Governance Ergonomics (`GOVERNANCE`)
@@ -38,7 +38,7 @@ When auditing existing frameworks or evaluating proposed alternatives, the coach
 
 ## 2. Reconnaissance Guide: Sibling Ecosystem Scouting
 
-The coach has direct access to inspect adjacent repositories in `~/Repos/`. When scouting for patterns, follow these repo-specific intelligence maps:
+When the current client's tools and permissions allow adjacent repository inspection, use the confirmed target's parent directory. When scouting for patterns, follow these repo-specific intelligence maps:
 
 * **`arete` & `arete-engine`:** Deep functional domain modelling, strict typing, Obsidian integration, CLI automation, and continuous verification.
 * **`emergent`:** Headless simulation purity, pure reducers, EGM governance, strict TypeScript, and end-to-end perception tests.
