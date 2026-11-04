@@ -76,10 +76,9 @@ artifice/
 ## Core Scripts & Verification
 
 * `./scripts/check_ollama.py`: Ollama residency and selection controller (`status`, `select --task <task>`, `warm <model> --lease 5m`, `unload --all`). Honours `ARTIFICE_CODE_MODEL` and `ARTIFICE_PROSE_MODEL` overrides when set, defaulting to `qwen2.5-coder:14b` / `qwen2.5:14b` for code and `mistral-nemo` for prose.
-* `./scripts/lint.sh` (`./scripts/lint.py`): Unified static governance linter auditing Markdown heading cleanliness, YAML frontmatter, Copilot adapter contracts, relative links, Core Diet line/word ceilings, EGM contracts, and Bash syntax.
+* `./scripts/lint.sh` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, Bash syntax, and the `tests/` unit suite.
 * `./scripts/validate_egm.py`: Validates EGM specification sections and matching approved Goldfish reviews (`--spec <id>`).
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
-* `python3 -m unittest discover -s tests`: Executes the dependency-free unit and disposable-home installer test suite.
 
 ## Integration with Antigravity
 
@@ -106,7 +105,7 @@ bash scripts/install_copilot.sh
 bash scripts/install_copilot.sh --check
 ```
 
-The installer derives the physical checkout from its own path, refuses to overwrite existing files, directories, or mismatched links, rolls back its own partial changes on failure, and creates three symlinks:
+The installer derives the physical checkout from its own path, validates all targets upfront before writing, never overwrites existing files, directories, or mismatched links, and creates three symlinks:
 
 ```text
 $HOME/.local/share/artifice                  -> physical Artifice checkout

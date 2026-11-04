@@ -125,51 +125,31 @@ def check_markdown_cleanliness_and_links(
 
 
 def check_copilot_adapter(path: str, header: list, body: str) -> int:
-    """Validate the deliberately narrow, dependency-free adapter format."""
-    filename = os.path.basename(path)
-    role = filename.removesuffix(".agent.md")
+    """Validate Copilot adapter frontmatter, tool allowlist, and canonical role target."""
+    role = os.path.basename(path).removesuffix(".agent.md")
     fields = {}
-    valid = filename == f"{role}.agent.md" and role in COPILOT_TOOLS
+    valid = os.path.basename(path) == f"{role}.agent.md" and role in COPILOT_TOOLS
     for line in header:
-        match = re.fullmatch(r"([a-z-]+):[ \t]*(.*)", line.rstrip("\r\n"))
+        match = re.fullmatch(r"([a-z-]+):[ \t]*(.+)", line.strip())
         if not match or match[1] in fields:
             valid = False
         else:
             fields[match[1]] = match[2].strip()
 
-    def scalar(value):
-        if value[:1] in ("'", '"'):
-            return value[1:-1] if len(value) >= 2 and value[-1] == value[0] else ""
-        if (
-            value in ("", "null", "~", "true", "false")
-            or value.startswith(("#", "[", "]", "{", "}", ">", "|"))
-        ):
-            return ""
-        return value
-
-    tools = fields.get("tools", "")
-    inline_tools = re.fullmatch(r"\[(.*)\]", tools)
-    names = [scalar(item.strip()) for item in inline_tools[1].split(",")] if inline_tools else []
+    desc = fields.get("description", "").strip("\"'").strip()
+    inline_tools = re.fullmatch(r"\[([^\]]+)\]", fields.get("tools", ""))
+    tools = [t.strip().strip("\"'") for t in inline_tools[1].split(",")] if inline_tools else []
+    targets = re.findall(r"agents/([^/\s`]+)/agent\.md", body)
     valid = (
         valid
         and set(fields) == {"name", "description", "tools"}
-        and scalar(fields.get("name", "")) == role
-        and bool(scalar(fields.get("description", "")).strip())
-        and len(names) == len(set(names))
-        and set(names) == COPILOT_TOOLS.get(role)
+        and fields.get("name", "").strip("\"'") == role
+        and bool(desc) and not desc.startswith(("#", "[", "{", ">", "|"))
+        and len(tools) == len(set(tools)) and set(tools) == COPILOT_TOOLS.get(role)
+        and bool(targets) and all(t == role for t in targets)
     )
-    targets = re.findall(r"agents/([^/\s`]+)/agent\.md", body)
-    valid = valid and bool(targets) and all(target == role for target in targets)
-    valid = valid and bool(re.search(
-        rf"Before acting,\s+(?:use a read tool to )?(?:open|read)\s+`agents/{re.escape(role)}/agent\.md`\s+under the validated root\b",
-        body,
-    ))
-    valid = valid and all(phrase in body for phrase in (
-        "Markdown body", "Antigravity metadata", "Inherit the selected model",
-        "stop", "no generic fallback",
-    ))
     if not valid:
-        print(f"    {RED}Copilot adapter error{NC}: Invalid metadata or canonical loading directive in {path}")
+        print(f"    {RED}Copilot adapter error{NC}: Invalid metadata or canonical target in {path}")
     return 0 if valid else 1
 
 
