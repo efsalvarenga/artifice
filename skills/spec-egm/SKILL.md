@@ -8,78 +8,44 @@ description: >-
 argument-hint: "[init <feature_name> | review <spec_path> | validate [repo_path] [--spec <id>]]"
 ---
 
-# Elephant-Goldfish Model Specification Workflow (`spec-egm`)
+# Elephant-Goldfish Specification Workflow
 
-This skill coordinates specification-driven development using the **Elephant-Goldfish Model (EGM)**. It ensures that technical specifications precede implementation, undergo collaborative front-loaded human design alignment, survive adversarial zero-context critique, and enforce mechanical verification before releasing authoring subagents.
+Align with the human before drafting, review independently, then validate the approved contract before implementation.
 
-## Reference Materials
+## Resources & Authority
 
-* **Design Specification Template:** [`references/design-spec-template.md`](references/design-spec-template.md)
-* **Goldfish Review Template:** [`references/goldfish-review-template.md`](references/goldfish-review-template.md)
-* **Validation Script:** Read `scripts/validate_egm.py` under the resolved Artifice resource root when needed.
+Select Artifice in this order: explicitly supplied `ARTIFICE_ROOT` -> present `$HOME/.local/share/artifice` (including broken symlinks) -> `$HOME/Repos/artifice`. Validate only the selected source: empty/invalid overrides and broken/invalid selected anchors fail without fallback; unused lower-priority anchors are ignored. Require an absolute path, resolve it physically, and check readable `agents`, `skills`, `scripts` directories and the requested asset. Stop and request repair on validation failure. No physical definition path is required. Bind the quoted `ARTIFICE_ROOT` per command; the target repository is separate.
 
-### Resource Resolution
+Follow active client/repository authority, including valid preauthorisation. Branch changes, staging, commits, pushes and PR publication need operation-specific permission; this workflow grants none. Human design approval is distinct from review approval and Git permission. Use British English and blank lines after headings; preserve human narrative sovereignty. Strict local-only work requires a genuinely local session before protected reads, with no cloud fallback.
 
-Use `$HOME/.local/share/artifice` when present; resolve it physically and validate its `agents`, `skills`, and `scripts` directories. A present broken or invalid anchor is an error. Only when absent, resolve this definition's containing directory physically before ascending two directories. Validate the checkout and requested resource; if discovery has no physical source or a resource is unavailable, stop and request repair rather than guessing from the target repository.
+Documentation: [design template](references/design-spec-template.md), [Goldfish template](references/goldfish-review-template.md), [validator](../../scripts/validate_egm.py), [code-author](../../agents/code-author/agent.md). Runtime reads use the validated root, never lexical traversal through personal registration symlinks. Use the selected project interpreter where needed.
 
-Bind the resolved absolute directory as `ARTIFICE_ROOT` for each relevant command, quoting it and passing the target repository separately. Do not assume the value persists between shell executions. Use the selected Python interpreter in place of `python3` where required.
+## 1. Reconnaissance & Elephant Design — No Code
 
-Require explicit operation-specific permission for branch changes, staging, commits, pushes, and PR publication. Drafting or implementation permission does not authorise those operations.
+1. **Empirical recon:** Start with approximately 60 seconds of permitted read-only disk checks. Measure existing types, file boundaries and native test baselines before discussing designs or writing documents.
+2. **Front-loaded Grill-Me workshop:** Exhaust human-dependent decisions across:
+   * Scope, non-goals, boundaries and trade-offs.
+   * State schemas, invariants, valid bounds, persistence and concurrency.
+   * Orchestrator/local engines and workspace isolation (`inherit`/`share`).
+   * Verification, boundary/mutation probes, failure handling and recovery.
+3. Require explicit human confirmation of the workshop canvas before drafting. Do not equate brief chat or an autonomous goal with design sign-off.
+4. Draft `docs/designs/<NNN>_<feature_slug>.md` from the design template, marked `Status: Under Review`. Specify schemas, state/event mechanics, invariants, edge cases, truthful provenance and deterministic tests. Do not write production code.
+5. Present the design for explicit approval before implementation. Material revisions require renewed approval.
 
-## Step-by-Step EGM Procedure
+## 2. Zero-Context Goldfish Review
 
-### Step 1: Pre-Spec Recon & The Elephant Phase (Strict No-Code)
+Invoke a fresh independent reviewer through the current client's authorised delegation mechanism. Supply only the specification, repository `AGENTS.md` if present (otherwise state its absence), and Goldfish template. Changing persona does not clear this conversation's context. If independent delegation is unavailable, report the limitation and request independent review; never self-certify.
 
-When a new feature, milestone, or architectural module is requested:
+Probe contradictions, unbounded types, races, non-determinism and missing failure modes. Record `Approved` or `Revisions Required` in `docs/reviews/<NNN>_<feature_slug>_review.md`. Iterate the specification and independent review until approved; present material changes for renewed human approval.
 
-#### 1A. Empirical Recon & Front-Loaded "Grill-Me" Workshop
+## 3. Validation & Authoring Handoff
 
-1. **60-Second Empirical Disk Recon:**
-   Before discussing designs or authoring documents, execute read-only disk checks across the target repository to measure existing types, verify file boundaries, and assess test baselines.
-2. **Front-Loaded "Grill-Me" Alignment Canvas:**
-   * **Mandatory Alignment Gate:** The agent must *never* unilaterally generate a complete specification in isolation or conflate brief conversational chat with design sign-off.
-   * Proactively interrogate the human author across four structured categories to exhaust all human-dependent decisions before execution:
-     * *Architectural Scope & Non-Goals:* Explicit exclusions, design boundaries, and trade-off choices.
-     * *State Schemas & Invariant Contracts:* Data structures, valid value bounds, persistence, and concurrency rules.
-     * *Execution Mode & Model Tiering:* Orchestrator vs local engines (`local-code`), workspace isolation mode (`inherit` vs `share`).
-     * *Verification & Failure Fallbacks:* Test harness, boundary conditions, mutation probes, and recovery mechanisms.
-   * Require explicit human confirmation on the workshop canvas before proceeding to Step 1B.
+Confirm explicit human approval of the final revision, then run targeted validation:
 
-#### 1B. Draft the Technical Specification
+```bash
+ARTIFICE_ROOT="<validated-root>"; python3 "$ARTIFICE_ROOT/scripts/validate_egm.py" "<target_repo>" --spec "<NNN>"
+```
 
-1. Create `docs/designs/<NNN>_<feature_slug>.md` using [`references/design-spec-template.md`](references/design-spec-template.md).
-2. **Strict No-Code Rule:** Focus entirely on data schemas, state invariants, tick/event mechanics, boundary edge cases, model commit attribution, and deterministic test requirements. Do not write production code during this phase.
-3. Mark `Status: Under Review`.
-4. Present the document and stop for explicit human design approval before any implementation. Material revisions require renewed approval; a generic autonomous goal does not waive this pause.
+The validator checks required sections and matching approved Goldfish review; it does not supply human sign-off. Stop on non-zero exit status. Only a green contract permits handoff to `code-author`: Red contract tests, minimal Green implementation, Razor refactoring, native baseline gate, independent review.
 
-### Step 2: Zero-Context Goldfish Review
-
-Subject the Elephant draft to an adversarial, zero-context critique:
-
-1. **Mechanically Enforced Zero Context:**
-   Invoke a fresh review subagent using the current client's delegation capability. Do not claim that changing persona clears the current conversation's memory. If independent delegation is unavailable, report the limitation and request an independent review rather than self-certifying. Pass only:
-   * The specification file (`docs/designs/<NNN>_<feature_slug>.md`).
-   * The repository's `AGENTS.md`.
-   * The Goldfish template: [`references/goldfish-review-template.md`](references/goldfish-review-template.md).
-2. **Probing for Blind Spots:**
-   The reviewer must actively seek contradictions, unbounded types, race conditions, non-deterministic branches, and missing failure modes.
-3. **Produce Review Report:**
-   Write findings to `docs/reviews/<NNN>_<feature_slug>_review.md` with an explicit verdict: `Approved` or `Revisions Required`.
-4. **Resolution:**
-   The Elephant agent updates the spec until the Goldfish reviewer signs off with `Verdict: Approved`.
-5. Present material revisions for renewed human approval. The review verdict is independent of human sign-off.
-
-### Step 3: Hardened Contract Validation & Implementation Handoff
-
-Before writing any implementation code or dispatching authoring subagents:
-
-1. Confirm explicit human approval of the final presented design, then run the targeted contract validator:
-   ```bash
-   python3 "$ARTIFICE_ROOT/scripts/validate_egm.py" "<target_repo>" --spec <NNN>
-   ```
-2. The validator verifies that:
-   * The target specification exists and contains all required sections (Overview, Schema, Invariants, Verification).
-   * A matching Goldfish review exists with `Verdict: Approved`.
-3. **The Craftsman Handoff (`code-author`):**
-   * Upon successful validation (exit code `0`), implementation proceeds via `code-author` ("The Craftsman") following the contract-first TDD cycle: Red (failing invariant assertions) $\rightarrow$ Green (minimal deterministic logic) $\rightarrow$ Refactor (Occam's Razor) $\rightarrow$ Pre-Review Baseline Gate (`./scripts/lint.sh`).
-   * TDD phases do not require commits. Only when separately authorised, commits retain accurate model and agent provenance (`Model-Author`, `Co-authored-by`) without guessing hidden model identifiers.
+TDD phases need no commits. Separately authorised Git operations retain accurate `Model-Author`, `Agent-Role` and `Co-authored-by` provenance for actual contributors without guessing hidden model identities.

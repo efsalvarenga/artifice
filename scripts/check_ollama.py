@@ -122,17 +122,39 @@ def unload_all() -> dict:
 
 def select_best_model(task_type: str) -> dict:
     """Select the best local model based on installed roster and task type."""
+    override_name = None
+    if task_type in ("code", "logic", "fim", "tdd"):
+        override_name = "ARTIFICE_CODE_MODEL"
+    elif task_type in ("prose", "docs", "adr", "architecture"):
+        override_name = "ARTIFICE_PROSE_MODEL"
+    override = os.environ.get(override_name) if override_name else None
+    fallback = None if override is not None else "cloud-flash"
+    if override == "":
+        return {
+            "model": None,
+            "fallback": None,
+            "reason": f"{override_name} is empty",
+        }
+
     status = get_status()
     if not status["online"]:
         return {
             "model": None,
-            "fallback": "cloud-flash",
+            "fallback": fallback,
             "reason": "Ollama daemon is offline",
         }
 
     available = status["available"]
 
-    if task_type in ("code", "logic", "fim", "tdd"):
+    if override is not None:
+        if override not in available:
+            return {
+                "model": None,
+                "fallback": None,
+                "reason": f"Configured model '{override}' is not installed",
+            }
+        chosen = override
+    elif task_type in ("code", "logic", "fim", "tdd"):
         if any("qwen2.5-coder:14b" in m for m in available):
             chosen = next(m for m in available if "qwen2.5-coder:14b" in m)
         elif any("qwen2.5:14b" in m for m in available):

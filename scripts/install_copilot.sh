@@ -80,64 +80,44 @@ inside "$copilot_home" "$repo_root" && fail 'Copilot registration resolves insid
 destinations=("$anchor" "$copilot_home/agents" "$copilot_home/skills")
 targets=("$repo_root" "$anchor/integrations/copilot/agents" "$anchor/skills")
 physical_targets=("$repo_root" "$repo_root/integrations/copilot/agents" "$repo_root/skills")
-created_links=()
-created_targets=()
+created_link_indices=()
 created_directories=()
-states=()
 errors=0
 
-for role in code-author code-reviewer developer-coach; do
-    for source in "agents/$role/agent.md" "integrations/copilot/agents/$role.agent.md"; do
-        [[ -f "$repo_root/$source" && -r "$repo_root/$source" ]] || {
-            printf 'Missing or unreadable source: %s\n' "$repo_root/$source" >&2
-            errors=$((errors + 1))
-        }
-    done
-done
-for skill in spec-egm review coach-frameworks local-code; do
-    [[ -f "$repo_root/skills/$skill/SKILL.md" && -r "$repo_root/skills/$skill/SKILL.md" ]] || {
-        printf 'Missing skill: %s\n' "$repo_root/skills/$skill/SKILL.md" >&2
-        errors=$((errors + 1))
-    }
-done
-for source in validate_egm.py build_review_dossier.py check_ollama.py; do
-    [[ -f "$repo_root/scripts/$source" && -r "$repo_root/scripts/$source" ]] || {
-        printf 'Missing script: %s\n' "$repo_root/scripts/$source" >&2
-        errors=$((errors + 1))
+for source in agents/{code-author,code-reviewer,developer-coach}/agent.md \
+    integrations/copilot/agents/{code-author,code-reviewer,developer-coach}.agent.md \
+    skills/{spec-egm,review,coach-frameworks,local-code}/SKILL.md \
+    scripts/{validate_egm,build_review_dossier,check_ollama}.py; do
+    [[ -f "$repo_root/$source" && -r "$repo_root/$source" ]] || {
+        printf 'Missing or unreadable source: %s\n' "$repo_root/$source" >&2
+        errors=1
     }
 done
 
 classify() {
-    local destination=$1 expected=$2 expected_physical=$3 actual
+    local destination=$1 expected=$2 expected_physical=$3 actual state=missing
     if [[ -L "$destination" ]]; then
+        state=conflict
         if [[ -d "$destination" ]]; then
             actual=$(cd "$destination" && pwd -P) || return 1
-            if [[ $(readlink "$destination") == "$expected" || "$actual" == "$expected_physical" ]]; then
-                printf 'correct-link\n'
-                return
-            fi
+            [[ $(readlink "$destination") == "$expected" || "$actual" == "$expected_physical" ]] && state=correct-link
         fi
-        printf 'conflict\n'
     elif [[ -e "$destination" ]]; then
-        printf 'conflict\n'
-    else
-        printf 'missing\n'
+        state=conflict
     fi
+    printf '%s\n' "$state"
 }
 
 for index in 0 1 2; do
     destination=${destinations[$index]}
     inside "$destination" "$repo_root" && fail "Destination is inside checkout: $destination"
-    for prior in 0 1 2; do
-        if [[ "$index" != "$prior" && "$destination" == "${destinations[$prior]}" ]]; then
-            fail "Duplicate destination: $destination"
-        fi
+    for ((prior=0; prior<index; prior++)); do
+        [[ "$destination" != "${destinations[$prior]}" ]] || fail "Duplicate destination: $destination"
     done
-    planned_directory "${destination%/*}" >/dev/null || errors=$((errors + 1))
-    states[$index]=$(classify "$destination" "${targets[$index]}" "${physical_targets[$index]}")
-    printf '%s: %s -> %s\n' "${states[$index]}" "$destination" "${targets[$index]}"
-    if [[ "${states[$index]}" == conflict || ( "$mode" == check && "${states[$index]}" == missing ) ]]; then
-        errors=$((errors + 1))
+    state=$(classify "$destination" "${targets[$index]}" "${physical_targets[$index]}")
+    printf '%s: %s -> %s\n' "$state" "$destination" "${targets[$index]}"
+    if [[ "$state" == conflict || ( "$mode" == check && "$state" == missing ) ]]; then
+        errors=1
     fi
 done
 [[ "$errors" == 0 ]] || fail 'Preflight failed; no installation paths were changed. Review the reported conflicts or missing sources.'
@@ -147,13 +127,14 @@ if [[ "$mode" == check ]]; then
 fi
 
 rollback() {
-    local exit_code=$? index path
+    local exit_code=$? owned index path
     trap - EXIT INT TERM HUP
     [[ "$signal_pending" == 0 ]] || exit_code=1
     if [[ "$exit_code" != 0 ]]; then
-        for ((index=${#created_links[@]}-1; index>=0; index--)); do
-            path=${created_links[$index]}
-            if [[ -L "$path" && $(readlink "$path") == "${created_targets[$index]}" ]]; then
+        for ((owned=${#created_link_indices[@]}-1; owned>=0; owned--)); do
+            index=${created_link_indices[$owned]}
+            path=${destinations[$index]}
+            if [[ -L "$path" && $(readlink "$path") == "${targets[$index]}" ]]; then
                 rm "$path" || printf 'Rollback failed for link: %s\n' "$path" >&2
             fi
         done
@@ -202,8 +183,7 @@ for index in 0 1 2; do
     result=0
     ln -s "${targets[$index]}" "$destination" || result=$?
     if [[ -L "$destination" && $(readlink "$destination") == "${targets[$index]}" ]]; then
-        created_links[${#created_links[@]}]=$destination
-        created_targets[${#created_targets[@]}]=${targets[$index]}
+        created_link_indices[${#created_link_indices[@]}]=$index
     fi
     [[ "$result" == 0 ]] || fail "Cannot create link: $destination"
     check_signal
