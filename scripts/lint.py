@@ -124,6 +124,33 @@ def check_markdown_cleanliness_and_links(
     return heading_errors, link_errors
 
 
+def _adapter_string(value: str):
+    """Read the adapter's narrow single-line YAML strings, or return None."""
+    if value.startswith("'"):
+        return value[1:-1].replace("''", "'") if re.fullmatch(r"'(?:[^']|'')*'", value) else None
+    if value.startswith('"'):
+        if not re.fullmatch(r'"(?:[^"\\]|\\.)*"', value):
+            return None
+        escapes = {
+            "0": "\0", "a": "\a", "b": "\b", "t": "\t", "n": "\n",
+            "v": "\v", "f": "\f", "r": "\r", "e": "\x1b", " ": " ",
+            '"': '"', "/": "/", "\\": "\\", "N": "\x85", "_": "\xa0",
+            "L": "\u2028", "P": "\u2029",
+        }
+        try:
+            return re.sub(
+                r"\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|.)",
+                lambda m: chr(int(m[1][1:], 16)) if m[1][0] in "xuU" else escapes[m[1]],
+                value[1:-1],
+            )
+        except (KeyError, ValueError, OverflowError):
+            return None
+    plain = re.split(r"[ \t]+#", value, maxsplit=1)[0]
+    if plain.lower() in ("null", "~") or value.startswith(("#", "[", "{", ">", "|")):
+        return None
+    return value
+
+
 def check_copilot_adapter(path: str, header: list, body: str) -> int:
     """Validate Copilot adapter frontmatter, tool allowlist, and canonical role target."""
     role = os.path.basename(path).removesuffix(".agent.md")
@@ -136,15 +163,15 @@ def check_copilot_adapter(path: str, header: list, body: str) -> int:
         else:
             fields[match[1]] = match[2].strip()
 
-    desc = fields.get("description", "").strip("\"'").strip()
+    desc = _adapter_string(fields.get("description", ""))
     inline_tools = re.fullmatch(r"\[([^\]]+)\]", fields.get("tools", ""))
-    tools = [t.strip().strip("\"'") for t in inline_tools[1].split(",")] if inline_tools else []
+    tools = [_adapter_string(t.strip()) for t in inline_tools[1].split(",")] if inline_tools else []
     targets = re.findall(r"agents/([^/\s`]+)/agent\.md", body)
     valid = (
         valid
         and set(fields) == {"name", "description", "tools"}
-        and fields.get("name", "").strip("\"'") == role
-        and bool(desc) and not desc.startswith(("#", "[", "{", ">", "|"))
+        and _adapter_string(fields.get("name", "")) == role
+        and bool(desc and desc.strip())
         and len(tools) == len(set(tools)) and set(tools) == COPILOT_TOOLS.get(role)
         and bool(targets) and all(t == role for t in targets)
     )

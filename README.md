@@ -76,7 +76,7 @@ artifice/
 ## Core Scripts & Verification
 
 * `./scripts/check_ollama.py`: Ollama residency and selection controller (`status`, `select --task <task>`, `warm <model> --lease 5m`, `unload --all`). Honours `ARTIFICE_CODE_MODEL` and `ARTIFICE_PROSE_MODEL` overrides when set, defaulting to `qwen2.5-coder:14b` / `qwen2.5:14b` for code and `mistral-nemo` for prose.
-* `./scripts/lint.sh` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, Bash syntax, and the `tests/` unit suite.
+* `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, and Bash syntax. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
 * `./scripts/validate_egm.py`: Validates EGM specification sections and matching approved Goldfish reviews (`--spec <id>`).
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
 
@@ -105,7 +105,7 @@ bash scripts/install_copilot.sh
 bash scripts/install_copilot.sh --check
 ```
 
-The installer derives the physical checkout from its own path, validates all targets upfront before writing, never overwrites existing files, directories, or mismatched links, and creates three symlinks:
+The installer derives the physical checkout from its own path and validates sources, parent directories and targets before writing. If a parent cannot be resolved, installation aborts without creating links or directories. It never overwrites existing files, directories or mismatched links, and creates three symlinks:
 
 ```text
 $HOME/.local/share/artifice                  -> physical Artifice checkout
@@ -113,4 +113,4 @@ ${COPILOT_HOME:-$HOME/.copilot}/agents       -> $HOME/.local/share/artifice/inte
 ${COPILOT_HOME:-$HOME/.copilot}/skills       -> $HOME/.local/share/artifice/skills
 ```
 
-Thin adapters in `integrations/copilot/agents/` configure Copilot tool permissions and load the canonical `agents/<role>/agent.md` body without duplicating prompts. Start a fresh Copilot chat or reload the window after installation if discovery is stale.
+Thin adapters in `integrations/copilot/agents/` configure Copilot tool permissions and load the canonical `agents/<role>/agent.md` body without duplicating prompts. Use single-line string values for `name` and non-empty `description`, and an inline `tools` list; quote literal prefixes such as `#` or `[`. Start a fresh Copilot chat or reload the window after installation if discovery is stale.

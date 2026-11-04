@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,10 +27,11 @@ class InstallerTests(unittest.TestCase):
         self.home = Path(self.tmp.name) / "home dir"
         self.home.mkdir()
 
-    def run_installer(self, *args, home=None, copilot_home=None):
+    def run_installer(self, *args, home=None, copilot_home=None, extra_env=None):
         env = {"PATH": os.environ["PATH"], "HOME": str(home if home is not None else self.home)}
         if copilot_home is not None:
             env["COPILOT_HOME"] = str(copilot_home)
+        env.update(extra_env or {})
         return subprocess.run(
             ["bash", str(INSTALLER), *args],
             cwd=self.tmp.name, env=env, text=True, capture_output=True,
@@ -57,8 +59,47 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.home / ".copilot/agents").resolve(), (REPO_ROOT / "integrations/copilot/agents").resolve())
         self.assertEqual((self.home / ".copilot/skills").resolve(), (REPO_ROOT / "skills").resolve())
 
+        agents = self.home / ".copilot/agents"
+        agents.unlink()
+        agents.symlink_to(REPO_ROOT / "integrations/copilot/agents")
         self.assertEqual(self.run_installer("--check").returncode, 0)
         self.assertEqual(self.run_installer().returncode, 0)
+        alias = self.home / "copilot alias"
+        alias.symlink_to(self.home / ".copilot")
+        self.assertEqual(self.run_installer("--check", copilot_home=alias).returncode, 0)
+
+    def test_unresolvable_parent_fails_before_mutation(self):
+        root = Path(self.tmp.name).resolve()
+        denied = root / "denied parent"
+        denied.mkdir()
+        requested = denied / root.relative_to("/") / "misregistered copilot"
+        bash_env = root / "bash_env"
+        # Stub writes so even the regressed installer cannot touch the host.
+        bash_env.write_text(
+            'cd() {\n'
+            '    if [[ "$1" == "$DENIED_PARENT" ]]; then\n'
+            '        printf "Permission denied (simulated): %s\\n" "$1" >&2\n'
+            '        return 1\n'
+            '    fi\n'
+            '    builtin cd "$@"\n'
+            '}\n'
+            'mkdir() { printf "unexpected mutation: mkdir\\n" >&2; }\n'
+            'ln() { printf "unexpected mutation: ln\\n" >&2; }\n',
+            encoding="utf-8",
+        )
+        for args in (("--check",), ()):
+            with self.subTest(args=args):
+                result = self.run_installer(
+                    *args, copilot_home=requested,
+                    extra_env={"BASH_ENV": str(bash_env), "DENIED_PARENT": str(denied)},
+                )
+                self.assertIn("Permission denied (simulated)", result.stderr)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertNotIn("unexpected mutation:", result.stderr)
+                self.assertNotIn("missing:", result.stdout)
+                self.assertNotIn("PASS:", result.stdout)
+        self.assertFalse((self.home / ".local").exists())
+        self.assertFalse((root / "misregistered copilot").exists())
 
     def test_conflicts_and_bad_parents_never_overwritten(self):
         existing = self.home / ".copilot/agents"
@@ -130,6 +171,116 @@ class ModelSelectionTests(unittest.TestCase):
 
 
 class LintAndContractTests(unittest.TestCase):
+    def test_adapter_scalars_frontmatter_and_cli(self):
+        cases = (
+            ("name", 0, ("code-author", "'code-author'", '"code-author"')),
+            ("name", 1, ('"code-author', "'code-author\"", '""code-author""', '" code-author "')),
+            ("description", 0, (
+                "Review code.", '"Review code."', "'Review code.'",
+                '"[Beta] Review code."', "'[Beta] Review code.'",
+                '"# Review code."', "'# Review code.'", '"null"', "'null'",
+                "'It''s valid.'", '"Say \\"review\\"."', "'\\n'",
+            )),
+            ("description", 1, (
+                "", "null", "Null", "NULL", "~", '""', "''", '"   "', '"\\n"',
+                '"Review code.', "'Review code.\"", '""Review code.""', '"\\q"',
+                "[Beta]", "{review: code}", "# comment",
+            )),
+            ("tools", 0, ('["read", \'search\', edit, execute, agent]',)),
+            ("tools", 1, (
+                '[read, search, edit, execute, "agent]',
+                '[read, search, edit, execute, "agent\']',
+                "[read, search, edit, execute, agent, agent]",
+                "[read, search, edit, execute, web]",
+            )),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            adapter = root / "integrations/copilot/agents/code-author.agent.md"
+            adapter.parent.mkdir(parents=True)
+            env = {"PATH": os.environ["PATH"], "HOME": tmp, "PYTHONDONTWRITEBYTECODE": "1"}
+            for field, expected, values in cases:
+                for value in values:
+                    fields = {
+                        "name": "code-author", "description": "Review code.",
+                        "tools": "[read, search, edit, execute, agent]",
+                    }
+                    fields[field] = value
+                    adapter.write_text(
+                        "---\n" + "\n".join(f"{key}: {scalar}" for key, scalar in fields.items())
+                        + "\n---\n\nRead `agents/code-author/agent.md`.\n", encoding="utf-8",
+                    )
+                    with redirect_stdout(io.StringIO()):
+                        frontmatter = lint.check_yaml_frontmatter(tmp)
+                    cli = subprocess.run(
+                        [sys.executable, str(REPO_ROOT / "scripts/lint.py"), tmp],
+                        env=env, text=True, capture_output=True,
+                    )
+                    for interface, actual in (("frontmatter", frontmatter), ("cli", cli.returncode)):
+                        with self.subTest(field=field, value=value, interface=interface):
+                            self.assertEqual(actual, expected, cli.stderr)
+
+    def test_wrapper_uses_effective_target_for_unit_suite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tooling = root / "tooling checkout"
+            consumer = root / "consumer project"
+            consumer.mkdir()
+            scripts = tooling / "scripts"
+            scripts.mkdir(parents=True)
+            for name in ("lint.sh", "lint.py"):
+                shutil.copyfile(REPO_ROOT / "scripts" / name, scripts / name)
+            tests = tooling / "tests"
+            tests.mkdir()
+            (tests / "test_sentinel.py").write_text(
+                "import pathlib, sys, unittest\n"
+                "ROOT = pathlib.Path(__file__).resolve().parents[1]\n"
+                "sys.path.insert(0, str(ROOT / 'scripts'))\n"
+                "import lint\n"
+                "class Sentinel(unittest.TestCase):\n"
+                "    def test_tooling_budget(self):\n"
+                "        print('TOOLING_SENTINEL')\n"
+                "        self.assertEqual(lint.check_core_diet(str(ROOT)), 0)\n",
+                encoding="utf-8",
+            )
+            skill = tooling / "skills/fixture/SKILL.md"
+            skill.parent.mkdir(parents=True)
+            header = "---\nname: fixture\ndescription: Fixture\n---\n\n"
+            skill.write_text(header + "word " * 1001, encoding="utf-8")
+            env = {"PATH": os.environ["PATH"], "HOME": tmp, "PYTHONDONTWRITEBYTECODE": "1"}
+
+            def run(cwd, *args):
+                return subprocess.run(
+                    ["bash", str(scripts / "lint.sh"), *args], cwd=cwd,
+                    env=env, text=True, capture_output=True,
+                )
+
+            omitted, explicit = run(consumer), run(consumer, ".")
+            self.assertEqual(omitted.returncode, 0, omitted.stdout + omitted.stderr)
+            self.assertEqual(
+                (omitted.returncode, omitted.stdout, omitted.stderr),
+                (explicit.returncode, explicit.stdout, explicit.stderr),
+            )
+            self.assertNotIn("TOOLING_SENTINEL", omitted.stdout)
+
+            skill.write_text(header + "Within budget.\n", encoding="utf-8")
+            alias = root / "tooling alias"
+            alias.symlink_to(tooling)
+            for cwd, args in (
+                (consumer, (str(tooling),)), (consumer, (str(alias),)),
+                (tooling, ()), (tooling, (".",)),
+            ):
+                with self.subTest(cwd=cwd, args=args):
+                    result = run(cwd, *args)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn("TOOLING_SENTINEL", result.stdout)
+            for flag, expected in (("--help", 0), ("-h", 0), ("--unknown", 2)):
+                with self.subTest(flag=flag):
+                    result = run(tooling, flag)
+                    self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                    self.assertIn("usage:", result.stdout + result.stderr)
+                    self.assertNotIn("TOOLING_SENTINEL", result.stdout)
+
     def test_live_repository_and_canonical_word_budget(self):
         with redirect_stdout(io.StringIO()):
             self.assertEqual(lint.lint_repository(str(REPO_ROOT)), 0)

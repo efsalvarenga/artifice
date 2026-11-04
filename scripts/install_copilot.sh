@@ -27,14 +27,15 @@ raw_copilot=${COPILOT_HOME:-$home/.copilot}
     fail 'COPILOT_HOME must be a normalised absolute path.'
 
 resolve_parent_path() {
-    local p=${1%/} tail=""
+    local p=${1%/} tail="" physical
     [[ -n "$p" ]] || p=/
     while [[ ! -d "$p" ]]; do
         [[ ! -e "$p" && ! -L "$p" ]] || fail "Path component is not a directory: $p"
         tail="/${p##*/}$tail"
         p=${p%/*}; p=${p:-/}
     done
-    printf '%s%s\n' "$(cd "$p" && pwd -P)" "$tail"
+    physical=$(cd "$p" && pwd -P) || fail "Cannot resolve physical directory: $p"
+    printf '%s%s\n' "$physical" "$tail"
 }
 
 anchor="$(resolve_parent_path "$home/.local/share")/artifice"
