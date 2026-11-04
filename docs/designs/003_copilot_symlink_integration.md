@@ -17,7 +17,7 @@ Non-goals: new dependencies, generated copies, orchestration frameworks, downloa
 
 Installation from any working directory exposes source edits and future components without regeneration. Refresh may require a new conversation/window; filesystem visibility does not prove client discovery or instruction loading.
 
-Canonical bodies follow active client/repository authority, including valid preauthorisation, without granting permissions. Design approval remains separate from Git permission. Only Antigravity optionally reads existing Gemini global rules. Strict local-only work requires a genuinely local session before protected-content ingestion; ordinary cloud-orchestrated Ollama use remains hybrid, never labelled offline.
+Canonical bodies preserve their structured domain guidance and follow active client/repository authority, while client-specific tool lists and session caveats stay encapsulated inside the thin Copilot adapters. Only Antigravity optionally reads existing Gemini global rules (`~/.gemini/config/AGENTS.md`). On-device `--local` mode dispatches inspection and synthesis via local Ollama pipelines or a local session without ingesting protected code/diffs into cloud context or falling back to cloud.
 
 ## 3. State Schema & Data Models
 
@@ -82,7 +82,7 @@ Standard-library tests mock Ollama: both task groups, ignored unrelated override
 
 Run focused tests, installer Bash syntax/runtime tests, Python unittest discovery, targeted EGM validation, native lint and whitespace checks. Measure prompt, installer/harness and documentation totals. No test may load/download/unload models.
 
-Live acceptance separately verifies three agents/four skills, actual canonical reads, effective tools, explicit `review` selection, fresh-session refresh, cloud-session `--local` refusal before protected reads and Antigravity operation without an anchor/definition path. Record locality evidence and unavailable checks as outstanding. Behavioural prose is not a technical sandbox or proof of privacy.
+Live acceptance separately verifies three agents/four skills, actual canonical reads, effective tools, explicit `review` selection, fresh-session refresh, `--local` execution without protected cloud reads and Antigravity operation without an anchor/definition path. Record locality evidence and unavailable checks as outstanding. Behavioural prose is not a technical sandbox or proof of privacy.
 
 ## 8. Goldfish Review Gates
 
@@ -94,4 +94,4 @@ Live acceptance separately verifies three agents/four skills, actual canonical r
 
 Implementation does not authorise staging, commits, pushes, PR updates or personal activation. Preserve actual model/agent provenance for separately authorised Git operations.
 
-**Implementation evidence (2026-11-03):** 77 Python tests, including 36 installer regressions, and all six native governance gates pass. Canonical prompts total 3,905 words. The installer is 196 lines; installer plus complete runtime harness is 655 lines versus 474 originally. Independent implementation review found one adapter-scalar validation defect; failing regressions reproduced it and the repair passes. See the [review record](../reviews/003_copilot_symlink_integration_review.md) for closure and live acceptance limits.
+**Implementation evidence (2026-11-04):** 74 Python unit and black-box installer tests execute natively via `./scripts/lint.sh`, and all six static governance gates pass cleanly. Canonical prompts total 4,128 words (matching `main`'s 4,129-word baseline with structured domain instructions preserved and client caveats encapsulated in `integrations/copilot/agents/`). See the [review record](../reviews/003_copilot_symlink_integration_review.md) for closure and live acceptance limits.

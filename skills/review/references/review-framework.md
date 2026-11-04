@@ -113,9 +113,8 @@ The code review framework supports two cooperative execution topologies:
 * **Prose & Cadence Oracle (`prose_model`):** Select through `select --task prose`, honouring `ARTIFICE_PROSE_MODEL`. Audit readability, documentation cadence and explanatory clarity under Pillar 6.
 * Use the exact successful tags throughout warming, inference payloads, review streams and actual-worker provenance, as described in [the review workflow](../SKILL.md). Never assume the default models are installed.
 
-### B. Air-Gapped Privacy Protocol
+### B. On-Device Privacy Protocol
 
-* **Trigger:** `--local`, `Privacy: on-device` or `Review: local-only` in applicable policy metadata.
-* **Session Boundary:** Require a genuinely local session before protected reads. Stop in a cloud conversation; invoking Ollama does not make it air-gapped. Local-only work has no cloud fallback, including when model selection fails.
-* **On-Device Execution:** In the verified local session, `code_model` performs code invariant checks; `prose_model` evaluates architecture/documentation and synthesises the structured report. Only claim entirely on-device execution when session and actual-worker locality are verified.
-* These instructions express policy, not a technical sandbox or privacy guarantee. Ordinary cloud-orchestrated local consultation remains hybrid.
+* **Trigger:** `--local`, `Privacy: on-device`, or `Review: local-only` in applicable policy metadata.
+* **Privacy Boundary:** Protected source code and diff contents must never be ingested into cloud model context or transmitted off-device, with no cloud fallback when local selection fails.
+* **On-Device Execution:** Dispatch diff inspection and synthesis strictly on-device via local shell/Ollama pipelines or within a verified local session: `code_model` audits code invariants (Pillars 2, 3, 5, 7); `prose_model` evaluates architecture, documentation, and governance (Pillars 1, 6, 8) and synthesises the structured report.

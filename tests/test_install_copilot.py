@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -45,6 +46,7 @@ class InstallerFixture(unittest.TestCase):
             ["bash", str(self.checkout / "scripts/install_copilot.sh"), *arguments],
             env=self.env if environment is None else environment,
             cwd=self.consumer, capture_output=True, text=True, timeout=15,
+            preexec_fn=lambda: signal.signal(signal.SIGHUP, signal.SIG_DFL),
         )
         self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
         return result.stdout + result.stderr

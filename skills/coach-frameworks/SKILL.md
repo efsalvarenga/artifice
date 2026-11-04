@@ -9,22 +9,60 @@ description: >-
   paradigms.
 ---
 
-# Strategic Developer Coaching & Framework Scouting
+# Strategic Developer Coaching & Framework Scouting (`coach-frameworks`)
 
-## Resources & Authority
+This skill orchestrates a strategic framework evaluation, developer experience audit, or cross-project architectural scouting engagement using the **Principal Developer Coach ("The Catalyst")** persona.
 
-Select Artifice in this order: explicitly supplied `ARTIFICE_ROOT` -> present `$HOME/.local/share/artifice` (including broken symlinks) -> `$HOME/Repos/artifice`. Validate only the selected source: empty/invalid overrides and broken/invalid selected anchors fail without fallback; unused lower-priority anchors are ignored. Require an absolute path, resolve it physically, and check readable `agents`, `skills`, `scripts` directories and the requested asset. Stop and request repair on validation failure. No physical definition path is required. Bind the quoted `ARTIFICE_ROOT` per command; the target repository is separate.
+## Reference Materials
 
-Read `agents/developer-coach/agent.md` under that root and apply its Markdown body, not its Antigravity metadata. Documentation: [coach role](../../agents/developer-coach/agent.md), [rubric/reconnaissance guide](references/coaching-framework.md). Runtime reads must not traverse lexical paths through personal registration symlinks.
+* **Developer Coach Agent Definition:** [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)
+* **Detailed 5-Pillar Rubric & Reconnaissance Guide:** [`references/coaching-framework.md`](./references/coaching-framework.md)
 
-Follow active client/repository authority, including valid preauthorisation; only Antigravity may use existing Gemini globals. This skill grants no Git permission: branch changes, staging, commits, pushes and PR publication need operation-specific authorisation. Present material designs/revisions for explicit approval before implementation. Use British English and blank lines after headings. Strict local-only work requires a genuinely local session before protected reads with no cloud fallback.
+Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`.
 
-## Coaching Procedure
+## Step-by-Step Coaching Procedure
 
-1. **Diagnose friction:** Clarify the challenge and evidence: slow tests, state complexity, DX friction or proposed upgrades. Choose adherence coaching (follow the existing framework better), evolutionary proposal (compare alternatives), or `TASKS.md` incoming-feedback triage.
-2. **Find precedents:** Within permissions, inspect siblings adjacent to the confirmed target repository for reusable tooling and proven patterns. If evidence is insufficient, use targeted authoritative web sources through the current client's available tools. Do not assume a personal checkout root.
-3. **Evaluate:** Apply the role's five pillars: ecosystem scouting, ergonomic automation, architectural elegance, pragmatic evolution and governance harmonisation. Compare measurable benefits, costs and migration risks; novelty alone is insufficient.
-4. **Filter lessons:** Use the role's four-test gate, default **DISCARD**: observed cost, uncovered by existing rules (search first), generalises across projects, and changes decisions without being mechanically enforceable. Prefer code/types/lint over new prose.
-5. **Deliver:** Give concise insights, trade-off matrix and next steps in chat or an Antigravity canvas. Demonstrate authorised non-breaking tooling changes with tests. Use an existing coaching/proposals directory for a requested formal RFC; do not silently create planning artefacts or treat a proposal as implementation approval.
+### Step 1: Diagnose Friction & Engagement Scope
 
-Conclude with `developer-coach` ("The Catalyst"), skill `coach-frameworks v1.1.0`, date and actual assistant/exposed model identity. Attribute only contributors actually used; do not invent hidden model provenance.
+1. **Identify the Challenge:** Clarify the developer's question or architectural dilemma (e.g. slow tests, complex state management, DX friction, framework upgrades).
+2. **Determine Engagement Mode:**
+   * **Mode A: Framework Adherence Coaching ("Follow It Better"):** How to reduce friction and automate best practices within the existing architecture.
+   * **Mode B: Evolutionary Framework Proposal ("Propose a Better Way"):** Evaluating new libraries or architectural patterns against current bottlenecks.
+   * **Mode C: Tooling Feedback & Inbox Promotion Triage:** Evaluating feedback items from `TASKS.md` (`## Incoming Feedback / Inbox`) for potential promotion into global rules or shared skills.
+
+### Step 2: Conduct Ecosystem & Precedent Reconnaissance
+
+1. **Sibling Ecosystem Reconnaissance:**
+   Inspect permitted sibling projects (`~/Repos/*` or adjacent to the target repository) to identify battle-tested patterns, reusable scripts, and shared tooling.
+2. **External State-of-the-Art Scouting:**
+   If the internal ecosystem lacks a proven solution, perform targeted web searches (`search_web` or active client web tool) to review modern best practices and library releases.
+
+### Step 3: Dispatch or Execute the `developer-coach` Evaluation
+
+* Adopt the **Principal Developer Coach ("The Catalyst")** persona (or delegate to the registered coach defined in [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)).
+* Filter all findings and proposals through the **5 Coaching Pillars**:
+  1. `ECOSYSTEM_SCOUTING` — Proven precedents over reinvented wheels
+  2. `ERGONOMICS_AUTOMATION` — Guardrails as paths of least resistance
+  3. `ARCHITECTURAL_ELEGANCE` — Flat, pure, comprehensible designs
+  4. `PRAGMATIC_EVOLUTION` — Tangible velocity gains with phased migration plans
+  5. `GOVERNANCE_HARMONISATION` — British English, Markdown cleanliness, type safety
+* **Apply the 4-Test Lesson Acceptance Gate (Default = DISCARD):**
+  When evaluating tooling feedback or proposed additions to `AGENTS.md` / `SKILL.md`:
+  1. *Measured Cost:* Stemmed from an actual failure or defect.
+  2. *Uncovered (Search First):* No existing broader rule already covers it.
+  3. *Generalises:* Applies across projects, not a one-off local quirk.
+  4. *Changes Decisions & Cannot Be Automated:* Prefer code, linters, or types over prose instructions.
+
+### Step 4: Synthesise & Deliver Recommendations
+
+1. **Delivery Format (Adaptive Output):**
+   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an artefact canvas.
+   * If the project contains a `docs/coaching/` or `docs/proposals/` directory (or if the user requests a committed RFC), draft a formal proposal file for human approval before implementation.
+2. **Mandatory Provenance Signature:**
+   Always conclude the advice with the formal provenance footer:
+
+   ```markdown
+   ---
+
+   *Signed by: **Principal Developer Coach ("The Catalyst")** (`developer-coach`) · Model: **`<Actual Model or Assistant>`** · Skill: **`coach-frameworks v1.1.0`** · Date: `<YYYY-MM-DD>`*
+   ```

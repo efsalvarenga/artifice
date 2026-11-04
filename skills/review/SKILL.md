@@ -3,72 +3,100 @@ name: review
 version: 1.3.0
 description: >-
   Universal code and architectural review skill using the Principal Code Reviewer
-   ("The Gatekeeper") persona and the 8-Pillar Framework. Uses the current client
-   orchestrator with optional local Ollama consultation and explicit privacy boundaries.
+  ("The Gatekeeper") persona and the 8-Pillar Framework. Uses the current client
+  orchestrator with optional local Ollama consultation and explicit privacy boundaries.
 argument-hint: "[--local] [PR_NUMBER | branch | <file_or_doc_path>]"
 ---
 
-# Universal Code & Architecture Review
+# Universal Code & Architecture Review (`review`)
 
-## Resources, Authority & Privacy
+This skill orchestrates a rigorous evaluation of Pull Requests, branch diffs, individual files, or architectural design documents using the **Principal Code Reviewer ("The Gatekeeper")** persona and the **8-Pillar Code Review Framework**.
 
-Select Artifice in this order: explicitly supplied `ARTIFICE_ROOT` -> present `$HOME/.local/share/artifice` (including broken symlinks) -> `$HOME/Repos/artifice`. Validate only the selected source: empty/invalid overrides and broken/invalid selected anchors fail without fallback; unused lower-priority anchors are ignored. Require an absolute path, resolve it physically, and check readable `agents`, `skills`, `scripts` directories and the requested asset. Stop and request repair on validation failure. No physical definition path is required. Bind the quoted `ARTIFICE_ROOT` per command; the target repository is separate.
+## Reference Materials
 
-Establish privacy before protected reads, using arguments and minimum applicable policy metadata. `--local`, `Privacy: on-device` or `Review: local-only` requires a genuinely local session with no cloud fallback. Stop a cloud conversation before ingesting target code, diffs, specifications or dossiers. Cloud+Ollama remains hybrid, not offline; behavioural instructions do not establish technical containment.
+* **Code Reviewer Persona:** [`../../agents/code-reviewer/agent.md`](../../agents/code-reviewer/agent.md)
+* **8-Pillar Rubric & Conventional Comments:** [`references/review-framework.md`](references/review-framework.md)
+* **Ollama Residency & Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
+* **Repository Invariant Dossier Compiler:** [`../../scripts/build_review_dossier.py`](../../scripts/build_review_dossier.py)
 
-Read `agents/code-reviewer/agent.md` under the validated root and apply its Markdown body, not its Antigravity metadata. Documentation: [role](../../agents/code-reviewer/agent.md), [eight-pillar rubric/Conventional Comments](references/review-framework.md), [model manager](../../scripts/check_ollama.py), [dossier compiler](../../scripts/build_review_dossier.py). Do not execute lexical paths through personal registration symlinks. Use the selected project interpreter where needed.
+Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`.
 
-Follow active client/repository authority, including valid preauthorisation. This skill grants no Git permission; branch changes, staging, commits, pushes and PR publication require operation-specific authorisation. Explicit design/material-revision approval remains separate from review approval.
+## Step-by-Step Review Procedure
 
-## 1. Scope, Invariants & Baseline
+### Step 1: Scope, Privacy & Baseline Detection
 
-Parse a PR number, branch, file or document. After privacy clearance, read the target (`gh pr diff <PR>`, `git diff main...HEAD`, or direct file read). Ingest the active EGM specification's schema, invariants and edge cases. Compile repository constraints:
+1. **Parse Arguments:**
+   * `--local`: Enforces 100% on-device review via local Ollama models without reading protected diff or source bytes into cloud context (no cloud fallback).
+   * Target: PR number (`12`), branch name (`agent/feature`), file path (`engine.ts`), or document (`docs/designs/001_spec.md`).
+2. **Check Privacy Directives First:**
+   If `--local` is passed or `AGENTS.md` declares `Privacy: on-device` / `Review: local-only`, engage **Pathway B (On-Device Mode)** before reading target code or diffs.
+3. **Target Ingestion & Native Baselines:**
+   In Pathway A, inspect `gh pr diff <PR>`, `git diff main...HEAD`, or the target file directly. Run native verification (`./scripts/lint.sh`, `npm test`, `pytest`, `cargo test`) to record baseline pass/fail status.
 
-```bash
-ARTIFICE_ROOT="<validated-root>"; python3 "$ARTIFICE_ROOT/scripts/build_review_dossier.py" "<target_repo>"
-```
+### Step 2: Ingest Invariants & Specifications
 
-Run authorised native tests/lint and record pass/fail, rather than assuming a clean baseline.
+1. **Ingest Active EGM Specification:**
+   Inspect `docs/designs/` for the active specification and ingest its **State Schema**, **Invariants & Rules**, and **Edge Cases** as the source-of-truth contract.
+2. **Compile Repository Invariant Dossier:**
 
-## 2. Select & Lease Workers
+   ```bash
+   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/build_review_dossier.py" .
+   ```
 
-For authorised local consultation, select each needed task group independently:
+### Step 3: Model Selection & Wave Leasing
 
-```bash
-ARTIFICE_ROOT="<validated-root>"; python3 "$ARTIFICE_ROOT/scripts/check_ollama.py" select --task code
-ARTIFICE_ROOT="<validated-root>"; python3 "$ARTIFICE_ROOT/scripts/check_ollama.py" select --task prose
-```
+1. Select installed local worker models dynamically (honouring optional `ARTIFICE_CODE_MODEL` and `ARTIFICE_PROSE_MODEL` overrides; exit `2` indicates unavailable local selection):
 
-`ARTIFICE_CODE_MODEL` covers code/logic/fim/tdd; `ARTIFICE_PROSE_MODEL` covers prose/docs/adr/architecture. Only the selected group's override is validated. Empty, offline or uninstalled configured selections fail with exit 2 and no fallback. Unset variables retain [existing defaults](../../README.md#local-model-configuration); `cloud-flash` failure hints are advisory, never execution permission.
+   ```bash
+   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" select --task code
+   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" select --task prose
+   ```
 
-Capture successful JSON `model` values as `code_model`/`prose_model`. Bind the exact tags and root independently in every tool command; shell state does not persist:
+2. Capture the returned JSON `model` strings as `code_model` and `prose_model`, then lease them for the review wave:
 
-```bash
-ARTIFICE_ROOT="<validated-root>"; code_model="<successful code selection tag>"; python3 "$ARTIFICE_ROOT/scripts/check_ollama.py" warm "$code_model" --lease 5m
-ARTIFICE_ROOT="<validated-root>"; prose_model="<successful prose selection tag>"; python3 "$ARTIFICE_ROOT/scripts/check_ollama.py" warm "$prose_model" --lease 5m
-```
+   ```bash
+   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" warm "$code_model" --lease 5m
+   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" warm "$prose_model" --lease 5m
+   ```
 
-Use those same selected tags in Ollama inference payloads, never hard-coded defaults:
+### Step 4: Hybrid or On-Device Execution
 
-```python
-code_request = {"model": code_model, "messages": code_messages, "stream": False}
-prose_request = {"model": prose_model, "messages": prose_messages, "stream": False}
-```
+#### Pathway A: Current-Orchestrator Hybrid Review (Default)
 
-## 3. Evaluate & Synthesise
+The current client orchestrator acts as **Lead Architect, Quality Inspector, and Synthesiser**:
 
-In ordinary hybrid work, the current client orchestrator directly evaluates design/specification alignment and native verification. When delegated consultation is appropriate, `code_model` audits functionality, complexity, naming and types (pillars 2/3/5/7); `prose_model` audits comments/docs, British English and narrative sovereignty (6/8). Probe 2–3 concrete boundaries and assert coverage.
+1. **Orchestrator Direct Evaluation (Pillar 1 — Design & Contract Alignment):**
+   * **Contract Fulfilment:** Verifies state schemas, methods, and mutation rules match the approved specification 1:1.
+   * **Invariant Protection:** Confirms all Section 4 invariants are strictly upheld.
+   * **Drift Control:** Flags unauthorised expansion, speculative abstractions, or omitted capabilities as `[issue] (blocking, DESIGN)`.
+2. **Native Local Harness (Pillar 4 — Tests & Linters):**
+   Verifies local test coverage and zero linter errors.
+3. **Local Code Stream (`code_model`):**
+   Audits **Pillar 2 (Functionality & Invariants)** with 2–3 concrete boundary probes, **Pillar 3 (Complexity & Occam's Razor)**, **Pillar 5 (Naming)**, and **Pillar 7 (Style & Types)**.
+4. **Local Prose Stream (`prose_model`):**
+   Audits **Pillar 6 (Comments & Documentation)** and **Pillar 8 (British English & Narrative Sovereignty)**.
+5. **Orchestrator Quality Gate & Synthesis:**
+   * **Overlooked Defect Inspection:** Scrutinises the diff for subtle bugs or edge cases missed by local workers.
+   * **False-Positive Filtering:** Filters worker findings against intentional repository invariants.
+   * **Executive Synthesis:** Unifies findings under Conventional Comments (`issue`, `suggestion`, `question`, `praise`).
 
-Cross-check worker findings against the actual diff and intentional invariants. Remove false positives, inspect overlooked defects and synthesise all eight pillars. Under strict local-only policy, perform all work in the verified local session: code analysis uses `code_model`; architecture, documentation, governance and final synthesis use `prose_model`.
+#### Pathway B: On-Device Privacy Mode (`--local` or Privacy Directive)
 
-## 4. Teardown & Truthful Report
+* Protected code and diffs stay strictly on-device (dispatched directly via local shell/Ollama scripts or within a verified local session, never ingested into cloud context or falling back to cloud).
+* Code analysis (Pillars 2, 3, 5, 7) runs on `code_model`; architectural, documentation, and governance review (Pillars 1, 6, 8) plus final report synthesis run on `prose_model`.
 
-At authorised leased-wave conclusion, report actual teardown success/errors, without latency or zero-memory guarantees:
+### Step 5: Wave Teardown & Provenance Signature
 
-```bash
-ARTIFICE_ROOT="<validated-root>"; python3 "$ARTIFICE_ROOT/scripts/check_ollama.py" unload --all
-```
+1. Flush resident Ollama models to restore host memory:
 
-Use Conventional Comments (`issue`, `suggestion`, `question`, `praise`), explicit severity/pillar and an evidence-backed verdict. Include baseline failures and unavailable checks.
+   ```bash
+   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" unload --all
+   ```
 
-Sign as `code-reviewer` ("The Gatekeeper"), skill `review v1.3.0`, date, actual assistant/exposed model, and worker provenance: actual `code_model`/`prose_model` tags **only if used**, otherwise `none`. Never guess identities or claim on-device execution without verified session/worker locality.
+2. Sign with accurate provenance (recording only workers actually used, or `none`):
+
+   ```markdown
+   ---
+
+   *Signed by: **Principal Code Reviewer ("The Gatekeeper")** (`code-reviewer`) · Orchestrator: **`<Actual Model or Assistant>`** · Workers: **`<code_model + prose_model, or none>`** · Skill: **`review v1.3.0`** · Date: `<YYYY-MM-DD>`*
+   ```
