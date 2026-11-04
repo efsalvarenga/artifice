@@ -1,6 +1,6 @@
 # Artifice
 
-A curated, version-controlled collection of global agent skills, procedures, and workflows for Google Antigravity.
+A curated, version-controlled collection of shared agent skills, procedures, and workflows for Google Antigravity and GitHub Copilot.
 
 *Artifice* (English: the craft, the ingenious device; Portuguese *artífice*: the master craftsman, the architect of a work) serves as the centralised repository of capabilities mounted globally across all local development projects.
 
@@ -9,82 +9,80 @@ A curated, version-controlled collection of global agent skills, procedures, and
 ```text
 artifice/
 ├── README.md
-├── TASKS.md                 # Roadmap board & incoming tooling feedback inbox
+├── TASKS.md                      # Roadmap board & incoming tooling feedback inbox
 ├── agents/
-│   ├── code-author/         # Principal Code Author ("The Craftsman")
-│   ├── code-reviewer/       # Principal Code Reviewer ("The Gatekeeper")
-│   └── developer-coach/     # Principal Developer Coach ("The Catalyst")
+│   ├── code-author/              # Principal Code Author ("The Craftsman")
+│   ├── code-reviewer/            # Principal Code Reviewer ("The Gatekeeper")
+│   └── developer-coach/          # Principal Developer Coach ("The Catalyst")
+├── integrations/
+│   └── copilot/agents/           # Thin Copilot adapters delegating to canonical roles
 ├── docs/
-│   ├── designs/             # Elephant design specifications (001_*, 002_*)
-│   └── reviews/             # Adversarial Goldfish reviews
+│   ├── designs/                  # Elephant design specifications (001_*, 002_*, 003_*)
+│   └── reviews/                  # Adversarial Goldfish reviews
 ├── scripts/
-│   ├── check_ollama.py      # Ollama residency, lifecycle & wave-leasing controller
-│   ├── lint.py              # Unified static governance linter (Markdown, YAML, links, Core Diet)
-│   ├── lint.sh              # Execution wrapper for lint.py
-│   ├── validate_egm.py      # Portable EGM contract validator (--spec support)
-│   └── build_review_dossier.py # Compact repository invariant digest compiler
+│   ├── check_ollama.py           # Ollama residency, selection & wave-leasing controller
+│   ├── install_copilot.sh        # Non-overwriting personal Copilot symlink installer
+│   ├── lint.py                   # Unified static governance & Core Diet linter
+│   ├── lint.sh                   # Execution wrapper for lint.py
+│   ├── validate_egm.py           # Portable EGM contract validator (--spec support)
+│   └── build_review_dossier.py   # Compact repository invariant digest compiler
 ├── skills/
-│   ├── spec-egm/            # Elephant-Goldfish Model specification workflow & workshops
-│   ├── review/              # Universal code & architecture review (PR, branch, file, doc)
-│   ├── coach-frameworks/    # Framework evaluation & ecosystem DX coaching
-│   └── local-code/          # Algorithmic refactoring & tests via local Qwen 2.5 Coder
+│   ├── spec-egm/                 # Elephant-Goldfish Model specification workflow
+│   ├── review/                   # Universal 8-Pillar code & architecture review
+│   ├── coach-frameworks/         # Framework evaluation & ecosystem DX coaching
+│   └── local-code/               # Algorithmic refactoring & tests via local Ollama
+└── tests/                        # Standard-library unit & black-box installer tests
 ```
 
 ## Available Agents
 
 ### 1. `code-author`
 
-* **Persona:** Principal Code Author ("The Craftsman")
+* **Persona:** [Principal Code Author ("The Craftsman")](agents/code-author/agent.md)
 * **Role:** Primary implementation agent adhering to contract-first Test-Driven Development (TDD), minimal deterministic code, model-attributed Git commits, and pre-review green baseline gating.
 
 ### 2. `code-reviewer`
 
-* **Persona:** Principal Code Reviewer ("The Gatekeeper")
+* **Persona:** [Principal Code Reviewer ("The Gatekeeper")](agents/code-reviewer/agent.md)
 * **Role:** Universal evaluation of Pull Requests, branch diffs, single files, or architectural design specifications using the 8-Pillar Framework, Conventional Comments, and hybrid offloading.
 
 ### 3. `developer-coach`
 
-* **Persona:** Principal Developer Coach ("The Catalyst")
-* **Role:** Strategic framework evaluation, ecosystem scouting across `~/Repos/*`, developer ergonomics coaching, and tooling inbox triage using the 4-Test Lesson Acceptance Gate.
+* **Persona:** [Principal Developer Coach ("The Catalyst")](agents/developer-coach/agent.md)
+* **Role:** Strategic framework evaluation, ecosystem scouting across sibling repositories, developer ergonomics coaching, and tooling inbox triage using the 4-Test Lesson Acceptance Gate.
 
 ## Available Skills
 
 ### 1. `spec-egm`
 
 * **Trigger:** `/spec-egm [init | review | validate]`
-* **Role:** Orchestrates the Elephant-Goldfish Model (EGM) specification-driven development workflow: pre-spec empirical reconnaissance, collaborative interactive Design Workshops, no-code Elephant design specs, zero-context Goldfish reviews, and automated contract validation.
+* **Role:** Orchestrates the [Elephant-Goldfish Model (EGM)](skills/spec-egm/SKILL.md) workflow: pre-spec empirical reconnaissance, front-loaded Grill-Me workshops, no-code Elephant specs, zero-context Goldfish reviews, and mechanical contract validation.
 
 ### 2. `review`
 
 * **Trigger:** `/review [--local] [PR_NUMBER | branch | <file_or_doc_path>]`
-* **Persona:** Principal Code Reviewer ("The Gatekeeper")
-* **Role:** Universal evaluation of Pull Requests, branch diffs, single files, or architectural design specifications using the 8-Pillar Framework and Conventional Comments.
-* **Hybrid Offloading:** Orchestrated by Gemini, decomposing the review into orthogonal streams: delegating Pillar 2 logic fuzzing to local `qwen2.5-coder:14b` and Pillar 6 documentation review to local `mistral-nemo:12b` via wave-leased Ollama memory.
-* **Offline Privacy Mode:** Supports 100% on-device air-gapped review via the `--local` flag or repository privacy directives.
+* **Role:** [Universal 8-Pillar evaluation](skills/review/SKILL.md) using the current client orchestrator with optional wave-leased Ollama worker streams (`code_model` + `prose_model`) and strict `--local` on-device privacy mode.
 
 ### 3. `coach-frameworks`
 
 * **Trigger:** `/coach-frameworks`
-* **Persona:** Principal Developer Coach ("The Catalyst")
-* **Role:** Strategic framework evaluation, ecosystem scouting across `~/Repos/*`, developer ergonomics coaching, and tooling inbox triage using the 4-Test Lesson Acceptance Gate.
+* **Role:** [Strategic framework evaluation](skills/coach-frameworks/SKILL.md), sibling-repository scouting, and developer ergonomics coaching filtered through the 4-Test Lesson Acceptance Gate.
 
 ### 4. `local-code`
 
 * **Trigger:** `/local-code`
-* **Backend:** Local `qwen2.5-coder:14b` (fallback `qwen2.5:14b`) running via Ollama.
-* **Role:** Deep algorithmic refactoring, unit test generation, Fill-in-the-Middle (FIM) synthesis, and boundary edge-case probing with wave-leased memory management.
+* **Role:** [Bounded algorithmic refactoring](skills/local-code/SKILL.md), unit test generation, and Fill-in-the-Middle (FIM) synthesis via an installed Ollama coding model.
 
-## Core Scripts
+## Core Scripts & Verification
 
-* `./scripts/check_ollama.py`: Ollama lifecycle and residency manager providing sub-100ms health checks, model selection, wave-leasing (`keep_alive: 5m`), and memory cache flushing.
-* `./scripts/lint.py`: Unified static governance linter auditing Markdown heading cleanliness, YAML frontmatter syntax, relative link integrity, and Core Diet ceilings across repositories.
-* `./scripts/lint.sh`: Execution wrapper delegating directly to `lint.py`.
-* `./scripts/validate_egm.py`: Validates EGM specification sections, matching Goldfish reviews, and approval verdicts with targeted `--spec` validation.
-* `./scripts/build_review_dossier.py`: Extracts and formats intentional repository invariants for local review models.
+* `./scripts/check_ollama.py`: Ollama residency and selection controller (`status`, `select --task <task>`, `warm <model> --lease 5m`, `unload --all`). Honours `ARTIFICE_CODE_MODEL` and `ARTIFICE_PROSE_MODEL` overrides when set, defaulting to `qwen2.5-coder:14b` / `qwen2.5:14b` for code and `mistral-nemo` for prose.
+* `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, and Bash syntax. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
+* `./scripts/validate_egm.py`: Validates EGM specification sections and matching approved Goldfish reviews (`--spec <id>`).
+* `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
 
 ## Integration with Antigravity
 
-Mounted globally inside `~/.gemini/config/skills.json`:
+Mounted globally inside `~/.gemini/config/skills.json` (with agent symlinks in `~/.gemini/config/agents/`):
 
 ```json
 {
@@ -95,3 +93,24 @@ Mounted globally inside `~/.gemini/config/skills.json`:
   ]
 }
 ```
+
+Shared roles and skills resolve `ARTIFICE_ROOT` via explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`.
+
+## Integration with Copilot
+
+Install user-level directory symlinks once from any working directory:
+
+```bash
+bash scripts/install_copilot.sh
+bash scripts/install_copilot.sh --check
+```
+
+The installer derives the physical checkout from its own path and validates sources, parent directories and targets before writing. If a parent cannot be resolved, installation aborts without creating links or directories. It never overwrites existing files, directories or mismatched links, and creates three symlinks:
+
+```text
+$HOME/.local/share/artifice                  -> physical Artifice checkout
+${COPILOT_HOME:-$HOME/.copilot}/agents       -> $HOME/.local/share/artifice/integrations/copilot/agents
+${COPILOT_HOME:-$HOME/.copilot}/skills       -> $HOME/.local/share/artifice/skills
+```
+
+Thin adapters in `integrations/copilot/agents/` configure Copilot tool permissions and load the canonical `agents/<role>/agent.md` body without duplicating prompts. Use single-line string values for `name` and non-empty `description`, and an inline `tools` list; quote literal prefixes such as `#` or `[`. Start a fresh Copilot chat or reload the window after installation if discovery is stale.

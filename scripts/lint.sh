@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# lint.sh - Static Governance Harness for artifice
-# ==============================================================================
-# Thin execution wrapper delegating to scripts/lint.py.
-# Strictly returns 0 on complete pass, non-zero on any failure.
-# ==============================================================================
-
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "${SCRIPT_DIR}/lint.py" "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+
+python3 "${SCRIPT_DIR}/lint.py" "$@"
+
+if [[ "$(cd "${1:-.}" 2>/dev/null && pwd -P)" == "${REPO_ROOT}" ]]; then
+    printf '\n=== Running Unit & Contract Tests ===\n\n'
+    python3 -m unittest discover -s "${REPO_ROOT}/tests" -p 'test_*.py'
+fi

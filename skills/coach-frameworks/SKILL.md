@@ -18,6 +18,8 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 * **Developer Coach Agent Definition:** [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)
 * **Detailed 5-Pillar Rubric & Reconnaissance Guide:** [`references/coaching-framework.md`](./references/coaching-framework.md)
 
+Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`.
+
 ## Step-by-Step Coaching Procedure
 
 ### Step 1: Diagnose Friction & Engagement Scope
@@ -31,13 +33,13 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 ### Step 2: Conduct Ecosystem & Precedent Reconnaissance
 
 1. **Sibling Ecosystem Reconnaissance:**
-   Inspect sibling projects in `~/Repos/*` to identify battle-tested patterns, reusable scripts, and shared tooling.
+   Inspect permitted sibling projects (`~/Repos/*` or adjacent to the target repository) to identify battle-tested patterns, reusable scripts, and shared tooling.
 2. **External State-of-the-Art Scouting:**
-   If the internal ecosystem lacks a proven solution, perform targeted searches using `search_web` to review modern best practices and library releases.
+   If the internal ecosystem lacks a proven solution, perform targeted web searches (`search_web` or active client web tool) to review modern best practices and library releases.
 
 ### Step 3: Dispatch or Execute the `developer-coach` Evaluation
 
-* Adopt the **Principal Developer Coach ("The Catalyst")** persona (or dispatch the subagent defined in [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)).
+* Adopt the **Principal Developer Coach ("The Catalyst")** persona (or delegate to the registered coach defined in [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)).
 * Filter all findings and proposals through the **5 Coaching Pillars**:
   1. `ECOSYSTEM_SCOUTING` — Proven precedents over reinvented wheels
   2. `ERGONOMICS_AUTOMATION` — Guardrails as paths of least resistance
@@ -47,20 +49,20 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 * **Apply the 4-Test Lesson Acceptance Gate (Default = DISCARD):**
   When evaluating tooling feedback or proposed additions to `AGENTS.md` / `SKILL.md`:
   1. *Measured Cost:* Stemmed from an actual failure or defect.
-  2. *Uncovered (`grep` First):* No existing broader rule already covers it.
+  2. *Uncovered (Search First):* No existing broader rule already covers it.
   3. *Generalises:* Applies across projects, not a one-off local quirk.
   4. *Changes Decisions & Cannot Be Automated:* Prefer code, linters, or types over prose instructions.
 
 ### Step 4: Synthesise & Deliver Recommendations
 
 1. **Delivery Format (Adaptive Output):**
-   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an Antigravity artefact canvas.
-   * If the project contains a `docs/coaching/` or `docs/proposals/` directory (or if the user requests a committed RFC), draft a formal proposal file there.
+   * Deliver the primary insights, trade-off matrix, and next steps in-chat or via an artefact canvas.
+   * If the project contains a `docs/coaching/` or `docs/proposals/` directory (or if the user requests a committed RFC), draft a formal proposal file for human approval before implementation.
 2. **Mandatory Provenance Signature:**
    Always conclude the advice with the formal provenance footer:
 
    ```markdown
    ---
 
-   *Signed by: **Principal Developer Coach ("The Catalyst")** (`developer-coach`) · Model: **`<Model Name>`** · Skill: **`coach-frameworks v1.1.0`** · Date: `<YYYY-MM-DD>`*
+   *Signed by: **Principal Developer Coach ("The Catalyst")** (`developer-coach`) · Model: **`<Actual Model or Assistant>`** · Skill: **`coach-frameworks v1.1.0`** · Date: `<YYYY-MM-DD>`*
    ```

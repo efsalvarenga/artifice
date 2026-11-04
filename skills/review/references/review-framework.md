@@ -108,12 +108,13 @@ The code review framework supports two cooperative execution topologies:
 
 ### A. Dual-Model Consensus Protocol
 
-* **Primary Architect (Gemini):** Performs whole-repository architectural review, multi-file coherence checks, and synthesises findings across all 8 pillars.
-* **Algorithmic Oracle (Local Qwen 2.5 14B):** Cross-examines state transitions, pure mathematical functions, parser state machines, and edge-case boundary conditions under Pillar 2.
-* **Prose & Cadence Oracle (Local Mistral NeMo 12B):** Audits human readability, documentation cadence, and explanatory clarity under Pillar 6.
+* **Primary Architect (Current Orchestrator):** Performs whole-repository architectural review, multi-file coherence checks, and synthesises findings across all 8 pillars; the client selects the model.
+* **Algorithmic Oracle (`code_model`):** Select through `check_ollama.py select --task code`, honouring `ARTIFICE_CODE_MODEL`. Cross-examine state transitions, pure functions, parsers and boundary conditions under Pillar 2.
+* **Prose & Cadence Oracle (`prose_model`):** Select through `select --task prose`, honouring `ARTIFICE_PROSE_MODEL`. Audit readability, documentation cadence and explanatory clarity under Pillar 6.
+* Use the exact successful tags throughout warming, inference payloads, review streams and actual-worker provenance, as described in [the review workflow](../SKILL.md). Never assume the default models are installed.
 
-### B. Air-Gapped Privacy Protocol
+### B. On-Device Privacy Protocol
 
-* **Trigger:** `--local` flag in CLI or `Privacy: on-device` directive in project-local `AGENTS.md`.
-* **Security Guarantee:** Completely air-gaps the code review process. No source code diffs or metadata leave your local workstation.
-* **On-Device Execution:** Local Qwen 2.5 14B performs code invariant checks, while local Mistral NeMo 12B synthesises the structured review report and Conventional Comments directly on your Apple Silicon GPU.
+* **Trigger:** `--local`, `Privacy: on-device`, or `Review: local-only` in applicable policy metadata.
+* **Privacy Boundary:** Protected source code and diff contents must never be ingested into cloud model context or transmitted off-device, with no cloud fallback when local selection fails.
+* **On-Device Execution:** Dispatch diff inspection and synthesis strictly on-device via local shell/Ollama pipelines or within a verified local session: `code_model` audits code invariants (Pillars 2, 3, 5, 7); `prose_model` evaluates architecture, documentation, and governance (Pillars 1, 6, 8) and synthesises the structured report.
