@@ -24,7 +24,9 @@ FENCED_CODE_PATTERN = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_PATTERN = re.compile(r"`[^`\n]+`")
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
-GLOBAL_AGENTS_MD = os.path.expanduser("~/.gemini/config/AGENTS.md")
+GLOBAL_AGENTS_MD = os.environ.get(
+    "GLOBAL_AGENTS_PATH", os.path.expanduser("~/.gemini/config/AGENTS.md")
+)
 GLOBAL_LINE_LIMIT = 140
 GLOBAL_WORD_LIMIT = 1400
 SKILL_LINE_LIMIT = 180
@@ -315,21 +317,23 @@ def check_core_diet(target_dir: str) -> int:
 def check_bash_syntax(target_dir: str) -> int:
     """Check native syntax only; disposable runtime tests are separately runnable."""
     errors = 0
-    for directory in ("scripts", "tests"):
-        for root, _, files in os.walk(os.path.join(target_dir, directory)):
-            for filename in sorted(files):
-                if not filename.endswith(".sh"):
+    for root, dirs, files in os.walk(target_dir):
+        # Skip forbidden directories
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules", ".system_generated")]
+        
+        for filename in sorted(files):
+            if not filename.endswith(".sh"):
+                continue
+            path = os.path.join(root, filename)
+            try:
+                result = subprocess.run(["bash", "-n", path], capture_output=True, text=True)
+                if result.returncode == 0:
                     continue
-                path = os.path.join(root, filename)
-                try:
-                    result = subprocess.run(["bash", "-n", path], capture_output=True, text=True)
-                    if result.returncode == 0:
-                        continue
-                    detail = result.stderr.strip()
-                except OSError as error:
-                    detail = str(error)
-                print(f"    {RED}Bash syntax error{NC}: {path}: {detail}")
-                errors += 1
+                detail = result.stderr.strip()
+            except OSError as error:
+                detail = str(error)
+            print(f"    {RED}Bash syntax error{NC}: {path}: {detail}")
+            errors += 1
     return errors
 
 

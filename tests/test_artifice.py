@@ -18,6 +18,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import check_ollama  # noqa: E402
 import lint  # noqa: E402
+import validate_egm  # noqa: E402
 
 
 class InstallerTests(unittest.TestCase):
@@ -321,6 +322,121 @@ class LintAndContractTests(unittest.TestCase):
             with patch.object(lint, "GLOBAL_AGENTS_MD", str(root / "none.md")), redirect_stdout(io.StringIO()):
                 self.assertEqual(lint.check_core_diet(str(root)), 1)
                 self.assertEqual(lint.check_bash_syntax(str(root)), 1)
+
+
+class PathTraversalTests(unittest.TestCase):
+    """Tests for path traversal vulnerability fixes."""
+
+    def test_sanitise_spec_path_rejects_traversal_sequences(self):
+        designs_dir = "/tmp/docs/designs"
+        with self.assertRaises(ValueError) as ctx:
+            validate_egm.sanitise_spec_path("../../../etc/passwd", designs_dir)
+        self.assertIn("path traversal", str(ctx.exception))
+        
+        with self.assertRaises(ValueError) as ctx:
+            validate_egm.sanitise_spec_path("..", designs_dir)
+        self.assertIn("path traversal", str(ctx.exception))
+        
+        with self.assertRaises(ValueError) as ctx:
+            validate_egm.sanitise_spec_path("./test", designs_dir)
+        self.assertIn("path traversal", str(ctx.exception))
+        
+        with self.assertRaises(ValueError) as ctx:
+            validate_egm.sanitise_spec_path("test\\..\\test", designs_dir)
+        self.assertIn("path traversal", str(ctx.exception))
+
+    def test_sanitise_spec_path_accepts_valid_names(self):
+        designs_dir = "/tmp/docs/designs"
+        self.assertEqual(validate_egm.sanitise_spec_path("123-spec.md", designs_dir), "123-spec.md")
+        self.assertEqual(validate_egm.sanitise_spec_path("spec-001", designs_dir), "spec-001")
+        self.assertEqual(validate_egm.sanitise_spec_path("  spec-001  ", designs_dir), "spec-001")
+        self.assertEqual(validate_egm.sanitise_spec_path("123", designs_dir), "123")
+        self.assertIsNone(validate_egm.sanitise_spec_path(None, designs_dir))
+
+    def test_validate_repo_rejects_traversal_in_spec_argument(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            designs_dir = Path(tmp) / "docs" / "designs"
+            designs_dir.mkdir(parents=True)
+            spec_file = designs_dir / "001-test.md"
+            spec_file.write_text("# 1. Overview & Objectives\n\n# 3. State Schema\n\n# 4. Invariants & Rules\n\n# 7. Verification\n\n---\nStatus: Approved\n", encoding="utf-8")
+            
+            with redirect_stdout(io.StringIO()):
+                result = validate_egm.validate_repo(str(Path(tmp).resolve()), "../../../etc/passwd")
+            self.assertEqual(result, 1)
+
+
+class GlobalAgentsPathTests(unittest.TestCase):
+    """Tests for GLOBAL_AGENTS_PATH environment variable configuration."""
+
+    def test_global_agents_path_env_var_used(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            custom_path = Path(tmp) / "custom" / "AGENTS.md"
+            custom_path.parent.mkdir(parents=True)
+            custom_path.write_text("word " * 100, encoding="utf-8")
+            
+            with patch.dict(os.environ, {"GLOBAL_AGENTS_PATH": str(custom_path)}):
+                with patch.object(lint, "GLOBAL_AGENTS_MD", str(custom_path)):
+                    with redirect_stdout(io.StringIO()):
+                        result = lint.check_core_diet(tmp)
+                    self.assertEqual(result, 0)
+
+    def test_default_global_agents_path_used_when_env_not_set(self):
+        default_path = os.path.expanduser("~/.gemini/config/AGENTS.md")
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(lint, "GLOBAL_AGENTS_MD", default_path):
+                with redirect_stdout(io.StringIO()):
+                    lint.check_core_diet("/tmp")
+
+
+class BashSyntaxRecursiveTests(unittest.TestCase):
+    """Tests for recursive bash syntax checking across repository."""
+
+    def test_check_bash_syntax_recursive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            
+            # Create valid .sh files in various locations
+            (root / "scripts").mkdir(parents=True)
+            (root / "scripts" / "valid.sh").write_text("#!/usr/bin/env bash\necho 'hello'\n", encoding="utf-8")
+            
+            (root / "tests").mkdir(parents=True)
+            (root / "tests" / "test.sh").write_text("#!/usr/bin/env bash\necho 'test'\n", encoding="utf-8")
+            
+            # Create valid .sh file in subdirectory
+            (root / "subdir" / "nested.sh").parent.mkdir(parents=True)
+            (root / "subdir" / "nested.sh").write_text("#!/usr/bin/env bash\necho 'nested'\n", encoding="utf-8")
+            
+            # Create invalid .sh file
+            (root / "scripts" / "invalid.sh").write_text("#!/usr/bin/env bash\nif [\n", encoding="utf-8")
+            
+            with redirect_stdout(io.StringIO()):
+                errors = lint.check_bash_syntax(str(root))
+            self.assertEqual(errors, 1)
+
+    def test_check_bash_syntax_skips_forbidden_dirs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            
+            # Create .sh files in forbidden directories
+            (root / ".git").mkdir(parents=True)
+            (root / ".git" / "hooks" / "pre-commit.sh").parent.mkdir(parents=True)
+            (root / ".git" / "hooks" / "pre-commit.sh").write_text("#!/usr/bin/env bash\nif [\n", encoding="utf-8")
+            
+            (root / "node_modules").mkdir(parents=True)
+            (root / "node_modules" / "package" / "script.sh").parent.mkdir(parents=True)
+            (root / "node_modules" / "package" / "script.sh").write_text("#!/usr/bin/env bash\nif [\n", encoding="utf-8")
+            
+            (root / ".system_generated").mkdir(parents=True)
+            (root / ".system_generated" / "generated.sh").write_text("#!/usr/bin/env bash\nif [\n", encoding="utf-8")
+            
+            # Create valid .sh file outside forbidden dirs
+            (root / "scripts" / "valid.sh").parent.mkdir(parents=True)
+            (root / "scripts" / "valid.sh").write_text("#!/usr/bin/env bash\necho 'valid'\n", encoding="utf-8")
+            
+            with redirect_stdout(io.StringIO()):
+                errors = lint.check_bash_syntax(str(root))
+            # All .sh files in forbidden dirs should be skipped, so no errors
+            self.assertEqual(errors, 0)
 
 
 if __name__ == "__main__":

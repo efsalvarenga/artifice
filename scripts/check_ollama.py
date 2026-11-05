@@ -75,18 +75,39 @@ def get_status() -> dict:
 
 
 def warm_model(model_name: str, keep_alive: str = "5m") -> dict:
-    """Pre-heat a model into GPU memory with a lease."""
+    """Pre-heat a model into GPU memory with a lease.
+    
+    Verifies that the model was successfully loaded by checking the response
+    and confirming the model appears in the resident model list.
+    """
     payload = {
         "model": model_name,
         "keep_alive": keep_alive,
     }
     code, res, elapsed = request_json("/api/generate", data=payload, timeout=30.0)
+    
+    if code != 200:
+        return {
+            "success": False,
+            "model": model_name,
+            "keep_alive": keep_alive,
+            "load_time_sec": round(elapsed, 2),
+            "error": res.get("error"),
+            "verified": False,
+        }
+    
+    # Verify model is now resident
+    ps_code, ps_res, _ = request_json("/api/ps", timeout=2.0)
+    resident_models = [m.get("name") for m in ps_res.get("models", [])]
+    verified = model_name in resident_models
+    
     return {
-        "success": code == 200,
+        "success": True,
         "model": model_name,
         "keep_alive": keep_alive,
         "load_time_sec": round(elapsed, 2),
-        "error": res.get("error") if code != 200 else None,
+        "error": None,
+        "verified": verified,
     }
 
 
