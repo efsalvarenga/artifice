@@ -128,6 +128,8 @@ def check_markdown_cleanliness_and_links(
 
 def _adapter_string(value: str):
     """Read the adapter's narrow single-line YAML strings, or return None."""
+    if re.search(r"[\x00-\x08\x0b-\x1f\x7f]", value):
+        return None
     if value.startswith("'"):
         return value[1:-1].replace("''", "'") if re.fullmatch(r"'(?:[^']|'')*'", value) else None
     if value.startswith('"'):
@@ -147,10 +149,26 @@ def _adapter_string(value: str):
             )
         except (KeyError, ValueError, OverflowError):
             return None
-    plain = re.split(r"[ \t]+#", value, maxsplit=1)[0]
-    if plain.lower() in ("null", "~") or value.startswith(("#", "[", "{", ">", "|")):
+    plain = re.split(r"[ \t]+#", value, maxsplit=1)[0].rstrip()
+    if (
+        not plain
+        or plain.lower() in ("null", "~", "true", "false", "yes", "no", "on", "off")
+        or re.match(r"[,{}\[\]#&*!|>%@`]|[-?:](?:\s|$)", plain)
+        or re.search(r":(?:\s|$)", plain)
+        or re.fullmatch(
+            r"[+-]?(?:\d[\d_]*(?:\.[\d_]*)?(?:e[+-]?\d+)?"
+            r"|\.[\d_]+(?:e[+-]?\d+)?|0[xob][\da-f_]+|\.(?:inf|nan)"
+            r"|\d[\d_]*(?::[0-5]?\d)+(?:\.\d+)?)",
+            plain, re.IGNORECASE,
+        )
+        or re.fullmatch(
+            r"\d{4}-\d{1,2}-\d{1,2}(?:[Tt \t]+\d{1,2}:\d{2}:\d{2}"
+            r"(?:\.\d*)?(?:[ \t]*(?:Z|[+-]\d{1,2}(?::\d{2})?))?)?",
+            plain,
+        )
+    ):
         return None
-    return value
+    return plain
 
 
 def check_copilot_adapter(path: str, header: list, body: str) -> int:
@@ -159,7 +177,7 @@ def check_copilot_adapter(path: str, header: list, body: str) -> int:
     fields = {}
     valid = os.path.basename(path) == f"{role}.agent.md" and role in COPILOT_TOOLS
     for line in header:
-        match = re.fullmatch(r"([a-z-]+):[ \t]*(.+)", line.strip())
+        match = re.fullmatch(r"([a-z-]+):[ \t]*(.+)", line.rstrip("\r\n"))
         if not match or match[1] in fields:
             valid = False
         else:
@@ -320,7 +338,7 @@ def check_bash_syntax(target_dir: str) -> int:
     for root, dirs, files in os.walk(target_dir):
         # Skip forbidden directories
         dirs[:] = [d for d in dirs if d not in (".git", "node_modules", ".system_generated")]
-        
+
         for filename in sorted(files):
             if not filename.endswith(".sh"):
                 continue

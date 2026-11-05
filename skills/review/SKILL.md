@@ -19,7 +19,7 @@ This skill orchestrates a rigorous evaluation of Pull Requests, branch diffs, in
 * **Ollama Residency & Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
 * **Repository Invariant Dossier Compiler:** [`../../scripts/build_review_dossier.py`](../../scripts/build_review_dossier.py)
 
-Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`.
+`ARTIFICE_ROOT`: explicit value, existing `$HOME/.local/share/artifice`, then `$HOME/Repos/artifice`; resolve links from `ARTIFICE_ROOT/skills/review/`.
 
 ## Step-by-Step Review Procedure
 

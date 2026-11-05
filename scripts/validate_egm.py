@@ -27,20 +27,20 @@ REQUIRED_SECTIONS = [
 
 def sanitise_spec_path(target_spec: str, designs_dir: str) -> str:
     """Sanitise and validate the spec path to prevent path traversal attacks.
-    
+
     Returns the basename of the target spec if it's safe, otherwise raises ValueError.
     """
     if not target_spec:
         return target_spec
-    
+
     clean_target = target_spec.strip()
-    
+
     # Reject any path containing traversal sequences
     if '..' in clean_target or '/' in clean_target or '\\' in clean_target:
         raise ValueError(
             f"Invalid specification path: '{clean_target}' contains path traversal sequences"
         )
-    
+
     # Return just the filename part
     return os.path.basename(clean_target)
 
@@ -74,7 +74,7 @@ def validate_repo(repo_root: str, target_spec: str = None) -> int:
         except ValueError as e:
             print(f"{RED}Error: {e}{NC}")
             return 1
-        
+
         target_num = int(clean_target) if clean_target.isdigit() else None
 
         filtered_specs = []

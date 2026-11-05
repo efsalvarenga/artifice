@@ -21,7 +21,7 @@ This skill serves as the sovereign external execution gateway whenever an agent 
 * **Ollama Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
 * **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
 
-Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`.
+`ARTIFICE_ROOT`: explicit value, existing `$HOME/.local/share/artifice`, then `$HOME/Repos/artifice`; resolve links from `ARTIFICE_ROOT/skills/vibe-execute/`.
 
 ## Step-by-Step Procedure
 
@@ -83,7 +83,7 @@ When handling batched or compound tasks (e.g. multi-comment PR reviews, multi-fi
 Never dispatch compound items in uncoordinated isolation or cram 10+ items into one monolithic prompt. Ingest all items simultaneously to identify cross-cutting constraints:
 
 ```bash
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<COMPOUND_INPUT_FILE>"
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<COMPOUND_INPUT_FILE>" [--local]
 ```
 
 `mistral-large-4` evaluates the full context, surfaces contradictions, and partitions items into a 3-wave execution manifest:
@@ -91,7 +91,11 @@ python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage 
 * **Wave 2 (Implementation & Tests):** Discrete functions, algorithmic logic, unit tests, bug fixes. Recommended engine: `codestral` (cloud) or `local` (Ollama on-device).
 * **Wave 3 (Cosmetic & Informational):** Documentation, nits, formatting, explanatory replies. Recommended engine: `fast`.
 
+Invalid JSON, malformed wave/task fields, inconsistent item counts, or forward dependencies fail with a non-zero exit and an error on stderr. Do not dispatch waves from an invalid manifest.
+
 ### Phase 2: Heterogeneous Wave Dispatch & Verification
+
+For local-only tasks, use `--local` for triage and every wave, regardless of the manifest's recommendations. Never send private input to hosted triage.
 
 Execute each wave sequentially with its dedicated engine:
 1. Dispatch Wave 1 with `vibe_execute.py run "<WAVE_1_TASKS>" --model large --auto-approve`.

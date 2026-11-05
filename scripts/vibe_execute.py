@@ -211,7 +211,19 @@ def execute_local(
 
     # Warm model if not resident
     if not model_info.get("resident"):
-        check_ollama.warm_model(model_name, keep_alive=keep_alive)
+        warm = check_ollama.warm_model(model_name, keep_alive=keep_alive)
+        if not warm["success"]:
+            error = warm.get("error") or f"Failed to warm model '{model_name}'."
+            return {
+                "success": False,
+                "error": error,
+                "returncode": 1,
+                "stdout": "",
+                "stderr": error,
+                "elapsed_sec": warm.get("load_time_sec", 0.0),
+                "provider": "ollama",
+                "model_used": model_name,
+            }
 
     payload = {
         "model": model_name,
@@ -242,7 +254,20 @@ def execute_local(
             "model_used": model_name,
         }
 
-    content = res.get("message", {}).get("content", "")
+    message = res.get("message") if isinstance(res, dict) else None
+    content = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(content, str) or not content.strip():
+        error = "Ollama returned no non-empty assistant content."
+        return {
+            "success": False,
+            "error": error,
+            "returncode": 1,
+            "stdout": "",
+            "stderr": error,
+            "elapsed_sec": round(elapsed, 2),
+            "provider": "ollama",
+            "model_used": model_name,
+        }
     return {
         "success": True,
         "returncode": 0,
@@ -401,6 +426,49 @@ Respond strictly with a valid JSON object in British English matching this schem
 """
 
 
+def validate_manifest(manifest: object) -> None:
+    """Validate the three-wave triage contract before it can guide execution."""
+    if not isinstance(manifest, dict):
+        raise ValueError("Manifest must be a JSON object.")
+    if not isinstance(manifest.get("summary"), str) or not manifest["summary"].strip():
+        raise ValueError("Manifest summary must be a non-empty string.")
+    conflicts = manifest.get("conflicts_detected")
+    if not isinstance(conflicts, list) or not all(isinstance(item, str) for item in conflicts):
+        raise ValueError("conflicts_detected must be a list of strings.")
+    total = manifest.get("total_items")
+    if type(total) is not int or total < 0:
+        raise ValueError("total_items must be a non-negative integer.")
+    waves = manifest.get("waves")
+    if not isinstance(waves, list) or len(waves) != 3:
+        raise ValueError("Manifest must contain three ordered waves.")
+    seen = set()
+    for number, wave in enumerate(waves, 1):
+        if not isinstance(wave, dict) or type(wave.get("wave")) is not int or wave["wave"] != number:
+            raise ValueError("Wave numbers must be ordered 1, 2, 3.")
+        if not all(isinstance(wave.get(key), str) and wave[key].strip() for key in ("category", "recommended_engine")):
+            raise ValueError("Each wave needs a category and recommended_engine.")
+        items = wave.get("items")
+        if not isinstance(items, list):
+            raise ValueError("Wave items must be a list.")
+        for item in items:
+            if not isinstance(item, dict):
+                raise ValueError("Each task must be an object.")
+            identifier = item.get("id")
+            if type(identifier) is not int or identifier < 1 or identifier in seen:
+                raise ValueError("Task IDs must be unique positive integers.")
+            if not isinstance(item.get("description"), str) or not item["description"].strip():
+                raise ValueError("Each task needs a non-empty description.")
+            files = item.get("files")
+            if not isinstance(files, list) or not all(isinstance(path, str) and path.strip() for path in files):
+                raise ValueError("Task files must be a list of non-empty strings.")
+            dependency = item.get("dependency")
+            if dependency is not None and (type(dependency) is not int or dependency not in seen):
+                raise ValueError("Task dependencies must refer to an earlier task.")
+            seen.add(identifier)
+    if total != len(seen):
+        raise ValueError("total_items does not match the tasks in the waves.")
+
+
 def triage_compound_task(
     input_text: str,
     model: str = "large",
@@ -427,18 +495,19 @@ def triage_compound_task(
     json_str = json_match.group(1) if json_match else raw
     try:
         manifest = json.loads(json_str)
+        validate_manifest(manifest)
         return {
             "success": True,
             "manifest": manifest,
             "model_used": res.get("model_used"),
             "elapsed_sec": res.get("elapsed_sec"),
         }
-    except Exception as e:
+    except ValueError as error:
         return {
-            "success": True,
+            "success": False,
+            "error": f"Invalid triage manifest: {error}",
             "manifest": None,
             "raw_output": raw,
-            "parse_error": str(e),
             "model_used": res.get("model_used"),
             "elapsed_sec": res.get("elapsed_sec"),
         }
@@ -467,6 +536,7 @@ def main():
     triage_parser.add_argument(
         "--model", default="large", help="Model to perform triage (default: large)"
     )
+    triage_parser.add_argument("--local", action="store_true", help="Force local on-device triage")
     triage_parser.add_argument(
         "--timeout", type=float, default=120.0, help="Triage timeout in seconds"
     )
@@ -498,14 +568,13 @@ def main():
             with open(input_data, "r", encoding="utf-8") as f:
                 input_data = f.read()
 
-        result = triage_compound_task(input_data, model=args.model, timeout_sec=args.timeout)
-        if result.get("manifest"):
-            print(json.dumps(result["manifest"], indent=2))
-        elif result.get("raw_output"):
-            print(result["raw_output"])
-        else:
-            print(result.get("error", "Triage execution failed"), file=sys.stderr)
-        return 0 if result.get("success") else 1
+        model = "local" if args.local else args.model
+        result = triage_compound_task(input_data, model=model, timeout_sec=args.timeout)
+        if not result["success"]:
+            print(result.get("error") or "Triage execution failed", file=sys.stderr)
+            return 1
+        print(json.dumps(result["manifest"], indent=2))
+        return 0
 
     if args.command == "run":
         selected_model = args.model
