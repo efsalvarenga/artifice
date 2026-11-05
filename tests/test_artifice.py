@@ -735,11 +735,23 @@ class VibeExecuteTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(request.call_args.kwargs["data"]["options"]["num_ctx"], 8192)
 
-    def test_hosted_delivery_is_deferred_before_any_metadata_or_inference(self):
-        result = vibe_execute.execute("Task", provider="mistral", model="explicit-alias")
+    def test_hosted_delivery_dispatches_via_vibe_subprocess(self):
+        with patch.object(model_inventory, "discover", side_effect=DISCOVER_MODELS), \
+                patch("vibe_execute.find_vibe", return_value="/usr/local/bin/vibe"), \
+                patch("subprocess.run") as mock_run:
+            mock_run.return_value = unittest.mock.Mock(returncode=0, stdout="Hosted answer", stderr="")
+            result = vibe_execute.execute("Task", provider="mistral", model="large")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["stdout"], "Hosted answer")
+        self.assertEqual(result["provider"], "mistral")
+        mock_run.assert_called_once()
+        self.assertIn("--model", mock_run.call_args[0][0])
+        self.assertIn("large", mock_run.call_args[0][0])
+
+    def test_hosted_delivery_is_blocked_under_local_policy(self):
+        result = vibe_execute.execute("Task", provider="mistral", model="large", local_only=True)
         self.assertFalse(result["success"])
-        self.assertIn("deferred", result["error"])
-        self.discovery.assert_not_called()
+        self.assertIn("Local-only policy rejects hosted execution", result["error"])
 
     def test_empty_mode_is_not_silently_defaulted(self):
         result = vibe_execute.execute("Task", provider="ollama", model=LOCAL_TAG, mode="")

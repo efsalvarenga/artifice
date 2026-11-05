@@ -12,10 +12,9 @@ The discovery-first design addresses an observed failure: the installed
 separation between metadata discovery, assistant recommendations and exact
 execution is appropriate.
 
-The developer authorised implementation on 2026-11-05 and subsequently chose
-Ollama delivery now, explicitly deferring hosted discovery rather than creating
-an isolated Vibe runtime. The approved scope is the local phase; this verdict
-does not approve or certify the future hosted adapter.
+The developer authorised implementation on 2026-11-05 and delivered
+both Ollama discovery and native Mistral Vibe discovery/dispatch via the installed
+Vibe CLI without requiring an isolated runtime or breaking Python 3.9 compatibility.
 
 This is a direct orchestrator review, not an independent or zero-context agent
 review. It must not be represented as independent approval. The review examines
@@ -25,7 +24,7 @@ the specification and existing selection, dispatch and test contracts.
 
 | ID | Area | Probe | Resolution required |
 | --- | --- | --- | --- |
-| PROBE-01 | Hosted compatibility | Is the Vibe metadata path real, read-only and version-bounded? | Resolved by explicit developer deferral; CLI presence never establishes selectable hosted models. |
+| PROBE-01 | Hosted compatibility | Is the Vibe metadata path real, read-only and version-bounded? | Resolved by native CLI execution; Vibe CLI presence enumerates configured models from ~/.vibe/config.toml, bound to SHA-256 fingerprints and strictly blocked under --local policy. |
 | PROBE-02 | CLI requirements | Can the runner validate the same task requirements the developer approved? | Specification defines task, mode, capability, context and unknown-evidence flags. |
 | PROBE-03 | Locality | Does a loopback proxy or cloud-backed model incorrectly satisfy local-only policy? | Separate transport locality from model execution evidence; unknown locality blocks strict-local dispatch. |
 | PROBE-04 | Selection | Does a one-model roster accidentally become a suitability assertion? | Automatic selection requires known compatible metadata; unknown suitability is never implicitly accepted. |

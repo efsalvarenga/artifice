@@ -6,6 +6,7 @@ import json
 import math
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -135,15 +136,13 @@ def _prepare(prompt: str, model: str = None, provider: str = None, task_type: st
         raise model_inventory.SelectionError("Discover engines and choose an explicit provider/model before running.")
     if local_only and provider != "ollama":
         raise model_inventory.SelectionError("Local-only policy rejects hosted execution.")
-    if provider == "mistral":
-        raise model_inventory.SelectionError("Hosted discovery and dispatch are deferred.")
-    if auto_approve:
+    if auto_approve and provider == "ollama":
         raise model_inventory.SelectionError("The bounded Ollama runner has no autonomous tool loop.")
     requested = model_inventory.requirements(
         task=classified["task"] if task_type is None else task_type,
         mode=classified["mode"] if mode is None else mode,
         required_capabilities=required_capabilities, min_context=min_context,
-        accept_unknown=accept_unknown, local_only=local_only or provider == "ollama",
+        accept_unknown=accept_unknown, local_only=local_only,
     )
     snapshot = model_inventory.discover(local_only=requested["local_only"], workdir=workdir)
     if snapshot["status"] == "unavailable" and provider == "ollama":
@@ -151,14 +150,19 @@ def _prepare(prompt: str, model: str = None, provider: str = None, task_type: st
             "Ollama inventory is unavailable; no fallback is permitted.",
             diagnostics=snapshot["diagnostics"], returncode=127,
         )
+    if provider == "mistral" and not any(p["provider"] == "mistral" and p["state"] == "selectable" for p in snapshot["providers"]):
+        raise model_inventory.SelectionError(
+            "Mistral Vibe inventory is unavailable; CLI was not found or disabled.",
+            diagnostics=snapshot["diagnostics"], returncode=127,
+        )
     model = model_inventory.role_override(requested["task"], model) if provider == "ollama" else model
     selected = model_inventory.select_candidate(
         snapshot, provider=provider, model=model, task_requirements=requested,
         expect_identity=expect_identity,
     )
-    base, _ = model_inventory.endpoint()
+    base = "vibe" if provider == "mistral" else model_inventory.endpoint()[0]
     if model_inventory.fingerprint(selected, base) != selected["identity_fingerprint"]:
-        raise model_inventory.SelectionError("Ollama endpoint changed during selection; discover again.")
+        raise model_inventory.SelectionError(f"{provider.capitalize()} configuration changed during selection; discover again.")
     return selected, snapshot, requested, base
 
 
@@ -219,6 +223,84 @@ def _dispatch_local(prompt: str, selected: dict, requested: dict, base: str,
     return result
 
 
+def find_vibe() -> str:
+    """Locate the vibe executable on the system."""
+    return model_inventory.find_vibe()
+
+
+def _dispatch_vibe(
+    prompt: str,
+    selected: dict,
+    requested: dict,
+    timeout_sec: float = 120.0,
+    workdir: str = None,
+    json_output: bool = False,
+    auto_approve: bool = False,
+) -> dict:
+    start = time.perf_counter()
+    if requested.get("local_only"):
+        return _failure("Local-only policy rejects hosted execution.", 2, "mistral", selected["model_id"])
+    vibe_bin = find_vibe()
+    if not vibe_bin:
+        return _failure("Mistral Vibe binary ('vibe') not found.", 127, "mistral", selected["model_id"])
+
+    cmd = [vibe_bin, "--trust"]
+    if workdir:
+        cmd.extend(["--workdir", workdir])
+    if auto_approve:
+        cmd.append("--auto-approve")
+    execution_ref = selected.get("execution_ref") or selected["model_id"]
+    if execution_ref:
+        cmd.extend(["--model", execution_ref])
+    if json_output:
+        cmd.extend(["--output", "json"])
+    cmd.extend(["-p", prompt])
+
+    try:
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_sec,
+        )
+        elapsed = round(time.perf_counter() - start, 2)
+        if proc.returncode != 0:
+            return {
+                "success": False,
+                "error": proc.stderr.strip() or f"Vibe exited with status {proc.returncode}",
+                "returncode": proc.returncode,
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "elapsed_sec": elapsed,
+                "provider": "mistral",
+                "model_used": selected["model_id"],
+                "identity_fingerprint": selected["identity_fingerprint"],
+            }
+        return {
+            "success": True,
+            "returncode": 0,
+            "stdout": proc.stdout,
+            "stderr": proc.stderr,
+            "elapsed_sec": elapsed,
+            "provider": "mistral",
+            "model_used": selected["model_id"],
+            "identity_fingerprint": selected["identity_fingerprint"],
+        }
+    except subprocess.TimeoutExpired:
+        elapsed = round(time.perf_counter() - start, 2)
+        return {
+            "success": False,
+            "error": f"Execution timed out after {timeout_sec} seconds.",
+            "returncode": 124,
+            "stdout": "",
+            "stderr": "Timeout expired",
+            "elapsed_sec": elapsed,
+            "provider": "mistral",
+            "model_used": selected["model_id"],
+            "identity_fingerprint": selected["identity_fingerprint"],
+        }
+
+
 def execute_local(
     prompt: str,
     task_type: str = "code",
@@ -248,11 +330,13 @@ def execute_vibe(
     json_output: bool = False,
     timeout_sec: float = 120.0,
 ) -> dict:
-    """Hosted dispatch stays disabled until read-only discovery is verified."""
+    """Convenience entry point for hosted Mistral Vibe dispatch."""
     if not find_vibe():
         return _failure("Mistral Vibe binary ('vibe') not found.", 127, "mistral", model)
-    return _failure("Hosted discovery and dispatch are deferred; CLI presence is not model eligibility.",
-                    2, "mistral", model)
+    return execute(
+        prompt, model=model, provider="mistral", workdir=workdir,
+        auto_approve=auto_approve, json_output=json_output, timeout_sec=timeout_sec,
+    )
 
 
 def execute(
@@ -284,7 +368,10 @@ def execute(
             expect_identity=expect_identity, auto_approve=auto_approve,
         )
         provider, model = selected["identity"][0], selected["model_id"]
-        result = _dispatch_local(prompt, selected, requested, base, timeout_sec, keep_alive, workdir)
+        if provider == "mistral":
+            result = _dispatch_vibe(prompt, selected, requested, timeout_sec, workdir, json_output, auto_approve)
+        else:
+            result = _dispatch_local(prompt, selected, requested, base, timeout_sec, keep_alive, workdir)
     except model_inventory.SelectionError as error:
         result = _failure(str(error), error.returncode, provider, model)
         result["diagnostics"] = error.diagnostics
@@ -399,9 +486,9 @@ def triage_compound_task(
         input_text=input_text, eligible_models=json.dumps(sorted(eligible)),
     )
     res = execute(
-        prompt, model=selected["execution_ref"], provider="ollama", task_type=task_type, mode=mode,
+        prompt, model=selected["execution_ref"], provider=selected["identity"][0], task_type=task_type, mode=mode,
         required_capabilities=required_capabilities, min_context=min_context,
-        accept_unknown=accept_unknown, local_only=True, workdir=workdir,
+        accept_unknown=accept_unknown, local_only=requested["local_only"], workdir=workdir,
         expect_identity=selected["identity_fingerprint"], timeout_sec=timeout_sec,
     )
     diagnostics = _merge_diagnostics(snapshot["diagnostics"], res.get("diagnostics", []))

@@ -1,15 +1,15 @@
 ---
 name: vibe-execute
-version: 1.3.0
+version: 1.4.0
 description: >-
-  Discovery-led Ollama model proposals, exact approved dispatch and compound
-  triage. Hosted Mistral/Vibe discovery and execution are deferred.
-argument-hint: "[discover | classify | triage | run] [--local] [--provider ollama --model EXACT_TAG --expect-identity FINGERPRINT] <prompt_or_file>"
+  Discovery-led model proposals, exact approved dispatch and compound
+  execution across local Ollama and hosted Mistral Vibe engines.
+argument-hint: "[discover | classify | triage | run] [--local] [--provider [ollama|mistral] --model EXACT_TAG --expect-identity FINGERPRINT] <prompt_or_file>"
 ---
 
 # Discovery & Execution Gateway (`vibe-execute`)
 
-Use **discover → filter → propose → confirm → execute**, not fixed tier-to-model menus. This phase delivers Ollama only; classification describes requirements, while the current assistant reasons about suitability.
+Use **discover → filter → propose → confirm → execute**, not fixed tier-to-model menus. Supports local on-device Ollama engines and hosted Mistral Vibe models (`large`, `codestral`, `fast`, `small`, `ministral`).
 
 ## Reference Materials
 
@@ -23,10 +23,10 @@ Resolve and export `ARTIFICE_ROOT` from its explicit value when set, otherwise `
 
 Check applicable privacy directives before ingesting task material. `--local` governs discovery, triage and every wave. Protected prompts, source, diffs and generated outputs require local pipelines or a verified local session; metadata discovery cannot make a cloud conversation air-gapped.
 
-This Ollama phase permits only configured loopback endpoints and verified on-device inference, even without `--local`. Remote endpoints are diagnosed without contact; cloud-backed or unknown execution locality blocks dispatch. Loopback transport alone does not prove on-device execution.
+When `--local` or a repository privacy policy (`Privacy: on-device`, `Review: local-only`) applies, hosted Mistral is strictly disabled with zero cloud egress. Without `--local`, both on-device and hosted engines are discoverable.
 
 ```bash
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" classify "<PROMPT>" --local
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" classify "<PROMPT>" [--local]
 ```
 
 `classify PROMPT [--local]` emits complexity and requirements only, never a named model. Establish task, capability/context needs, mode, permissions and workdir; do not infer quality from a model name.
@@ -34,22 +34,20 @@ python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" classif
 ## 2. Discover, Propose & Confirm
 
 ```bash
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" discover --local --workdir "<DIR>"
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" discover [--local] [--workdir "<DIR>"]
 ```
 
-`discover [--local] [--workdir DIR]` accepts no task text. Inspect the entire versioned inventory: exact tags, references, fingerprints, capabilities, context, locality, size and residency evidence, including explicit unknowns. It performs metadata operations only: no warming, inference, unloading or configuration mutation, and no quality ranking. Handle non-zero partial discovery explicitly and disclose missing evidence.
+`discover [--local] [--workdir DIR]` accepts no task text. Inspect the entire versioned inventory: exact tags, references, fingerprints, capabilities, context, locality, size and residency evidence, including explicit unknowns. It performs metadata operations only: no warming, inference, unloading or configuration mutation, and no quality ranking.
 
-Hosted Mistral/Vibe is **deferred**: absent CLI means `unavailable`; present CLI means `unsupported_version` with `HOSTED_DISCOVERY_DEFERRED`. Presence establishes no selectable model and authorises no configuration/authentication/catalogue/inference access. Do not fabricate hosted menus.
-
-Filter known incompatibilities, then propose at most three inventory choices with evidence and uncertainty. Unknown suitability needs explicit task-scoped acceptance; `--accept-unknown` cannot waive known incompatibility or privacy/locality. Obtain approval of exact identity/fingerprint, requirements, mode and workdir; reuse an explicit request or still-valid approval for this task.
+When Vibe CLI is present and `--local` is not set, configured hosted models (`mistral-large-4`, `codestral-latest`, etc.) are enumerated alongside Ollama. Filter known incompatibilities, then propose at most three inventory choices with evidence and uncertainty. Obtain approval of exact identity/fingerprint, requirements, mode and workdir; reuse an explicit request or still-valid approval for this task.
 
 ## 3. Exact Dispatch
 
 ```bash
 python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" run "<PROMPT>" \
-  --provider ollama --model "<EXACT_TAG>" --expect-identity "<FINGERPRINT>" \
+  --provider [ollama|mistral] --model "<EXACT_TAG>" --expect-identity "<FINGERPRINT>" \
   --task code --mode bounded_chat --require-capability chat \
-  --local --workdir "<DIR>" --json
+  [--local] --workdir "<DIR>" [--json]
 ```
 
 Carry the approved requirements using:
@@ -60,26 +58,29 @@ Carry the approved requirements using:
 * `--min-context POSITIVE_INT` and, only when approved, `--accept-unknown`
 * `--local`, `--workdir DIR`, optional `--json`
 
-The Ollama runner supports **bounded_chat only**; tool metadata or `--auto-approve` cannot create filesystem autonomy. Exact identity, capabilities and locality are revalidated before inference. A changed endpoint/tag/digest or execution failure stops dispatch: no fallback.
+The Ollama runner supports **bounded_chat only**; tool metadata or `--auto-approve` cannot create filesystem autonomy. Hosted Vibe dispatch supports `--auto-approve` and autonomous tools where authorised. Exact identity, capabilities and locality are revalidated before inference. A changed endpoint/tag/digest or execution failure stops dispatch: no fallback.
 
-Missing normal run selection fails. `--local` alone or a legacy generic local request may resolve only a role override or one known-compatible candidate, never list-first/whitelist selection. Explicit CLI tags precede exact `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` overrides.
+Missing normal run selection fails. Explicit CLI tags precede exact `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` overrides.
 
 `check_ollama.py select --task ROLE [--model EXACT_TAG] [--expect-identity HASH] [--accept-unknown]` uses the same inventory. Success returns `model`, `resident`, `fallback: null`, `identity_fingerprint` and `reference`; failure exits `2` with an explicit reason.
 
-## 4. Compound Triage & Ordered Waves
+## 4. Compound Execution & Triage
+
+Multi-step or batched tasks follow a clean division of labour to avoid redundant planning:
+
+1. **Orchestrator-Led Triage (Default):** The primary orchestrator plans, resolves dependencies, and structures waves directly in-context. It dispatches individual tasks to the approved workers via `vibe_execute.py run`.
+2. **Optional CLI Triage (`vibe_execute.py triage`):** Reserved for unparsed batch backlogs (10+ items) or headless scripts outside an interactive conversation:
 
 ```bash
 python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<INPUT>" \
-  --provider ollama --model "<EXACT_TAG>" --expect-identity "<FINGERPRINT>" \
-  --task architecture --mode bounded_chat --local --workdir "<DIR>"
+  --provider [ollama|mistral] --model "<EXACT_TAG>" --expect-identity "<FINGERPRINT>" \
+  --task architecture --mode bounded_chat [--local] --workdir "<DIR>"
 ```
 
-Select and approve the triage engine first, carrying the same relevant requirement flags as `run`. An explicit engine or unambiguous local request is required; there is no default large model.
-
-Generated `recommended_engine` values must be discovered `provider/source/model` references. Split only the first two slashes, preserving tag namespaces/suffixes. Validate references and manifest structure/dependencies; reject missing, invented or ineligible engines. Approve concrete wave engines and fingerprints before dispatch.
+Select and approve the triage engine first, carrying the same relevant requirement flags as `run`. Generated `recommended_engine` values must be discovered `provider/source/model` references. Split only the first two slashes, preserving tag namespaces/suffixes. Validate references and manifest structure/dependencies; reject missing, invented or ineligible engines. Approve concrete wave engines and fingerprints before dispatch.
 
 Execute waves sequentially with native checks between them. `--local` constrains triage **and every wave**, regardless of recommendations.
 
 ## 5. Verification, Provenance & Teardown
 
-Check exit status and stdout/stderr; run native verification on applied changes. Report actual provider, exact model, identity and elapsed time, not merely the recommended worker. Preserve existing declared wave lifecycle policy (`check_ollama.py unload --all` after leased local work); discovery never mutates residency.
+Check exit status and stdout/stderr; run native verification on applied changes. Report actual provider, exact model, identity and elapsed time, not practical assumptions. Preserve existing declared wave lifecycle policy (`check_ollama.py unload --all` after leased local work); discovery never mutates residency.

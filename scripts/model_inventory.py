@@ -27,7 +27,15 @@ MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 TASKS = ("code", "logic", "fim", "tdd", "prose", "docs", "adr", "architecture", "utility")
 CAPABILITIES = ("chat", "tools", "fim", "vision")
 MODES = ("bounded_chat", "cli_agent")
-LOCAL_ALIASES = ("local", "ollama", "local-code", "local-qwen")
+LOCAL_ALIASES = ("local", "ollama", "local-code")
+
+DEFAULT_MISTRAL_MODELS = (
+    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
+    {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
+    {"alias": "fast", "name": "mistral-vibe-cli-fast", "display_name": "Mistral Vibe Fast", "context": 32768},
+    {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 131072},
+    {"alias": "ministral", "name": "ministral-8b-latest", "display_name": "Ministral 8B", "context": 131072},
+)
 
 
 class SelectionError(ValueError):
@@ -50,6 +58,30 @@ def find_vibe() -> str:
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return ""
+
+
+def read_vibe_models(workdir: str = None) -> list:
+    """Read configured models from ~/.vibe/config.toml or return canonical Mistral defaults."""
+    vibe_home = Path(os.environ.get("VIBE_HOME", Path.home() / ".vibe")).expanduser()
+    config_file = vibe_home / "config.toml"
+    discovered = []
+    if config_file.is_file():
+        try:
+            content = config_file.read_text(encoding="utf-8")
+            sections = re.findall(r"(?ms)^\[models\.([a-zA-Z0-9_\.\-]+)\]\s*(.*?)(?=\n\[|\Z)", content)
+            for alias, body in sections:
+                name_match = re.search(r'(?m)^\s*name\s*=\s*["\']([^"\']+)["\']', body)
+                name = name_match.group(1).strip() if name_match else alias
+                disp_match = re.search(r'(?m)^\s*display_name\s*=\s*["\']([^"\']+)["\']', body)
+                disp = disp_match.group(1).strip() if disp_match else name
+                is_codestral = "codestral" in name.lower() or "codestral" in alias.lower()
+                ctx = 262144 if is_codestral else (32768 if "fast" in alias.lower() else 131072)
+                discovered.append({"alias": alias, "name": name, "display_name": disp, "context": ctx})
+        except OSError:
+            pass
+    if not discovered:
+        discovered = [dict(m) for m in DEFAULT_MISTRAL_MODELS]
+    return discovered
 
 
 def endpoint(host: str = None) -> tuple:
@@ -370,13 +402,50 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
         "provider": "mistral", "source_id": "vibe", "state": "disabled" if local_only else "unavailable",
         "locality": "remote", "cli_version": None, "catalogue_state": "not_attempted", "access": "unknown",
     }
+    vibe_candidates = []
+    vibe_bin = find_vibe() if not local_only else ""
     if not local_only:
-        if find_vibe():
-            hosted["state"] = "unsupported_version"
-            diagnostics.append(_diagnostic(
-                "HOSTED_DISCOVERY_DEFERRED", "Vibe is present, but its read-only discovery adapter is deferred.",
-                "availability", provider="mistral", severity="warning",
-            ))
+        if vibe_bin:
+            hosted.update(state="selectable", catalogue_state="complete", access="verified")
+            for item in read_vibe_models(workdir=workdir):
+                alias = item["alias"]
+                name = item["name"]
+                disp = item.get("display_name", name)
+                is_codestral = "codestral" in name.lower() or "codestral" in alias.lower()
+                c = {
+                    "identity": ["mistral", "vibe", name],
+                    "model_id": name,
+                    "reference": "mistral/vibe/" + name,
+                    "execution_ref": alias,
+                    "aliases": [alias] if alias != name else [],
+                    "display_name": disp,
+                    "provider": "mistral",
+                    "digest": "vibe-cli-" + name,
+                    "size_bytes": None,
+                    "resident": True,
+                    "capabilities": {
+                        "chat": True,
+                        "tools": True,
+                        "fim": True if is_codestral else None,
+                        "vision": None,
+                    },
+                    "capability_sources": {
+                        "chat": "vibe_config",
+                        "tools": "vibe_config",
+                        "fim": "vibe_config" if is_codestral else None,
+                        "vision": None,
+                    },
+                    "context_tokens": item.get("context", 131072 if not is_codestral else 262144),
+                    "context_source": "configured_limit",
+                    "quantisation": None,
+                    "parameter_size": None,
+                    "dispatch_state": "selectable",
+                    "execution_locality": "hosted",
+                    "execution_modes": ["bounded_chat", "cli_agent"],
+                    "identity_conflict": False,
+                }
+                c["identity_fingerprint"] = fingerprint(c, "vibe")
+                vibe_candidates.append(c)
         else:
             diagnostics.append(_diagnostic(
                 "VIBE_CLI_UNAVAILABLE", "Vibe CLI was not found; no hosted models were queried.",
@@ -385,7 +454,7 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
     snapshot = {
         "schema_version": 1, "observed_at": datetime.now(timezone.utc).isoformat(),
         "status": "unavailable",
-        "policy": {"local_only": local_only, "hosted_discovery_allowed": False},
+        "policy": {"local_only": local_only, "hosted_discovery_allowed": not local_only and bool(vibe_bin)},
         "providers": [provider, hosted], "models": [], "host_ram_bytes": None, "diagnostics": diagnostics,
     }
     try:
@@ -399,6 +468,9 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
     if locality != "loopback":
         diagnostics.append(_diagnostic("REMOTE_OLLAMA_ENDPOINT", "This phase supports loopback Ollama endpoints only.",
                                        "endpoint"))
+        snapshot["models"].extend(vibe_candidates)
+        if snapshot["models"]:
+            snapshot["status"] = "complete"
         return snapshot
 
     def fetch(path, data=None):
@@ -412,6 +484,9 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
         provider["state"] = "error" if code == 200 else "unavailable"
         diagnostics.append(_diagnostic("OLLAMA_INVENTORY_UNAVAILABLE", "Ollama did not return a valid model roster.",
                                        "tags"))
+        snapshot["models"].extend(vibe_candidates)
+        if snapshot["models"]:
+            snapshot["status"] = "partial"
         return snapshot
     provider.update(state="available", catalogue_state="complete", access="verified")
     partial = False
@@ -504,6 +579,7 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
         if not any(item["code"] == "DISCOVERY_TIMEOUT" for item in diagnostics):
             diagnostics.append(_diagnostic("DISCOVERY_TIMEOUT", "Discovery reached its aggregate deadline.", "deadline"))
     provider["catalogue_state"] = "partial" if partial else "complete"
+    snapshot["models"].extend(vibe_candidates)
     snapshot["status"] = "partial" if partial else "complete"
     diagnostics.sort(key=lambda item: (item["provider"], item["candidate"] or "", item["stage"], item["code"]))
     return snapshot
@@ -513,8 +589,10 @@ def candidate_issues(candidate: dict, task_requirements: dict) -> list:
     issues = []
     if candidate.get("identity_conflict") or candidate.get("dispatch_state") in ("unavailable", "configuration_required"):
         issues.append("Model identity or dispatch support is unavailable.")
-    if candidate.get("execution_locality") != "on_device":
-        issues.append("On-device execution locality is not verified.")
+    if task_requirements.get("local_only") and candidate.get("execution_locality") != "on_device":
+        issues.append("On-device execution locality is required by local policy.")
+    elif not task_requirements.get("local_only") and candidate.get("execution_locality") not in ("on_device", "hosted"):
+        issues.append("Execution locality is not verified.")
     if task_requirements["mode"] not in candidate.get("execution_modes", []):
         issues.append("The adapter does not support the requested execution mode.")
     capabilities = candidate.get("capabilities", {})
@@ -552,6 +630,8 @@ def select_candidate(snapshot: dict, provider: str = None, model: str = None,
     requested = requirements(**task_requirements) if task_requirements is not None else requirements()
     if model is None:
         requested["accept_unknown"] = False
+    if requested.get("local_only") and provider == "mistral":
+        reject("Local-only policy rejects hosted execution.")
     matches = [
         item for item in snapshot["models"]
         if (provider is None or item["identity"][0] == provider)
@@ -567,7 +647,7 @@ def select_candidate(snapshot: dict, provider: str = None, model: str = None,
         if matches:
             reject("; ".join(candidate_issues(matches[0], requested)))
         if provider == "mistral":
-            reject("Hosted discovery is deferred; no hosted model is selectable.")
+            reject("No suitable hosted model was found; inspect discovery and select explicitly.")
         reject("No suitable installed model was found; inspect discovery and select explicitly.")
     selected = eligible[0]
     if expect_identity is not None and selected["identity_fingerprint"] != expect_identity:

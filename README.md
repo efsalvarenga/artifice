@@ -79,7 +79,7 @@ artifice/
 ### 5. `vibe-execute`
 
 * **Trigger:** `/vibe-execute [discover | classify | triage | run]`
-* **Role:** [Discover, filter, propose, confirm, execute](skills/vibe-execute/SKILL.md): metadata-led Ollama selection, exact identity-bound dispatch and inventory-constrained compound waves. Hosted Mistral/Vibe support is deferred.
+* **Role:** [Discover, filter, propose, confirm, execute](skills/vibe-execute/SKILL.md): metadata-led model selection across local Ollama and hosted Mistral, exact identity-bound dispatch and compound execution.
 
 ## Core Scripts & Verification
 

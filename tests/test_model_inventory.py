@@ -258,13 +258,15 @@ class InventoryTests(unittest.TestCase):
                 snapshot = self.discover(workdir=tmp)
             self.assertTrue(snapshot["policy"]["local_only"])
 
-    def test_hosted_cli_presence_is_explicitly_deferred(self):
-        self.find_vibe.return_value = "/not-executed/vibe"
+    def test_hosted_cli_presence_discovers_configured_models(self):
+        self.find_vibe.return_value = "/mock/bin/vibe"
         snapshot = self.discover()
         hosted = next(p for p in snapshot["providers"] if p["provider"] == "mistral")
-        self.assertEqual(hosted["state"], "unsupported_version")
-        self.assertIn("HOSTED_DISCOVERY_DEFERRED", [d["code"] for d in snapshot["diagnostics"]])
-        self.assertTrue(all(m["identity"][0] == "ollama" for m in snapshot["models"]))
+        self.assertEqual(hosted["state"], "selectable")
+        self.assertTrue(any(m["identity"][0] == "mistral" for m in snapshot["models"]))
+        large = inventory.select_candidate(snapshot, provider="mistral", model="large")
+        self.assertEqual(large["execution_ref"], "large")
+        self.assertEqual(large["execution_locality"], "hosted")
         self.assertTrue(all(call[0] in ("/api/tags", "/api/ps", "/api/show") for call in self.calls))
 
     def test_malformed_entries_are_diagnosed_without_losing_valid_models(self):

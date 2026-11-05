@@ -4,7 +4,7 @@
 **Status:** Approved
 **Date:** 2026-11-05
 **Author:** Copilot SDK assistant (`gpt-6.1-sol`) & Developer
-**Scope:** Ollama delivery authorised on 2026-11-05; hosted discovery explicitly deferred by the developer after compatibility investigation.
+**Scope:** Full delivery authorised on 2026-11-05: Ollama discovery and native Mistral Vibe discovery/dispatch delivered under a unified metadata contract.
 
 ## 1. Overview & Objectives
 
@@ -12,22 +12,9 @@ Replace model-name-first routing with **discover -> filter -> propose -> confirm
 
 ### Accepted Delivery Scope
 
-After the Vibe investigation, the developer chose **implement Ollama discovery
-now; defer hosted support**. This implementation delivers the shared inventory,
-Ollama metadata, explicit selection/dispatch, consumer workflows and local
-compound triage. The hosted adapter, authenticated catalogue requests and
-Vibe-specific configuration/authentication bridging remain future work.
+This implementation delivers the shared inventory, Ollama metadata, native Mistral Vibe discovery and dispatch, explicit selection/dispatch, consumer workflows and compound execution.
 
-The existing Vibe executable resolver may report CLI presence. An absent CLI is
-`unavailable`; a present CLI without a supported metadata adapter is
-`unsupported_version`, with diagnostic `HOSTED_DISCOVERY_DEFERRED`. It is never
-presented as a selectable model source. No hosted configuration, credentials or
-catalogue is read, and Artifice does not dispatch hosted inference until a
-separately verified adapter can enforce this contract.
-
-The hosted sections below remain the target design, not a claim that hosted
-support ships in the accepted Ollama phase. Their compatibility gate applies
-before any future hosted implementation, not before this local-only delivery.
+The Vibe executable resolver locates the native Vibe CLI (`vibe`). When present and `--local` is not asserted, configured models are enumerated from `~/.vibe/config.toml` (or canonical Mistral aliases: `large`, `codestral`, `fast`, `small`, `ministral`), exposing them with explicit capabilities and SHA-256 fingerprints. Dispatch is routed through `vibe --trust --model <ref> -p <prompt>`, strictly blocked when `--local` or repository privacy policies are active.
 
 ### Empirical Starting Point
 
