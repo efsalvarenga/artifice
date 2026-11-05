@@ -24,7 +24,9 @@ FENCED_CODE_PATTERN = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_PATTERN = re.compile(r"`[^`\n]+`")
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
-GLOBAL_AGENTS_MD = os.path.expanduser("~/.gemini/config/AGENTS.md")
+GLOBAL_AGENTS_MD = os.environ.get(
+    "GLOBAL_AGENTS_PATH", os.path.expanduser("~/.gemini/config/AGENTS.md")
+)
 GLOBAL_LINE_LIMIT = 140
 GLOBAL_WORD_LIMIT = 1400
 SKILL_LINE_LIMIT = 180
@@ -126,6 +128,8 @@ def check_markdown_cleanliness_and_links(
 
 def _adapter_string(value: str):
     """Read the adapter's narrow single-line YAML strings, or return None."""
+    if re.search(r"[\x00-\x08\x0b-\x1f\x7f]", value):
+        return None
     if value.startswith("'"):
         return value[1:-1].replace("''", "'") if re.fullmatch(r"'(?:[^']|'')*'", value) else None
     if value.startswith('"'):
@@ -145,10 +149,15 @@ def _adapter_string(value: str):
             )
         except (KeyError, ValueError, OverflowError):
             return None
-    plain = re.split(r"[ \t]+#", value, maxsplit=1)[0]
-    if plain.lower() in ("null", "~") or value.startswith(("#", "[", "{", ">", "|")):
+    plain = re.split(r"[ \t]+#", value, maxsplit=1)[0].rstrip()
+    if (
+        not plain
+        or plain.lower() in ("null", "~", "true", "false", "yes", "no", "on", "off")
+        or re.match(r"[,{}\[\]#&*!|>%@`]|[-?:](?:\s|$)", plain)
+        or re.search(r":(?:\s|$)", plain)
+    ):
         return None
-    return value
+    return plain
 
 
 def check_copilot_adapter(path: str, header: list, body: str) -> int:
@@ -157,7 +166,7 @@ def check_copilot_adapter(path: str, header: list, body: str) -> int:
     fields = {}
     valid = os.path.basename(path) == f"{role}.agent.md" and role in COPILOT_TOOLS
     for line in header:
-        match = re.fullmatch(r"([a-z-]+):[ \t]*(.+)", line.strip())
+        match = re.fullmatch(r"([a-z-]+):[ \t]*(.+)", line.rstrip("\r\n"))
         if not match or match[1] in fields:
             valid = False
         else:
@@ -315,21 +324,23 @@ def check_core_diet(target_dir: str) -> int:
 def check_bash_syntax(target_dir: str) -> int:
     """Check native syntax only; disposable runtime tests are separately runnable."""
     errors = 0
-    for directory in ("scripts", "tests"):
-        for root, _, files in os.walk(os.path.join(target_dir, directory)):
-            for filename in sorted(files):
-                if not filename.endswith(".sh"):
+    for root, dirs, files in os.walk(target_dir):
+        # Skip forbidden directories
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules", ".system_generated")]
+
+        for filename in sorted(files):
+            if not filename.endswith(".sh"):
+                continue
+            path = os.path.join(root, filename)
+            try:
+                result = subprocess.run(["bash", "-n", path], capture_output=True, text=True)
+                if result.returncode == 0:
                     continue
-                path = os.path.join(root, filename)
-                try:
-                    result = subprocess.run(["bash", "-n", path], capture_output=True, text=True)
-                    if result.returncode == 0:
-                        continue
-                    detail = result.stderr.strip()
-                except OSError as error:
-                    detail = str(error)
-                print(f"    {RED}Bash syntax error{NC}: {path}: {detail}")
-                errors += 1
+                detail = result.stderr.strip()
+            except OSError as error:
+                detail = str(error)
+            print(f"    {RED}Bash syntax error{NC}: {path}: {detail}")
+            errors += 1
     return errors
 
 

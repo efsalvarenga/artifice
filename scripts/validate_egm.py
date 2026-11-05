@@ -25,6 +25,26 @@ REQUIRED_SECTIONS = [
 ]
 
 
+def sanitise_spec_path(target_spec: str, designs_dir: str) -> str:
+    """Sanitise and validate the spec path to prevent path traversal attacks.
+
+    Returns the basename of the target spec if it's safe, otherwise raises ValueError.
+    """
+    if not target_spec:
+        return target_spec
+
+    clean_target = target_spec.strip()
+
+    # Reject any path containing traversal sequences
+    if '..' in clean_target or '/' in clean_target or '\\' in clean_target:
+        raise ValueError(
+            f"Invalid specification path: '{clean_target}' contains path traversal sequences"
+        )
+
+    # Return just the filename part
+    return os.path.basename(clean_target)
+
+
 def validate_repo(repo_root: str, target_spec: str = None) -> int:
     designs_dir = os.path.join(repo_root, "docs", "designs")
     reviews_dir = os.path.join(repo_root, "docs", "reviews")
@@ -49,9 +69,15 @@ def validate_repo(repo_root: str, target_spec: str = None) -> int:
     num_pattern = re.compile(r"^(\d+)")
 
     if target_spec:
-        filtered_specs = []
-        clean_target = target_spec.strip()
+        try:
+            clean_target = sanitise_spec_path(target_spec, designs_dir)
+        except ValueError as e:
+            print(f"{RED}Error: {e}{NC}")
+            return 1
+
         target_num = int(clean_target) if clean_target.isdigit() else None
+
+        filtered_specs = []
 
         for sf in all_spec_files:
             if sf == clean_target or sf == f"{clean_target}.md":
@@ -69,7 +95,7 @@ def validate_repo(repo_root: str, target_spec: str = None) -> int:
 
         if not filtered_specs:
             print(
-                f"{RED}Error: Target specification '{target_spec}' not found in {designs_dir}.{NC}"
+                f"{RED}Error: Target specification '{clean_target}' not found in {designs_dir}.{NC}"
             )
             print("Available specifications:")
             for sf in sorted(all_spec_files):
