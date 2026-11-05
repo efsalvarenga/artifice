@@ -518,6 +518,32 @@ class VibeExecuteTests(unittest.TestCase):
             mock_local.assert_called_once()
             self.assertEqual(res["provider"], "ollama")
 
+    def test_triage_compound_task_parses_manifest(self):
+        fake_manifest = {
+            "summary": "Triage 3 items",
+            "conflicts_detected": [],
+            "total_items": 3,
+            "waves": [{"wave": 1, "items": []}, {"wave": 2, "items": []}, {"wave": 3, "items": []}],
+        }
+        with patch("vibe_execute.execute", return_value={"success": True, "stdout": json.dumps(fake_manifest), "model_used": "large", "elapsed_sec": 1.2}):
+            res = vibe_execute.triage_compound_task("1. Item A\n2. Item B\n3. Item C")
+            self.assertTrue(res["success"])
+            self.assertIsNotNone(res["manifest"])
+            self.assertEqual(len(res["manifest"]["waves"]), 3)
+
+    def test_triage_compound_task_extracts_fenced_json(self):
+        fake_json = '```json\n{"summary": "Fenced output", "waves": []}\n```'
+        with patch("vibe_execute.execute", return_value={"success": True, "stdout": fake_json, "model_used": "large", "elapsed_sec": 1.5}):
+            res = vibe_execute.triage_compound_task("items")
+            self.assertTrue(res["success"])
+            self.assertEqual(res["manifest"]["summary"], "Fenced output")
+
+    def test_triage_compound_task_handles_failure(self):
+        with patch("vibe_execute.execute", return_value={"success": False, "error": "Execution timed out", "stdout": ""}):
+            res = vibe_execute.triage_compound_task("items")
+            self.assertFalse(res["success"])
+            self.assertIn("timed out", res["error"])
+
 
 if __name__ == "__main__":
     unittest.main()

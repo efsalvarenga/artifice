@@ -1,11 +1,11 @@
 ---
 name: vibe-execute
-version: 1.1.0
+version: 1.2.0
 description: >-
   Universal external execution gateway for models outside the Gemini family.
-  Evaluates task complexity and conducts Grill-Me model selection across
-  Hosted Mistral and Local On-Device (local-code) branches.
-argument-hint: "[--model <alias>] [--local] [--auto-approve] <prompt_or_task>"
+  Evaluates task complexity, conducts Grill-Me model selection, and orchestrates
+  the Two-Phase Compound Protocol (Macro Triage -> Micro-Dispatch).
+argument-hint: "[classify | triage | run] [--model <alias>] [--local] [--auto-approve] <prompt_or_file>"
 ---
 
 # External Execution Gateway: Mistral Vibe & Local On-Device (`vibe-execute`)
@@ -73,3 +73,28 @@ After execution finishes:
   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" unload --all
   ```
 * If files were mutated under `--auto-approve`, run native verification (`./scripts/lint.sh`) before completing the turn.
+
+## Compound Task Protocol: Macro Triage to Micro-Dispatch
+
+When handling batched or compound tasks (e.g. multi-comment PR reviews, multi-file refactoring passes, backlog task lists):
+
+### Phase 1: Macro Triage & Graph Ordering
+
+Never dispatch compound items in uncoordinated isolation or cram 10+ items into one monolithic prompt. Ingest all items simultaneously to identify cross-cutting constraints:
+
+```bash
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<COMPOUND_INPUT_FILE>"
+```
+
+`mistral-large-4` evaluates the full context, surfaces contradictions, and partitions items into a 3-wave execution manifest:
+* **Wave 1 (Architectural / High-Risk):** Systemic contracts, state schemas, breaking interface changes. Recommended engine: `large`.
+* **Wave 2 (Implementation & Tests):** Discrete functions, algorithmic logic, unit tests, bug fixes. Recommended engine: `codestral` (cloud) or `local` (Ollama on-device).
+* **Wave 3 (Cosmetic & Informational):** Documentation, nits, formatting, explanatory replies. Recommended engine: `fast`.
+
+### Phase 2: Heterogeneous Wave Dispatch & Verification
+
+Execute each wave sequentially with its dedicated engine:
+1. Dispatch Wave 1 with `vibe_execute.py run "<WAVE_1_TASKS>" --model large --auto-approve`.
+2. Dispatch Wave 2 with `vibe_execute.py run "<WAVE_2_TASKS>" --model codestral` (or `--local` for air-gapped tasks).
+3. Dispatch Wave 3 with `vibe_execute.py run "<WAVE_3_TASKS>" --model fast`.
+4. Run native baseline checks (`./scripts/lint.sh`) between waves to trap regressions early.

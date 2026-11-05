@@ -352,6 +352,98 @@ def execute(
     )
 
 
+TRIAGE_PROMPT_TEMPLATE = """You are a principal software architect performing Macro Triage on a compound engineering task.
+
+Analyse the input items below and generate a structured JSON execution manifest:
+1. Detect any conflicting, duplicate, or overlapping instructions.
+2. Order items by dependency (e.g. contracts and schemas before implementation).
+3. Partition items into three distinct execution waves:
+   - Wave 1 (Architectural / High-Risk): Systemic contracts, state schemas, breaking interface changes. Recommended engine: 'large' or 'mistral-medium-3.5'.
+   - Wave 2 (Implementation & Tests): Discrete functions, algorithmic logic, unit tests, bug fixes. Recommended engine: 'codestral' (cloud) or 'local' (Ollama on-device).
+   - Wave 3 (Cosmetic & Informational): Documentation, nits, code formatting, explanatory review replies. Recommended engine: 'fast'.
+
+Input compound task:
+{input_text}
+
+Output format:
+Respond strictly with a valid JSON object in British English matching this schema:
+{{
+  "summary": "Brief executive summary of compound task",
+  "conflicts_detected": ["..."],
+  "total_items": 0,
+  "waves": [
+    {{
+      "wave": 1,
+      "category": "Architectural / High-Risk",
+      "recommended_engine": "large",
+      "items": [
+        {{"id": 1, "description": "...", "files": ["..."], "dependency": null}}
+      ]
+    }},
+    {{
+      "wave": 2,
+      "category": "Implementation & Tests",
+      "recommended_engine": "codestral",
+      "items": [
+        {{"id": 2, "description": "...", "files": ["..."], "dependency": 1}}
+      ]
+    }},
+    {{
+      "wave": 3,
+      "category": "Cosmetic & Informational",
+      "recommended_engine": "fast",
+      "items": [
+        {{"id": 3, "description": "...", "files": ["..."], "dependency": null}}
+      ]
+    }}
+  ]
+}}
+"""
+
+
+def triage_compound_task(
+    input_text: str,
+    model: str = "large",
+    timeout_sec: float = 120.0,
+) -> dict:
+    """Perform Phase 1 Macro Triage on a compound task via mistral-large-4 or specified engine."""
+    prompt = TRIAGE_PROMPT_TEMPLATE.format(input_text=input_text)
+    res = execute(
+        prompt,
+        model=model,
+        json_output=False,
+        timeout_sec=timeout_sec,
+    )
+    if not res.get("success"):
+        return {
+            "success": False,
+            "error": res.get("error") or res.get("stderr"),
+            "manifest": None,
+            "raw_output": res.get("stdout", ""),
+        }
+
+    raw = res.get("stdout", "").strip()
+    json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
+    json_str = json_match.group(1) if json_match else raw
+    try:
+        manifest = json.loads(json_str)
+        return {
+            "success": True,
+            "manifest": manifest,
+            "model_used": res.get("model_used"),
+            "elapsed_sec": res.get("elapsed_sec"),
+        }
+    except Exception as e:
+        return {
+            "success": True,
+            "manifest": None,
+            "raw_output": raw,
+            "parse_error": str(e),
+            "model_used": res.get("model_used"),
+            "elapsed_sec": res.get("elapsed_sec"),
+        }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="External Execution Gateway: Mistral Vibe & Local On-Device."
@@ -365,6 +457,18 @@ def main():
     classify_parser.add_argument("prompt", help="Task prompt or instruction to evaluate")
     classify_parser.add_argument(
         "--local", action="store_true", help="Enforce local on-device preference"
+    )
+
+    # Triage command (Phase 1 of Compound Protocol)
+    triage_parser = subparsers.add_parser(
+        "triage", help="Perform Phase 1 Macro Triage on a compound task"
+    )
+    triage_parser.add_argument("input", help="File path or text containing compound task items")
+    triage_parser.add_argument(
+        "--model", default="large", help="Model to perform triage (default: large)"
+    )
+    triage_parser.add_argument(
+        "--timeout", type=float, default=120.0, help="Triage timeout in seconds"
     )
 
     # Run command
@@ -387,6 +491,21 @@ def main():
         result = classify_task(args.prompt, is_local_preferred=args.local)
         print(json.dumps(result, indent=2))
         return 0
+
+    if args.command == "triage":
+        input_data = args.input
+        if os.path.isfile(input_data):
+            with open(input_data, "r", encoding="utf-8") as f:
+                input_data = f.read()
+
+        result = triage_compound_task(input_data, model=args.model, timeout_sec=args.timeout)
+        if result.get("manifest"):
+            print(json.dumps(result["manifest"], indent=2))
+        elif result.get("raw_output"):
+            print(result["raw_output"])
+        else:
+            print(result.get("error", "Triage execution failed"), file=sys.stderr)
+        return 0 if result.get("success") else 1
 
     if args.command == "run":
         selected_model = args.model
