@@ -101,7 +101,7 @@ Follow active client and repository Git governance (e.g. autonomous feature-bran
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
 
 * **Division of Labour:** The current client orchestrator maintains architectural contracts, specification compliance, Red test design, and PR drafting.
-* **Non-Gemini Offloading:** Evaluate external engines via [`vibe-execute`](../../skills/vibe-execute/SKILL.md), routing bounded on-device passes to the [`local-code`](../../skills/local-code/SKILL.md) branch (`qwen2.5:14b`) and high-capacity tasks to hosted Mistral (`codestral`).
+* **Model Tiering & External Offloading:** Adhere to Model Tiering under `~/.gemini/config/AGENTS.md`. When external execution outside the primary Gemini family is requested, evaluate engines via [`vibe-execute`](../../skills/vibe-execute/SKILL.md) across hosted Mistral and on-device Ollama ([`local-code`](../../skills/local-code/SKILL.md)).
 * **Zero-Waste Memory Purge:** Any authoring wave that leases local memory must invoke:
 
   ```bash

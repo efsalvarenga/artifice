@@ -47,13 +47,12 @@ Evaluate every target diff across the eight pillars detailed in [`review-framewo
 
 ## 4. Multi-Model Delegation & Privacy Modes
 
-The Gatekeeper supports two execution topologies using dynamic model selection (`check_ollama.py select --task code|prose`, honouring `ARTIFICE_CODE_MODEL` and `ARTIFICE_PROSE_MODEL`):
+Model tiering and offloading are orchestrator-level decisions governed by `~/.gemini/config/AGENTS.md` and [`vibe-execute`](../../skills/vibe-execute/SKILL.md):
 
-### Mode 1: Hybrid Planner-Worker (Default)
+### Mode 1: Orchestrator-Led Review (Default)
 
-* **Primary Driver & Planner:** The current client orchestrator drives the overarching 8-Pillar review, evaluates design/contract alignment directly, and synthesises findings.
-* **Algorithmic Invariant Consultation (Pillar 2):** Queries the selected local `code_model` via Ollama (`http://localhost:11434/api/chat`) for edge-case counter-examples, test generation, and boundary fuzzing.
-* **Prose & Documentation Consultation (Pillar 6):** Queries the selected local `prose_model` via Ollama to evaluate documentation cadence and clarity.
+* **Primary Driver & Planner:** The current client orchestrator drives the 8-Pillar review, evaluates design/contract alignment directly, and synthesises findings.
+* **Optional Pillar Delegation via `vibe-execute`:** The orchestrator may evaluate and delegate bounded sub-tasks (Pillar 2 invariant probes, Pillar 6 documentation audits) to external or local engines via [`vibe-execute`](../../skills/vibe-execute/SKILL.md).
 
 ### Mode 2: On-Device Privacy Mode (`--local` or Privacy Directive)
 
