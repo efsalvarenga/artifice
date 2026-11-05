@@ -57,16 +57,23 @@ FAST_KEYWORDS = {
 }
 
 
+def _matches_keyword(text: str, kw: str) -> bool:
+    """Match keyword using word boundaries for short terms to avoid false positives."""
+    if len(kw) <= 2:
+        return bool(re.search(r"\b" + re.escape(kw) + r"\b", text))
+    return kw in text
+
+
 def classify_task(prompt: str, is_local_preferred: bool = False) -> dict:
     """Classify prompt complexity and recommend the optimal execution engine."""
     text = prompt.lower()
 
-    # Check for keywords
-    has_local = is_local_preferred or any(kw in text for kw in LOCAL_KEYWORDS)
-    has_arch = any(kw in text for kw in ARCH_KEYWORDS)
-    has_agentic = any(kw in text for kw in AGENTIC_KEYWORDS)
-    has_code = any(kw in text for kw in CODE_KEYWORDS)
-    has_fast = any(kw in text for kw in FAST_KEYWORDS)
+    # Check for keywords with word boundary guardrails
+    has_local = is_local_preferred or any(_matches_keyword(text, kw) for kw in LOCAL_KEYWORDS)
+    has_arch = any(_matches_keyword(text, kw) for kw in ARCH_KEYWORDS)
+    has_agentic = any(_matches_keyword(text, kw) for kw in AGENTIC_KEYWORDS)
+    has_code = any(_matches_keyword(text, kw) for kw in CODE_KEYWORDS)
+    has_fast = any(_matches_keyword(text, kw) for kw in FAST_KEYWORDS)
 
     # Length heuristic
     word_count = len(text.split())

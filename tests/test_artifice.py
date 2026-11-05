@@ -448,6 +448,12 @@ class VibeExecuteTests(unittest.TestCase):
         self.assertEqual(res["tier"], 1)
         self.assertEqual(res["recommended_model"], "fast")
 
+    def test_classify_task_word_boundary_guardrail(self):
+        # Prompts containing 'c' or 'go' as substrings shouldn't trigger code tier
+        res = vibe_execute.classify_task("check the status of the branch")
+        self.assertEqual(res["tier"], 1)
+        self.assertEqual(res["recommended_model"], "fast")
+
     def test_classify_task_tier2_code(self):
         res = vibe_execute.classify_task("Write an algorithmic red-black tree in C")
         self.assertEqual(res["tier"], 2)
