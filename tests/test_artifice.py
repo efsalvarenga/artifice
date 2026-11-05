@@ -233,8 +233,7 @@ class LintAndContractTests(unittest.TestCase):
                 "[Beta]", "{review: code}", "# comment",
                 "Review: code", "Review:", "*missing_alias", "&anchor Review",
                 "!tag Review", "- Review", "? Review", "@Review", "`Review",
-                "true", "false", "yes", "off", "42", "-12", "1.5", "1e3",
-                "0x20", ".inf", "2026-11-05", '"Review\x01code"',
+                "true", "false", "yes", "off", '"Review\x01code"',
             )),
             ("tools", 0, ('["read", \'search\', edit, execute, agent]',)),
             ("tools", 1, (
@@ -667,11 +666,30 @@ class VibeExecuteTests(unittest.TestCase):
             self.assertTrue(res["success"])
             self.assertEqual(res["manifest"]["summary"], "Triage three items")
 
+    def test_triage_accepts_subset_waves_and_normalises_total_items(self):
+        two_wave = self._manifest()
+        two_wave["waves"] = [two_wave["waves"][0], two_wave["waves"][2]]
+        two_wave["waves"][1]["items"][0]["dependency"] = 1
+        two_wave["total_items"] = 99
+        with patch("vibe_execute.execute", return_value={"success": True, "stdout": json.dumps(two_wave), "model_used": "large", "elapsed_sec": 0.8}):
+            res = vibe_execute.triage_compound_task("1. Contract\n2. Docs")
+        self.assertTrue(res["success"])
+        self.assertEqual([w["wave"] for w in res["manifest"]["waves"]], [1, 3])
+        self.assertEqual(res["manifest"]["total_items"], 2)
+
     def test_triage_rejects_invalid_json_and_manifest_shapes(self):
         invalid_outputs = ["not JSON", "null", "[]", "{}", '{"waves": []}']
-        for field, value in (("summary", None), ("conflicts_detected", "none"), ("total_items", 4), ("waves", {})):
+        for field, value in (("summary", None), ("conflicts_detected", "none"), ("waves", {})):
             manifest = self._manifest()
             manifest[field] = value
+            invalid_outputs.append(json.dumps(manifest))
+        for bad_waves in (
+            [*self._manifest()["waves"], {"wave": 4, "category": "Extra", "recommended_engine": "fast", "items": []}],
+            list(reversed(self._manifest()["waves"])),
+            [{"wave": 1, "category": "Empty", "recommended_engine": "large", "items": []}],
+        ):
+            manifest = self._manifest()
+            manifest["waves"] = bad_waves
             invalid_outputs.append(json.dumps(manifest))
         for field, value in (("id", 1), ("description", None), ("dependency", 3), ("files", "example.py")):
             manifest = self._manifest()

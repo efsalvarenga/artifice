@@ -21,7 +21,7 @@ This skill serves as the sovereign external execution gateway whenever an agent 
 * **Ollama Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
 * **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
 
-`ARTIFICE_ROOT`: explicit value, existing `$HOME/.local/share/artifice`, then `$HOME/Repos/artifice`; resolve links from `ARTIFICE_ROOT/skills/vibe-execute/`.
+Resolve `ARTIFICE_ROOT` from an explicit value, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/vibe-execute/`.
 
 ## Step-by-Step Procedure
 
@@ -86,12 +86,12 @@ Never dispatch compound items in uncoordinated isolation or cram 10+ items into 
 python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<COMPOUND_INPUT_FILE>" [--local]
 ```
 
-`mistral-large-4` evaluates the full context, surfaces contradictions, and partitions items into a 3-wave execution manifest:
+`mistral-large-4` evaluates the full context, surfaces contradictions, and partitions items into up to three ordered execution waves:
 * **Wave 1 (Architectural / High-Risk):** Systemic contracts, state schemas, breaking interface changes. Recommended engine: `large`.
 * **Wave 2 (Implementation & Tests):** Discrete functions, algorithmic logic, unit tests, bug fixes. Recommended engine: `codestral` (cloud) or `local` (Ollama on-device).
 * **Wave 3 (Cosmetic & Informational):** Documentation, nits, formatting, explanatory replies. Recommended engine: `fast`.
 
-Invalid JSON, malformed wave/task fields, inconsistent item counts, or forward dependencies fail with a non-zero exit and an error on stderr. Do not dispatch waves from an invalid manifest.
+Invalid JSON, malformed wave/task fields, out-of-order waves, empty manifests, or forward dependencies fail with a non-zero exit and an error on stderr (`total_items` is derived automatically from validated tasks). Do not dispatch waves from an invalid manifest.
 
 ### Phase 2: Heterogeneous Wave Dispatch & Verification
 

@@ -382,7 +382,7 @@ TRIAGE_PROMPT_TEMPLATE = """You are a principal software architect performing Ma
 Analyse the input items below and generate a structured JSON execution manifest:
 1. Detect any conflicting, duplicate, or overlapping instructions.
 2. Order items by dependency (e.g. contracts and schemas before implementation).
-3. Partition items into three distinct execution waves:
+3. Partition items into up to three ordered execution waves (omit empty waves):
    - Wave 1 (Architectural / High-Risk): Systemic contracts, state schemas, breaking interface changes. Recommended engine: 'large' or 'mistral-medium-3.5'.
    - Wave 2 (Implementation & Tests): Discrete functions, algorithmic logic, unit tests, bug fixes. Recommended engine: 'codestral' (cloud) or 'local' (Ollama on-device).
    - Wave 3 (Cosmetic & Informational): Documentation, nits, code formatting, explanatory review replies. Recommended engine: 'fast'.
@@ -395,7 +395,7 @@ Respond strictly with a valid JSON object in British English matching this schem
 {{
   "summary": "Brief executive summary of compound task",
   "conflicts_detected": ["..."],
-  "total_items": 0,
+  "total_items": 3,
   "waves": [
     {{
       "wave": 1,
@@ -427,7 +427,7 @@ Respond strictly with a valid JSON object in British English matching this schem
 
 
 def validate_manifest(manifest: object) -> None:
-    """Validate the three-wave triage contract before it can guide execution."""
+    """Validate the multi-wave triage contract and normalise total_items before execution."""
     if not isinstance(manifest, dict):
         raise ValueError("Manifest must be a JSON object.")
     if not isinstance(manifest.get("summary"), str) or not manifest["summary"].strip():
@@ -435,16 +435,16 @@ def validate_manifest(manifest: object) -> None:
     conflicts = manifest.get("conflicts_detected")
     if not isinstance(conflicts, list) or not all(isinstance(item, str) for item in conflicts):
         raise ValueError("conflicts_detected must be a list of strings.")
-    total = manifest.get("total_items")
-    if type(total) is not int or total < 0:
-        raise ValueError("total_items must be a non-negative integer.")
     waves = manifest.get("waves")
-    if not isinstance(waves, list) or len(waves) != 3:
-        raise ValueError("Manifest must contain three ordered waves.")
+    if not isinstance(waves, list) or not (1 <= len(waves) <= 3):
+        raise ValueError("Manifest must contain between 1 and 3 ordered waves.")
     seen = set()
-    for number, wave in enumerate(waves, 1):
-        if not isinstance(wave, dict) or type(wave.get("wave")) is not int or wave["wave"] != number:
-            raise ValueError("Wave numbers must be ordered 1, 2, 3.")
+    prev_wave = 0
+    for wave in waves:
+        wave_num = wave.get("wave") if isinstance(wave, dict) else None
+        if type(wave_num) is not int or not (1 <= wave_num <= 3) or wave_num <= prev_wave:
+            raise ValueError("Wave numbers must be strictly increasing within 1..3.")
+        prev_wave = wave_num
         if not all(isinstance(wave.get(key), str) and wave[key].strip() for key in ("category", "recommended_engine")):
             raise ValueError("Each wave needs a category and recommended_engine.")
         items = wave.get("items")
@@ -465,8 +465,9 @@ def validate_manifest(manifest: object) -> None:
             if dependency is not None and (type(dependency) is not int or dependency not in seen):
                 raise ValueError("Task dependencies must refer to an earlier task.")
             seen.add(identifier)
-    if total != len(seen):
-        raise ValueError("total_items does not match the tasks in the waves.")
+    if not seen:
+        raise ValueError("Manifest must contain at least one task.")
+    manifest["total_items"] = len(seen)
 
 
 def triage_compound_task(

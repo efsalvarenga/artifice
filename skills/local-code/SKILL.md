@@ -14,7 +14,7 @@ Use this skill directly or as the on-device branch of [`vibe-execute`](../vibe-e
 * **Ollama Residency & Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
 * **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
 
-`ARTIFICE_ROOT`: explicit value, existing `$HOME/.local/share/artifice`, then `$HOME/Repos/artifice`; resolve links from `ARTIFICE_ROOT/skills/local-code/`.
+Resolve `ARTIFICE_ROOT` from an explicit value, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/local-code/`.
 
 ## Step-by-Step Procedure
 

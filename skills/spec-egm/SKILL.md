@@ -19,7 +19,7 @@ This skill coordinates specification-driven development using the **Elephant-Gol
 * **Validation Script:** [`../../scripts/validate_egm.py`](../../scripts/validate_egm.py)
 * **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
 
-`ARTIFICE_ROOT`: explicit value, existing `$HOME/.local/share/artifice`, then `$HOME/Repos/artifice`; resolve links from `ARTIFICE_ROOT/skills/spec-egm/`.
+Resolve `ARTIFICE_ROOT` from an explicit value, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/spec-egm/`.
 
 ## Step-by-Step EGM Procedure
 

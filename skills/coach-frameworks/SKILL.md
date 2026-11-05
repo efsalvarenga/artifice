@@ -18,7 +18,7 @@ This skill orchestrates a strategic framework evaluation, developer experience a
 * **Developer Coach Agent Definition:** [`../../agents/developer-coach/agent.md`](../../agents/developer-coach/agent.md)
 * **Detailed 5-Pillar Rubric & Reconnaissance Guide:** [`references/coaching-framework.md`](./references/coaching-framework.md)
 
-`ARTIFICE_ROOT`: explicit value, existing `$HOME/.local/share/artifice`, then `$HOME/Repos/artifice`; resolve links from `ARTIFICE_ROOT/skills/coach-frameworks/`.
+Resolve `ARTIFICE_ROOT` from an explicit value, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/coach-frameworks/`.
 
 ## Step-by-Step Coaching Procedure
 
