@@ -112,9 +112,11 @@ The code review framework supports two cooperative execution topologies:
 * **Algorithmic Oracle (`code_model`):** Select through `check_ollama.py select --task code`, honouring `ARTIFICE_CODE_MODEL`. Cross-examine state transitions, pure functions, parsers and boundary conditions under Pillar 2.
 * **Prose & Cadence Oracle (`prose_model`):** Select through `select --task prose`, honouring `ARTIFICE_PROSE_MODEL`. Audit readability, documentation cadence and explanatory clarity under Pillar 6.
 * Use the exact successful tags throughout warming, inference payloads, review streams and actual-worker provenance, as described in [the review workflow](../SKILL.md). Never assume the default models are installed.
+* Accept a worker only when selection exits `0` and returns a non-empty `model`; warm only that value, never `fallback` or `null`. If selection or warming fails, skip that optional worker and continue with the orchestrator and native harness.
 
 ### B. On-Device Privacy Protocol
 
 * **Trigger:** `--local`, `Privacy: on-device`, or `Review: local-only` in applicable policy metadata.
 * **Privacy Boundary:** Protected source code and diff contents must never be ingested into cloud model context or transmitted off-device, with no cloud fallback when local selection fails.
 * **On-Device Execution:** Dispatch diff inspection and synthesis strictly on-device via local shell/Ollama pipelines or within a verified local session: `code_model` audits code invariants (Pillars 2, 3, 5, 7); `prose_model` evaluates architecture, documentation, and governance (Pillars 1, 6, 8) and synthesises the structured report.
+* Select and warm both required workers before ingesting protected content. If either is unavailable or warming fails, stop without reading the target or using a cloud fallback.

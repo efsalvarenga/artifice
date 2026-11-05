@@ -29,7 +29,7 @@ Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/
    * `--local`: Enforces 100% on-device review via local Ollama models without reading protected diff or source bytes into cloud context (no cloud fallback).
    * Target: PR number (`12`), branch name (`agent/feature`), file path (`engine.ts`), or document (`docs/designs/001_spec.md`).
 2. **Check Privacy Directives First:**
-   If `--local` is passed or `AGENTS.md` declares `Privacy: on-device` / `Review: local-only`, engage **Pathway B (On-Device Mode)** before reading target code or diffs.
+   If `--local` is passed or `AGENTS.md` declares `Privacy: on-device` / `Review: local-only`, engage **Pathway B (On-Device Mode)** before reading target code or diffs. Run Step 3's model checks first; stop if either worker is unavailable.
 3. **Target Ingestion & Native Baselines:**
    In Pathway A, inspect `gh pr diff <PR>`, `git diff main...HEAD`, or the target file directly. Run native verification (`./scripts/lint.sh`, `npm test`, `pytest`, `cargo test`) to record baseline pass/fail status.
 
@@ -52,11 +52,15 @@ Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/
    python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" select --task prose
    ```
 
-2. Capture the returned JSON `model` strings as `code_model` and `prose_model`, then lease them for the review wave:
+2. Warm only selected, non-empty models, following the failure rules in [`review-framework.md`](references/review-framework.md):
 
    ```bash
-   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" warm "$code_model" --lease 5m
-   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" warm "$prose_model" --lease 5m
+   if [[ -n "${code_model:-}" ]]; then
+     python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" warm "$code_model" --lease 5m || code_model=""
+   fi
+   if [[ -n "${prose_model:-}" ]]; then
+     python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" warm "$prose_model" --lease 5m || prose_model=""
+   fi
    ```
 
 ### Step 4: Hybrid or On-Device Execution
