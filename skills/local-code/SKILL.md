@@ -6,10 +6,11 @@ description: Delegate bounded algorithmic refactoring, logic analysis, FIM synth
 
 # Local Code Refactoring & Logic (`local-code`)
 
-Use this skill when delegating bounded code generation, algorithmic refactoring, test suite synthesis, or Fill-in-the-Middle (FIM) operations to an installed local coding model via Ollama. Integrates natively with [`code-author`](../../agents/code-author/agent.md) ("The Craftsman") during specification-driven TDD workflows.
+Use this skill directly or as the on-device branch of [`vibe-execute`](../vibe-execute/SKILL.md) when delegating bounded code generation, algorithmic refactoring, test suite synthesis, or Fill-in-the-Middle (FIM) operations to an installed local coding model via Ollama. Integrates natively with [`code-author`](../../agents/code-author/agent.md) ("The Craftsman") during specification-driven TDD workflows.
 
 ## Reference Materials
 
+* **External Gateway:** [`../vibe-execute/SKILL.md`](../vibe-execute/SKILL.md)
 * **Ollama Residency & Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
 * **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
 

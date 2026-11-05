@@ -101,7 +101,7 @@ Follow active client and repository Git governance (e.g. autonomous feature-bran
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
 
 * **Division of Labour:** The current client orchestrator maintains architectural contracts, specification compliance, Red test design, and PR drafting.
-* **Bounded Local Offloading:** Delegate repetitive boilerplate micro-passes (mock fixtures, table-driven test cases, pure algorithmic reducers) via [`local-code`](../../skills/local-code/SKILL.md), using `check_ollama.py select --task code` (`ARTIFICE_CODE_MODEL`) to resolve the installed `code_model` tag dynamically.
+* **Non-Gemini Offloading:** Evaluate external engines via [`vibe-execute`](../../skills/vibe-execute/SKILL.md), routing bounded on-device passes to the [`local-code`](../../skills/local-code/SKILL.md) branch (`qwen2.5:14b`) and high-capacity tasks to hosted Mistral (`codestral`).
 * **Zero-Waste Memory Purge:** Any authoring wave that leases local memory must invoke:
 
   ```bash

@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import check_ollama  # noqa: E402
 import lint  # noqa: E402
 import validate_egm  # noqa: E402
+import vibe_execute  # noqa: E402
 
 
 class InstallerTests(unittest.TestCase):
@@ -437,6 +438,79 @@ class BashSyntaxRecursiveTests(unittest.TestCase):
                 errors = lint.check_bash_syntax(str(root))
             # All .sh files in forbidden dirs should be skipped, so no errors
             self.assertEqual(errors, 0)
+
+
+class VibeExecuteTests(unittest.TestCase):
+    """Tests for vibe_execute.py task classifier and execution gateway."""
+
+    def test_classify_task_tier1_fast(self):
+        res = vibe_execute.classify_task("Summarise this git diff and explain the status")
+        self.assertEqual(res["tier"], 1)
+        self.assertEqual(res["recommended_model"], "fast")
+
+    def test_classify_task_tier2_code(self):
+        res = vibe_execute.classify_task("Write an algorithmic red-black tree in C")
+        self.assertEqual(res["tier"], 2)
+        self.assertEqual(res["recommended_model"], "codestral")
+
+    def test_classify_task_tier3_agentic(self):
+        res = vibe_execute.classify_task("Crawl the repository, explore files, and inspect codebase across files")
+        self.assertEqual(res["tier"], 3)
+        self.assertEqual(res["recommended_model"], "mistral-medium-3.5")
+
+    def test_classify_task_tier4_architecture(self):
+        res = vibe_execute.classify_task("Analyse the architectural trade-offs, concurrency race conditions and protocol invariants")
+        self.assertEqual(res["tier"], 4)
+        self.assertEqual(res["recommended_model"], "large")
+
+    def test_find_vibe_custom_override(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_bin = Path(tmp) / "vibe"
+            fake_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            fake_bin.chmod(0o755)
+            with patch.dict(os.environ, {"VIBE_BIN": str(fake_bin)}):
+                self.assertEqual(vibe_execute.find_vibe(), str(fake_bin))
+
+    def test_execute_vibe_missing_binary(self):
+        with patch("vibe_execute.find_vibe", return_value=""):
+            res = vibe_execute.execute_vibe("hello")
+            self.assertFalse(res["success"])
+            self.assertEqual(res["returncode"], 127)
+            self.assertIn("not found", res["error"])
+
+    def test_classify_task_tier0_local_privacy(self):
+        res = vibe_execute.classify_task("Generate confidential key vault for private storage")
+        self.assertEqual(res["tier"], 0)
+        self.assertEqual(res["branch"], "local")
+        self.assertEqual(res["recommended_model"], "local")
+
+    def test_classify_task_local_flag_override(self):
+        res = vibe_execute.classify_task("Write an algorithmic red-black tree in C", is_local_preferred=True)
+        self.assertEqual(res["tier"], 0)
+        self.assertEqual(res["branch"], "local")
+        self.assertEqual(res["recommended_model"], "local")
+
+    def test_execute_local_offline_daemon(self):
+        with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": False}):
+            res = vibe_execute.execute_local("hello")
+            self.assertFalse(res["success"])
+            self.assertEqual(res["returncode"], 127)
+            self.assertIn("offline", res["error"])
+
+    def test_execute_local_success(self):
+        with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": True}):
+            with patch.object(vibe_execute.check_ollama, "select_best_model", return_value={"model": "qwen2.5:14b", "resident": True}):
+                with patch.object(vibe_execute.check_ollama, "request_json", return_value=(200, {"message": {"content": "Generated local code"}}, 0.5)):
+                    res = vibe_execute.execute_local("Write a function")
+                    self.assertTrue(res["success"])
+                    self.assertEqual(res["stdout"], "Generated local code")
+                    self.assertEqual(res["provider"], "ollama")
+
+    def test_execute_router_dispatches_local(self):
+        with patch("vibe_execute.execute_local", return_value={"success": True, "provider": "ollama"}) as mock_local:
+            res = vibe_execute.execute("prompt", model="local")
+            mock_local.assert_called_once()
+            self.assertEqual(res["provider"], "ollama")
 
 
 if __name__ == "__main__":
