@@ -9,36 +9,17 @@ import argparse
 import json
 import os
 import sys
-import time
-import urllib.error
-import urllib.request
+
+import model_inventory
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 DEFAULT_TIMEOUT_SEC = 1.0
 
 
-def request_json(path: str, data: dict = None, timeout: float = DEFAULT_TIMEOUT_SEC) -> tuple:
-    """Send an HTTP request to the local Ollama API."""
-    url = f"{OLLAMA_HOST}{path}"
-    req = urllib.request.Request(url)
-    if data is not None:
-        req.add_header("Content-Type", "application/json")
-        body = json.dumps(data).encode("utf-8")
-    else:
-        body = None
-
-    start = time.perf_counter()
-    try:
-        with urllib.request.urlopen(req, data=body, timeout=timeout) as resp:
-            elapsed = time.perf_counter() - start
-            res_body = resp.read().decode("utf-8")
-            return resp.status, json.loads(res_body) if res_body else {}, elapsed
-    except urllib.error.URLError as e:
-        elapsed = time.perf_counter() - start
-        return 0, {"error": str(e)}, elapsed
-    except Exception as e:
-        elapsed = time.perf_counter() - start
-        return 0, {"error": str(e)}, elapsed
+def request_json(path: str, data: dict = None, timeout: float = DEFAULT_TIMEOUT_SEC, host: str = None) -> tuple:
+    """Use the same direct endpoint transport as inventory and selection."""
+    host = os.environ.get("OLLAMA_HOST", OLLAMA_HOST) if host is None else host
+    return model_inventory.request_json(path, data=data, timeout=timeout, host=host)
 
 
 def get_status() -> dict:
@@ -74,7 +55,7 @@ def get_status() -> dict:
     }
 
 
-def warm_model(model_name: str, keep_alive: str = "5m") -> dict:
+def warm_model(model_name: str, keep_alive: str = "5m", options: dict = None, host: str = None) -> dict:
     """Pre-heat a model into GPU memory with a lease.
 
     Verifies that the model was successfully loaded by checking the response
@@ -84,7 +65,9 @@ def warm_model(model_name: str, keep_alive: str = "5m") -> dict:
         "model": model_name,
         "keep_alive": keep_alive,
     }
-    code, res, elapsed = request_json("/api/generate", data=payload, timeout=30.0)
+    if options:
+        payload["options"] = options
+    code, res, elapsed = request_json("/api/generate", data=payload, timeout=30.0, host=host)
 
     if code != 200:
         return {
@@ -96,13 +79,21 @@ def warm_model(model_name: str, keep_alive: str = "5m") -> dict:
             "verified": False,
         }
 
-    ps_code, ps_res, _ = request_json("/api/ps", timeout=2.0)
-    resident_models = [m.get("name") for m in ps_res.get("models", [])]
-    verified = ps_code == 200 and model_name in resident_models
+    ps_code, ps_res, _ = request_json("/api/ps", timeout=2.0, host=host)
+    entries = ps_res.get("models") if isinstance(ps_res, dict) else None
+    valid = isinstance(entries, list) and all(
+        isinstance(entry, dict) and isinstance(entry.get("name"), str) and entry["name"]
+        for entry in entries
+    )
+    resident_models = [entry["name"] for entry in entries] if valid else []
+    verified = ps_code == 200 and valid and model_name in resident_models
     error = None
     if ps_code != 200:
-        detail = ps_res.get("error") or f"HTTP {ps_code}"
+        detail = ps_res.get("error") if isinstance(ps_res, dict) else None
+        detail = detail or f"HTTP {ps_code}"
         error = f"Cannot verify model residency: {detail}"
+    elif not valid:
+        error = "Cannot verify model residency: invalid metadata."
     elif not verified:
         error = f"Model '{model_name}' is not resident after warming."
 
@@ -146,68 +137,34 @@ def unload_all() -> dict:
     return {"online": True, "evicted": results}
 
 
-def select_best_model(task_type: str) -> dict:
-    """Select the best local model based on installed roster and task type."""
-    override_name = None
-    if task_type in ("code", "logic", "fim", "tdd"):
-        override_name = "ARTIFICE_CODE_MODEL"
-    elif task_type in ("prose", "docs", "adr", "architecture"):
-        override_name = "ARTIFICE_PROSE_MODEL"
-    override = os.environ.get(override_name) if override_name else None
-    fallback = None if override is not None else "cloud-flash"
-    if override == "":
+def select_best_model(task_type: str, model: str = None, expect_identity: str = None,
+                      accept_unknown: bool = False, workdir: str = None,
+                      min_context: int = None, required_capabilities=None) -> dict:
+    """Resolve an explicit choice or one known-compatible installed model."""
+    snapshot = None
+    try:
+        override = model_inventory.role_override(task_type, model)
+        requested = model_inventory.requirements(
+            task=task_type, accept_unknown=accept_unknown, local_only=True,
+            min_context=min_context, required_capabilities=required_capabilities,
+        )
+        snapshot = model_inventory.discover(local_only=True, workdir=workdir)
+        selected = model_inventory.select_candidate(
+            snapshot, provider="ollama", model=override, task_requirements=requested,
+            expect_identity=expect_identity,
+        )
+    except (ValueError, OSError) as error:
         return {
             "model": None,
             "fallback": None,
-            "reason": f"{override_name} is empty",
+            "reason": str(error),
+            "diagnostics": snapshot["diagnostics"] if snapshot is not None else [],
         }
-
-    status = get_status()
-    if not status["online"]:
-        return {
-            "model": None,
-            "fallback": fallback,
-            "reason": "Ollama daemon is offline",
-        }
-
-    available = status["available"]
-
-    if override is not None:
-        if override not in available:
-            return {
-                "model": None,
-                "fallback": None,
-                "reason": f"Configured model '{override}' is not installed",
-            }
-        chosen = override
-    elif task_type in ("code", "logic", "fim", "tdd"):
-        if any("qwen2.5-coder:14b" in m for m in available):
-            chosen = next(m for m in available if "qwen2.5-coder:14b" in m)
-        elif any("qwen2.5:14b" in m for m in available):
-            chosen = next(m for m in available if "qwen2.5:14b" in m)
-        else:
-            chosen = None
-    elif task_type in ("prose", "docs", "adr", "architecture"):
-        if any("mistral-nemo" in m for m in available):
-            chosen = next(m for m in available if "mistral-nemo" in m)
-        else:
-            chosen = None
-    else:
-        chosen = available[0] if available else None
-
-    if chosen:
-        is_resident = any(item["name"] == chosen for item in status["resident"])
-        return {
-            "model": chosen,
-            "resident": is_resident,
-            "fallback": None,
-        }
-    else:
-        return {
-            "model": None,
-            "fallback": "cloud-flash",
-            "reason": f"No suitable local model found for task '{task_type}'",
-        }
+    return {
+        "model": selected["model_id"], "resident": selected["resident"], "fallback": None,
+        "identity_fingerprint": selected["identity_fingerprint"], "reference": selected["reference"],
+        "diagnostics": snapshot["diagnostics"],
+    }
 
 
 def main():
@@ -228,8 +185,14 @@ def main():
     unload_parser.add_argument("--all", action="store_true", help="Unload all resident models")
 
     # select
-    select_parser = subparsers.add_parser("select", help="Select optimal model for task")
-    select_parser.add_argument("--task", required=True, choices=["code", "logic", "fim", "tdd", "prose", "docs", "adr", "architecture"], help="Task type")
+    select_parser = subparsers.add_parser("select", help="Resolve an exact or unambiguous compatible local model")
+    select_parser.add_argument("--task", required=True, choices=model_inventory.TASKS, help="Task type")
+    select_parser.add_argument("--model", help="Exact installed tag, overriding the role environment variable")
+    select_parser.add_argument("--expect-identity", help="Fingerprint from the approved inventory")
+    select_parser.add_argument("--accept-unknown", action="store_true", help="Explicitly accept unknown suitability")
+    select_parser.add_argument("--min-context", type=int, help="Positive minimum context capacity")
+    select_parser.add_argument("--require-capability", action="append", choices=model_inventory.CAPABILITIES, default=[])
+    select_parser.add_argument("--workdir", help="Working directory for privacy policy")
 
     args = parser.parse_args()
 
@@ -252,7 +215,15 @@ def main():
         sys.exit(0)
 
     elif args.command == "select":
-        res = select_best_model(args.task)
+        res = select_best_model(
+            args.task, model=args.model, expect_identity=args.expect_identity,
+            accept_unknown=args.accept_unknown, workdir=args.workdir,
+            min_context=args.min_context, required_capabilities=args.require_capability,
+        )
+        for diagnostic in res.get("diagnostics", []):
+            print(json.dumps(diagnostic, sort_keys=True), file=sys.stderr)
+        if res.get("reason"):
+            print(res["reason"], file=sys.stderr)
         print(json.dumps(res, indent=2))
         sys.exit(0 if res["model"] else 2)
 

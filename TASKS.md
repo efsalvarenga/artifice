@@ -8,6 +8,22 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
 
 *This section receives asynchronously logged friction, missing edge cases, and enhancement proposals captured from active project sessions across the local repository ecosystem.*
 
+* **[2026-11-06]** *(from `oude-mechanismen` @ `efsalvarenga/prune-filter-studio`)*:
+  - **Autonomy Mode:** `[AUTO]`
+  - **Component:** `skills/vibe-execute/SKILL.md`
+  - **Operational Context:** Proposing candidate models during `/vibe-execute` discovery.
+  - **Specific Friction & Defect:** The agent output a static Markdown table in chat asking the user to type back their model selection in text, rather than using the native `ask_question` tool as an interactive multiple-choice prompt. This violated developer ergonomics and the expected interactive Grill-Me experience.
+  - **Actionable Remediation:** Update `skills/vibe-execute/SKILL.md` under `## 2. Discover, Propose & Confirm` to explicitly mandate that discovered candidate model proposals must always be presented via the native `ask_question` tool, with the top candidate prefixed by `(Recommended)` and detailing engine locality, context limits, and identity fingerprint.
+  - **Status:** Closed (Delivered in PR #11: codified native `ask_question` model proposal mandate in `skills/vibe-execute/SKILL.md`)
+
+* **[2026-11-05]** *(from `oude-mechanismen` @ `efsalvarenga/decomposed-scribing-engine`)*:
+  - **Autonomy Mode:** `[AUTO]`
+  - **Component:** `scripts/check_ollama.py`, `rules/quota-guardrails`
+  - **Operational Context:** Standardised local Ollama models on 16 GB Apple Silicon M5; uninstalled `mistral-nemo` due to repetition loops and factual hallucinations.
+  - **Specific Friction & Defect:** `scripts/check_ollama.py` hardcodes `mistral-nemo` as the sole local model for prose/docs tasks (`task_type in ("prose", "docs", "adr", "architecture")`). When `mistral-nemo` is uninstalled, `check_ollama.py` immediately falls back to `cloud-flash` with exit code 2, even though `qwen2.5:14b` is installed, resident, and highly capable of local prose synthesis.
+  - **Actionable Remediation:** Update `scripts/check_ollama.py` to allow `qwen2.5:14b` as a secondary local candidate for prose/docs tasks when `mistral-nemo` is missing before falling back to cloud models.
+  - **Status:** Open
+
 * **[2026-11-01]** *(from `antigravity` @ `main`)*:
   - **Autonomy Mode:** `[SEMI]`
   - **Component:** `skills/local-code`, `skills/local-review`, Ollama model roster
@@ -162,7 +178,10 @@ This document tracks active development tasks, roadmap milestones, and cross-pro
     2. *Code Review Gate (`review-pr` / `code-reviewer` Pillar 3):* Sharpen the Gatekeeper rubric to explicitly challenge unnecessary classes, wrappers, and file proliferation in PR diffs.
     3. *Tooling Gate (`scripts/`):* Mandate single unified scripts and native in-memory runtime primitives over file-based IPC and multi-file satellite sprawl.
     4. *Global Governance (`AGENTS.md`):* Formulate a compact rule enshrining the 4 Razor Questions (*Native First*, *Observed vs Hypothetical*, *Consolidation*, *Code Over Prose*).
-
+- [ ] `[SEMI]` **TASK-122**: Enshrine Markdown Symlink Architecture for Prompts and Skills (Zero-Latency Loop):
+  - **Core Architectural Invariant:** Retain `agents/` and `skills/` as canonical Markdown symlinks mapped into Antigravity (`~/.gemini/config/skills.json`, `~/.gemini/config/agents/`) and Copilot (`~/.copilot/agents`, `~/.copilot/skills`) rather than compiling or bundling them into static package distributions (e.g. pure APM compilation).
+  - **Zero-Latency Rationale:** Preserves instantaneous, uncompiled local prompt engineering and iteration loops without build or re-installation steps.
+  - **Decoupled Execution Boundary:** Maintain a strict separation between declarative prompt guidance (retained as symlinked markdown) and imperative machinery/scripts (`scripts/` evaluated for standalone CLI packaging via `pyproject.toml` or FastMCP exposure).
 
 ---
 

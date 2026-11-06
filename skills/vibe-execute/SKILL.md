@@ -1,104 +1,86 @@
 ---
 name: vibe-execute
-version: 1.2.0
+version: 1.4.0
 description: >-
-  Universal external execution gateway for models outside the Gemini family.
-  Evaluates task complexity, conducts Grill-Me model selection, and orchestrates
-  the Two-Phase Compound Protocol (Macro Triage -> Micro-Dispatch).
-argument-hint: "[classify | triage | run] [--model <alias>] [--local] [--auto-approve] <prompt_or_file>"
+  Discovery-led model proposals, exact approved dispatch and compound
+  execution across local Ollama and hosted Mistral Vibe engines.
+argument-hint: "[discover | classify | triage | run] [--local] [--provider [ollama|mistral] --model EXACT_TAG --expect-identity FINGERPRINT] <prompt_or_file>"
 ---
 
-# External Execution Gateway: Mistral Vibe & Local On-Device (`vibe-execute`)
+# Discovery & Execution Gateway (`vibe-execute`)
 
-This skill serves as the sovereign external execution gateway whenever an agent or developer requests model inference outside the primary Gemini family. It evaluates prompt complexity, privacy directives, and quota constraints to conduct a front-loaded Grill-Me selection across two execution branches:
-* **Branch A (Hosted Mistral):** Cloud inference via Mistral Vibe (`fast`, `codestral`, `mistral-medium-3.5`, `large`).
-* **Branch B (Local On-Device Engine):** Air-gapped on-device execution via [`local-code`](../local-code/SKILL.md) and Ollama (`qwen2.5:14b`, `mistral-nemo:12b`).
+Use **discover → filter → propose → confirm → execute**, not fixed tier-to-model menus. Supports local on-device Ollama engines and hosted Mistral Vibe models (`large`, `codestral`, `fast`, `small`, `ministral`).
 
 ## Reference Materials
 
-* **Vibe Dispatch Controller:** [`../../scripts/vibe_execute.py`](../../scripts/vibe_execute.py)
-* **Local Code Offloading Skill:** [`../local-code/SKILL.md`](../local-code/SKILL.md)
-* **Ollama Lifecycle Manager:** [`../../scripts/check_ollama.py`](../../scripts/check_ollama.py)
-* **Code Author Agent:** [`../../agents/code-author/agent.md`](../../agents/code-author/agent.md)
+* [Dispatch controller](../../scripts/vibe_execute.py) and [shared inventory](../../scripts/model_inventory.py)
+* [Bounded local coding](../local-code/SKILL.md) and [Ollama lifecycle](../../scripts/check_ollama.py)
+* [Review workers and privacy](../review/references/review-framework.md)
 
-Resolve `ARTIFICE_ROOT` from an explicit value, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/vibe-execute/`.
+Resolve and export `ARTIFICE_ROOT` from its explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/vibe-execute/`. Verify readable `agents`, `skills` and `scripts` directories; stop on failure.
 
-## Step-by-Step Procedure
+## 1. Establish Privacy & Requirements
 
-### 1. Evaluate Complexity & Privacy Boundaries
+Check applicable privacy directives before ingesting task material. `--local` governs discovery, triage and every wave. Protected prompts, source, diffs and generated outputs require local pipelines or a verified local session; metadata discovery cannot make a cloud conversation air-gapped.
 
-Before executing any request outside the Gemini family, classify prompt intent and operational constraints:
-
-```bash
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" classify "<USER_PROMPT>" [--local]
-```
-
-The classifier routes across five operational tiers:
-* **Tier 0 (Air-Gapped / Privacy):** Confidential code, secret vaults, offline constraints, or `--local` flag. Routes to **Branch B (`local`)** via `qwen2.5:14b` with zero cloud egress.
-* **Tier 1 (Utility / Fast):** Explanations, commit messages, diff summaries, formatting. Recommends `fast` (`mistral-vibe-cli-fast`), offering `local` as on-device alternative.
-* **Tier 2 (Code & Tests):** Pure algorithmic functions, unit test suites, FIM synthesis. Recommends `codestral` (`codestral-latest`), offering `local` (`qwen2.5:14b`) as zero-cost alternative.
-* **Tier 3 (Agentic Loops):** Multi-file exploration, repository inspection, autonomous editing. Recommends `mistral-medium-3.5` (`mistral-vibe-cli-latest`).
-* **Tier 4 (Flagship Architecture):** High-stakes redesign, systemic trade-offs, concurrency, contracts. Recommends `large` (`mistral-large-4`).
-
-### 2. Front-Loaded "Grill-Me" Alignment Interview
-
-Engage the developer with a focused multiple-choice confirmation via `ask_question`:
-
-* **Question 1 (Execution Branch & Engine):**
-  * Present `(Recommended) <Model>` based on the complexity evaluation.
-  * Explicitly offer both Hosted Mistral and Local On-Device options (e.g. `codestral` vs `local (Qwen 14B)`).
-* **Question 2 (Autonomy & Permissions):**
-  * Confirm execution mode: Headless Safe (`-p`), Autonomous Mutating (`--auto-approve`), or Air-Gapped Local.
-  * Verify target working directory scope.
-
-### 3. Unified Dispatch
-
-Once aligned on model selection and execution boundaries, dispatch the job:
+When `--local` or a repository privacy policy (`Privacy: on-device`, `Review: local-only`) applies, hosted Mistral is strictly disabled with zero cloud egress. Without `--local`, both on-device and hosted engines are discoverable.
 
 ```bash
-# Branch A: Hosted Mistral
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" run "<PROMPT>" --model "<SELECTED_MODEL>" [--auto-approve] [--workdir "<DIR>"]
-
-# Branch B: Local On-Device (Ollama)
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" run "<PROMPT>" --local
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" classify "<PROMPT>" [--local]
 ```
 
-### 4. Post-Execution Verification & Teardown
+`classify PROMPT [--local]` emits complexity and requirements only, never a named model. Establish task, capability/context needs, mode, permissions and workdir; do not infer quality from a model name.
 
-After execution finishes:
-* Verify process return code and inspect generated stdout/stderr.
-* Report execution latency, active model endpoint, and provider (`mistral` or `ollama`).
-* If `local` was used, ensure host stewardship by running memory eviction when required:
-  ```bash
-  python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" unload --all
-  ```
-* If files were mutated under `--auto-approve`, run native verification (`./scripts/lint.sh`) before completing the turn.
-
-## Compound Task Protocol: Macro Triage to Micro-Dispatch
-
-When handling batched or compound tasks (e.g. multi-comment PR reviews, multi-file refactoring passes, backlog task lists):
-
-### Phase 1: Macro Triage & Graph Ordering
-
-Never dispatch compound items in uncoordinated isolation or cram 10+ items into one monolithic prompt. Ingest all items simultaneously to identify cross-cutting constraints:
+## 2. Discover, Propose & Confirm
 
 ```bash
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<COMPOUND_INPUT_FILE>" [--local]
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" discover [--local] [--workdir "<DIR>"]
 ```
 
-`mistral-large-4` evaluates the full context, surfaces contradictions, and partitions items into up to three ordered execution waves:
-* **Wave 1 (Architectural / High-Risk):** Systemic contracts, state schemas, breaking interface changes. Recommended engine: `large`.
-* **Wave 2 (Implementation & Tests):** Discrete functions, algorithmic logic, unit tests, bug fixes. Recommended engine: `codestral` (cloud) or `local` (Ollama on-device).
-* **Wave 3 (Cosmetic & Informational):** Documentation, nits, formatting, explanatory replies. Recommended engine: `fast`.
+`discover [--local] [--workdir DIR]` accepts no task text. Inspect the entire versioned inventory: exact tags, references, fingerprints, capabilities, context, locality, size and residency evidence, including explicit unknowns. It performs metadata operations only: no warming, inference, unloading or configuration mutation, and no quality ranking.
 
-Invalid JSON, malformed wave/task fields, out-of-order waves, empty manifests, or forward dependencies fail with a non-zero exit and an error on stderr (`total_items` is derived automatically from validated tasks). Do not dispatch waves from an invalid manifest.
+When Vibe CLI is present and `--local` is not set, configured hosted models (`mistral-large-4`, `codestral-latest`, etc.) are enumerated alongside Ollama. Filter known incompatibilities, then propose at most three inventory choices with evidence and uncertainty. Present candidate proposals interactively via the native `ask_question` tool, prefixing the top candidate with `(Recommended)` and detailing engine locality, context limits, and identity fingerprint. Obtain approval of exact identity/fingerprint, requirements, mode and workdir; reuse an explicit request or still-valid approval for this task.
 
-### Phase 2: Heterogeneous Wave Dispatch & Verification
+## 3. Exact Dispatch
 
-For local-only tasks, use `--local` for triage and every wave, regardless of the manifest's recommendations. Never send private input to hosted triage.
+```bash
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" run "<PROMPT>" \
+  --provider [ollama|mistral] --model "<EXACT_TAG>" --expect-identity "<FINGERPRINT>" \
+  --task code --mode bounded_chat --require-capability chat \
+  [--local] --workdir "<DIR>" [--json]
+```
 
-Execute each wave sequentially with its dedicated engine:
-1. Dispatch Wave 1 with `vibe_execute.py run "<WAVE_1_TASKS>" --model large --auto-approve`.
-2. Dispatch Wave 2 with `vibe_execute.py run "<WAVE_2_TASKS>" --model codestral` (or `--local` for air-gapped tasks).
-3. Dispatch Wave 3 with `vibe_execute.py run "<WAVE_3_TASKS>" --model fast`.
-4. Run native baseline checks (`./scripts/lint.sh`) between waves to trap regressions early.
+Carry the approved requirements using:
+
+* `--task code|logic|fim|tdd|prose|docs|adr|architecture|utility`
+* `--mode bounded_chat|cli_agent`
+* Repeatable `--require-capability chat|tools|fim|vision`
+* `--min-context POSITIVE_INT` and, only when approved, `--accept-unknown`
+* `--local`, `--workdir DIR`, optional `--json`
+
+The Ollama runner supports **bounded_chat only**; tool metadata or `--auto-approve` cannot create filesystem autonomy. Hosted Vibe dispatch supports `--auto-approve` and autonomous tools where authorised. Exact identity, capabilities and locality are revalidated before inference. A changed endpoint/tag/digest or execution failure stops dispatch: no fallback.
+
+Missing normal run selection fails. Explicit CLI tags precede exact `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` overrides.
+
+`check_ollama.py select --task ROLE [--model EXACT_TAG] [--expect-identity HASH] [--accept-unknown]` uses the same inventory. Success returns `model`, `resident`, `fallback: null`, `identity_fingerprint` and `reference`; failure exits `2` with an explicit reason.
+
+## 4. Compound Execution & Triage
+
+Multi-step or batched tasks follow a clean division of labour to avoid redundant planning:
+
+1. **Orchestrator-Led Triage (Default):** The primary orchestrator plans, resolves dependencies, and structures waves directly in-context. It dispatches individual tasks to the approved workers via `vibe_execute.py run`.
+2. **Optional CLI Triage (`vibe_execute.py triage`):** Reserved for unparsed batch backlogs (10+ items) or headless scripts outside an interactive conversation:
+
+```bash
+python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage "<INPUT>" \
+  --provider [ollama|mistral] --model "<EXACT_TAG>" --expect-identity "<FINGERPRINT>" \
+  --task architecture --mode bounded_chat [--local] --workdir "<DIR>"
+```
+
+Select and approve the triage engine first, carrying the same relevant requirement flags as `run`. Generated `recommended_engine` values must be discovered `provider/source/model` references. Split only the first two slashes, preserving tag namespaces/suffixes. Validate references and manifest structure/dependencies; reject missing, invented or ineligible engines. Approve concrete wave engines and fingerprints before dispatch.
+
+Execute waves sequentially with native checks between them. `--local` constrains triage **and every wave**, regardless of recommendations.
+
+## 5. Verification, Provenance & Teardown
+
+Check exit status and stdout/stderr; run native verification on applied changes. Report actual provider, exact model, identity and elapsed time, not practical assumptions. When changes synthesised by an engine are committed, attribute that engine in `Co-authored-by:` Git trailers. Preserve existing declared wave lifecycle policy (`check_ollama.py unload --all` after leased local work); discovery never mutates residency.

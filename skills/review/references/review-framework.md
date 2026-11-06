@@ -102,21 +102,38 @@ Every review finding must follow the structured Conventional Comments pattern:
 | `nitpick` | Small stylistic preference that does not block merging. | `non-blocking` |
 | `praise` | Celebrates elegant code, robust tests, or excellent abstractions. | `non-blocking` |
 
-## 3. Dual-Model Consensus & Privacy Directives
+## 3. Discovery-Led Workers & Privacy Directives
 
-The code review framework supports two cooperative execution topologies:
+The [gateway](../../vibe-execute/SKILL.md) and [review workflow](../SKILL.md) use the same live inventory and identity validator. Discovery is metadata-only: no ranking, warming, inference, unloading or configuration changes. This Ollama phase permits only configured loopback endpoints and verified on-device inference, even without `--local`. Remote endpoints are diagnosed without contact; cloud-backed or unknown execution locality blocks dispatch. Residency is provisional evidence, not proof of capacity or readiness.
 
-### A. Dual-Model Consensus Protocol
+Hosted Mistral/Vibe is deferred. An absent CLI is `unavailable`; a present CLI is `unsupported_version` with `HOSTED_DISCOVERY_DEFERRED`, not a selectable engine. Do not inspect hosted configuration/authentication/catalogues or invent hosted choices.
 
-* **Primary Architect (Current Orchestrator):** Performs whole-repository architectural review, multi-file coherence checks, and synthesises findings across all 8 pillars; the client selects the model.
-* **Algorithmic Oracle (`code_model`):** Select through `check_ollama.py select --task code`, honouring `ARTIFICE_CODE_MODEL`. Cross-examine state transitions, pure functions, parsers and boundary conditions under Pillar 2.
-* **Prose & Cadence Oracle (`prose_model`):** Select through `select --task prose`, honouring `ARTIFICE_PROSE_MODEL`. Audit readability, documentation cadence and explanatory clarity under Pillar 6.
-* Use the exact successful tags throughout warming, inference payloads, review streams and actual-worker provenance, as described in [the review workflow](../SKILL.md). Never assume the default models are installed.
-* Accept a worker only when selection exits `0` and returns a non-empty `model`; warm only that value, never `fallback` or `null`. If selection or warming fails, skip that optional worker and continue with the orchestrator and native harness.
+### A. Shared Selection Contract
 
-### B. On-Device Privacy Protocol
+1. Establish task requirements and privacy before protected ingestion. Refresh inventory for the task; disclose partial discovery and handle its non-zero status explicitly.
+2. Propose at most three eligible choices from capability, context and locality evidence. Do not use tag names as quality evidence. One discovered model may serve both code and prose roles.
+3. Confirm concrete tags, fingerprints, requirements, mode and working directory. Reuse explicit requests or still-valid task approval.
+4. Validate each assignment with `check_ollama.py select --task ROLE [--model EXACT_TAG] [--expect-identity HASH] [--accept-unknown]`. Exact CLI models precede `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL`. Without an explicit choice, require a role override or one known-compatible candidate, never a preferred-name list or list-first choice.
+5. Accept selection only on exit `0` with non-empty `model`, `identity_fingerprint` and `reference`; success also preserves `resident` and `fallback: null`. Failure exits `2` with an explicit reason and `fallback: null`. Empty, missing or incompatible overrides fail rather than substituting.
+6. Preserve exact tags through warming, inference and provenance. Revalidate identity, requirements and locality before inference; endpoint, alias or digest drift requires renewed approval. Use gateway `run`, not an unchecked raw HTTP inference path.
+
+Known-incompatible models are excluded. Explicit task-scoped `--accept-unknown` may accept unknown suitability, never known incompatibility or a privacy/locality exception. A role override names an identity; it does not implicitly accept unknown metadata. Tool capability cannot create a missing harness: Ollama supports `bounded_chat` only, not filesystem autonomy through `--auto-approve`.
+
+Inventory references are `provider/source/model`, split at the first two slashes only; preserve model namespaces, case and tag suffixes. Compound `recommended_engine` values are proposals from that inventory, not dispatch authority. Validate and approve each concrete wave engine/fingerprint before dispatch, retain `--local` throughout and run native checks between waves.
+
+### B. Optional Worker Protocol
+
+* **Current Orchestrator:** Covers all eight pillars directly when appropriate, filters false positives against repository invariants and synthesises Conventional Comments.
+* **Code Worker (`code_model`):** Cross-examines state transitions, pure functions, parsers and boundary conditions.
+* **Prose Worker (`prose_model`):** Audits readability, documentation and explanatory clarity.
+* Warm only successfully selected, non-empty tags. Surface selection/warming failures on stderr before clearing an optional worker; disclose omissions and continue directly with the native harness where permitted.
+* Sign only with actual workers and exact references, not proposed or failed assignments. If one model fills both roles, record that fact without inventing a second model.
+
+### C. Required On-Device Protocol
 
 * **Trigger:** `--local`, `Privacy: on-device`, or `Review: local-only` in applicable policy metadata.
-* **Privacy Boundary:** Protected source code and diff contents must never be ingested into cloud model context or transmitted off-device, with no cloud fallback when local selection fails.
-* **On-Device Execution:** Dispatch diff inspection and synthesis strictly on-device via local shell/Ollama pipelines or within a verified local session: `code_model` audits code invariants (Pillars 2, 3, 5, 7); `prose_model` evaluates architecture, documentation, and governance (Pillars 1, 6, 8) and synthesises the structured report.
-* Select and warm both required workers before ingesting protected content. If either is unavailable or warming fails, stop without reading the target or using a cloud fallback.
+* **Privacy Boundary:** Protected prompts, source, diffs and generated outputs must not enter cloud model context or leave the device. Metadata discovery does not make a cloud conversation air-gapped.
+* **Eligibility:** Require configured loopback transport and verified on-device execution evidence. Cloud-backed and unknown execution locality cannot satisfy strict policy; a loopback proxy is not proof of on-device inference.
+* **Execution:** Use local shell/Ollama pipelines or a verified local session: `code_model` covers Pillars 2, 3, 5, 7; `prose_model` covers 1, 6, 8 and synthesis. Native checks cover Pillar 4. One model may fill both required assignments.
+* Select and warm both role assignments before protected ingestion. If either fails, stop before reading the target; no cloud fallback or privacy waiver. `--local` governs triage and every wave regardless of generated recommendations.
+* Preserve the existing declared post-wave unload policy; discovery never mutates models or evicts other workloads.

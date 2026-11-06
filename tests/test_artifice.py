@@ -1,6 +1,7 @@
 """Unit and black-box contract tests for Artifice scripts, adapters, and installer."""
 
 from contextlib import redirect_stderr, redirect_stdout
+from copy import deepcopy
 import io
 import json
 import os
@@ -19,8 +20,32 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import check_ollama  # noqa: E402
 import lint  # noqa: E402
+import model_inventory  # noqa: E402
 import validate_egm  # noqa: E402
 import vibe_execute  # noqa: E402
+
+
+LOCAL_TAG = "qwen3.8:27b-mlx"
+DISCOVER_MODELS = model_inventory.discover
+
+
+def local_inventory(names=None, resident=True):
+    names = [LOCAL_TAG] if names is None else names
+
+    def metadata(path, data=None, **kwargs):
+        if path == "/api/tags":
+            return 200, {"models": [
+                {"name": name, "digest": "digest-" + name, "size": 1024} for name in names
+            ]}, 0.01
+        if path == "/api/ps":
+            return 200, {"models": [{"name": name} for name in names] if resident else []}, 0.01
+        return 200, {
+            "capabilities": ["completion", "tools"],
+            "model_info": {"example.context_length": 32768},
+        }, 0.01
+
+    with patch.object(model_inventory, "request_json", side_effect=metadata):
+        return DISCOVER_MODELS(local_only=True)
 
 
 class InstallerTests(unittest.TestCase):
@@ -150,25 +175,22 @@ class ModelSelectionTests(unittest.TestCase):
         env_patch = patch.dict(os.environ, {}, clear=True)
         env_patch.start()
         self.addCleanup(env_patch.stop)
-        status_patch = patch.object(check_ollama, "get_status", return_value={
-            "online": True,
-            "available": ["mistral-nemo:latest", "qwen2.5:14b", "qwen2.5-coder:14b"],
-            "resident": [{"name": "qwen2.5-coder:14b"}],
-        })
-        self.status = status_patch.start()
-        self.addCleanup(status_patch.stop)
+        snapshot_patch = patch.object(model_inventory, "discover", return_value=local_inventory())
+        self.snapshot = snapshot_patch.start()
+        self.addCleanup(snapshot_patch.stop)
+        legacy = patch.object(check_ollama, "get_status", side_effect=AssertionError("Selection must use inventory"))
+        legacy.start()
+        self.addCleanup(legacy.stop)
 
     def test_defaults_and_task_overrides(self):
-        self.assertEqual(
-            check_ollama.select_best_model("code"),
-            {"model": "qwen2.5-coder:14b", "resident": True, "fallback": None},
-        )
-        self.assertEqual(
-            check_ollama.select_best_model("prose"),
-            {"model": "mistral-nemo:latest", "resident": False, "fallback": None},
-        )
-        with patch.dict(os.environ, {"ARTIFICE_CODE_MODEL": "qwen2.5:14b", "ARTIFICE_PROSE_MODEL": ""}):
-            self.assertEqual(check_ollama.select_best_model("code")["model"], "qwen2.5:14b")
+        for task in ("code", "prose"):
+            selected = check_ollama.select_best_model(task)
+            self.assertEqual(selected["model"], LOCAL_TAG)
+            self.assertTrue(selected["resident"])
+            self.assertIsNone(selected["fallback"])
+            self.assertEqual(len(selected["identity_fingerprint"]), 64)
+        with patch.dict(os.environ, {"ARTIFICE_CODE_MODEL": LOCAL_TAG, "ARTIFICE_PROSE_MODEL": ""}):
+            self.assertEqual(check_ollama.select_best_model("code")["model"], LOCAL_TAG)
             empty_prose = check_ollama.select_best_model("prose")
             self.assertIsNone(empty_prose["model"])
             self.assertIsNone(empty_prose["fallback"])
@@ -178,17 +200,27 @@ class ModelSelectionTests(unittest.TestCase):
             res = check_ollama.select_best_model("code")
             self.assertEqual((res["model"], res["fallback"]), (None, None))
 
-        self.status.return_value = {"online": False, "available": [], "resident": []}
-        self.assertEqual(check_ollama.select_best_model("code")["fallback"], "cloud-flash")
-        with patch.dict(os.environ, {"ARTIFICE_CODE_MODEL": "qwen2.5:14b"}):
+        self.snapshot.return_value = {
+            "schema_version": 1, "status": "unavailable", "models": [], "diagnostics": [],
+        }
+        self.assertIsNone(check_ollama.select_best_model("code")["fallback"])
+        with patch.dict(os.environ, {"ARTIFICE_CODE_MODEL": LOCAL_TAG}):
             self.assertIsNone(check_ollama.select_best_model("code")["fallback"])
 
         buf = io.StringIO()
-        with patch.object(sys, "argv", ["check_ollama.py", "select", "--task", "code"]), redirect_stdout(buf):
+        with patch.object(sys, "argv", ["check_ollama.py", "select", "--task", "code"]), \
+                redirect_stdout(buf), redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit) as exc:
                 check_ollama.main()
         self.assertEqual(exc.exception.code, 2)
         self.assertIsNone(json.loads(buf.getvalue())["model"])
+
+    def test_explicit_choice_has_precedence_and_ambiguity_fails(self):
+        self.snapshot.return_value = local_inventory([LOCAL_TAG, "other:latest"])
+        self.assertIsNone(check_ollama.select_best_model("code")["model"])
+        with patch.dict(os.environ, {"ARTIFICE_CODE_MODEL": "other:latest"}):
+            selected = check_ollama.select_best_model("code", model=LOCAL_TAG)
+        self.assertEqual(selected["model"], LOCAL_TAG)
 
     def test_warming_requires_residency_confirmation(self):
         for status, response, success in (
@@ -213,6 +245,16 @@ class ModelSelectionTests(unittest.TestCase):
         self.assertFalse(result["verified"])
         self.assertEqual(result["error"], "load failed")
         request.assert_called_once()
+
+    def test_warming_rejects_malformed_residency(self):
+        for body in (None, [], {}, {"models": [None]}):
+            with self.subTest(body=body), patch.object(check_ollama, "request_json", side_effect=[
+                (200, {}, 0.1), (200, body, 0.1),
+            ]):
+                result = check_ollama.warm_model(LOCAL_TAG)
+            self.assertFalse(result["success"])
+            self.assertFalse(result["verified"])
+            self.assertTrue(result["error"])
 
 
 class LintAndContractTests(unittest.TestCase):
@@ -521,6 +563,21 @@ class BashSyntaxRecursiveTests(unittest.TestCase):
 class VibeExecuteTests(unittest.TestCase):
     """Tests for vibe_execute.py task classifier and execution gateway."""
 
+    def setUp(self):
+        environment = patch.dict(os.environ, {}, clear=True)
+        environment.start()
+        self.addCleanup(environment.stop)
+        self.inventory = local_inventory()
+        discovery = patch.object(model_inventory, "discover", return_value=self.inventory)
+        self.discovery = discovery.start()
+        self.addCleanup(discovery.stop)
+        transport = patch.object(check_ollama, "request_json", side_effect=AssertionError("Unexpected inference"))
+        transport.start()
+        self.addCleanup(transport.stop)
+        status = patch.object(check_ollama, "get_status", return_value={"online": False})
+        status.start()
+        self.addCleanup(status.stop)
+
     @staticmethod
     def _manifest():
         return {
@@ -531,7 +588,7 @@ class VibeExecuteTests(unittest.TestCase):
                 {
                     "wave": number,
                     "category": category,
-                    "recommended_engine": engine,
+                    "recommended_engine": "ollama/default/" + LOCAL_TAG,
                     "items": [{
                         "id": number, "description": f"Task {number}",
                         "files": ["example.py"], "dependency": number - 1 if number > 1 else None,
@@ -548,28 +605,29 @@ class VibeExecuteTests(unittest.TestCase):
     def test_classify_task_tier1_fast(self):
         res = vibe_execute.classify_task("Summarise this git diff and explain the status")
         self.assertEqual(res["tier"], 1)
-        self.assertEqual(res["recommended_model"], "fast")
+        self.assertEqual(res["task"], "utility")
+        self.assertNotIn("recommended_model", res)
 
     def test_classify_task_word_boundary_guardrail(self):
         # Prompts containing 'c' or 'go' as substrings shouldn't trigger code tier
         res = vibe_execute.classify_task("check the status of the branch")
         self.assertEqual(res["tier"], 1)
-        self.assertEqual(res["recommended_model"], "fast")
+        self.assertNotIn("model_endpoint", res)
 
     def test_classify_task_tier2_code(self):
         res = vibe_execute.classify_task("Write an algorithmic red-black tree in C")
         self.assertEqual(res["tier"], 2)
-        self.assertEqual(res["recommended_model"], "codestral")
+        self.assertEqual(res["task"], "code")
 
     def test_classify_task_tier3_agentic(self):
         res = vibe_execute.classify_task("Crawl the repository, explore files, and inspect codebase across files")
         self.assertEqual(res["tier"], 3)
-        self.assertEqual(res["recommended_model"], "mistral-medium-3.5")
+        self.assertEqual(res["mode"], "cli_agent")
 
     def test_classify_task_tier4_architecture(self):
         res = vibe_execute.classify_task("Analyse the architectural trade-offs, concurrency race conditions and protocol invariants")
         self.assertEqual(res["tier"], 4)
-        self.assertEqual(res["recommended_model"], "large")
+        self.assertEqual(res["task"], "architecture")
 
     def test_find_vibe_custom_override(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -589,36 +647,38 @@ class VibeExecuteTests(unittest.TestCase):
     def test_classify_task_tier0_local_privacy(self):
         res = vibe_execute.classify_task("Generate confidential key vault for private storage")
         self.assertEqual(res["tier"], 0)
-        self.assertEqual(res["branch"], "local")
-        self.assertEqual(res["recommended_model"], "local")
+        self.assertTrue(res["local_only"])
+        self.assertNotIn("recommended_model", res)
 
     def test_classify_task_local_flag_override(self):
         res = vibe_execute.classify_task("Write an algorithmic red-black tree in C", is_local_preferred=True)
         self.assertEqual(res["tier"], 0)
-        self.assertEqual(res["branch"], "local")
-        self.assertEqual(res["recommended_model"], "local")
+        self.assertTrue(res["local_only"])
 
     def test_execute_local_offline_daemon(self):
-        with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": False}):
-            res = vibe_execute.execute_local("hello")
-            self.assertFalse(res["success"])
-            self.assertEqual(res["returncode"], 127)
-            self.assertIn("offline", res["error"])
+        self.discovery.return_value = {
+            "schema_version": 1, "status": "unavailable", "models": [], "diagnostics": [],
+        }
+        res = vibe_execute.execute_local("hello")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["returncode"], 127)
+        self.assertTrue(res["error"])
 
     def test_execute_local_success(self):
-        with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": True}):
-            with patch.object(vibe_execute.check_ollama, "select_best_model", return_value={"model": "qwen2.5:14b", "resident": True}):
-                with patch.object(vibe_execute.check_ollama, "request_json", return_value=(200, {"message": {"content": "Generated local code"}}, 0.5)):
-                    res = vibe_execute.execute_local("Write a function")
-                    self.assertTrue(res["success"])
-                    self.assertEqual(res["stdout"], "Generated local code")
-                    self.assertEqual(res["provider"], "ollama")
+        with patch.object(check_ollama, "request_json", return_value=(
+            200, {"message": {"content": "Generated local code"}}, 0.5,
+        )) as request:
+            res = vibe_execute.execute_local("Write a function")
+        self.assertTrue(res["success"])
+        self.assertEqual(res["stdout"], "Generated local code")
+        self.assertEqual(res["provider"], "ollama")
+        self.assertEqual(res["model_used"], LOCAL_TAG)
+        self.assertEqual(request.call_args.kwargs["data"]["model"], LOCAL_TAG)
 
     def test_execute_local_stops_after_failed_warming(self):
-        with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": True}), \
-                patch.object(vibe_execute.check_ollama, "select_best_model", return_value={"model": "qwen2.5:14b", "resident": False}), \
-                patch.object(vibe_execute.check_ollama, "warm_model", return_value={"success": False, "error": "load failed", "load_time_sec": 0.2}), \
-                patch.object(vibe_execute.check_ollama, "request_json") as request:
+        self.inventory["models"][0]["resident"] = False
+        with patch.object(check_ollama, "warm_model", return_value={"success": False, "error": "load failed", "load_time_sec": 0.2}), \
+                patch.object(check_ollama, "request_json") as request:
             result = vibe_execute.execute_local("Synthetic task")
         self.assertFalse(result["success"])
         self.assertEqual(result["returncode"], 1)
@@ -626,35 +686,110 @@ class VibeExecuteTests(unittest.TestCase):
         request.assert_not_called()
 
     def test_execute_local_accepts_successful_warming(self):
-        with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": True}), \
-                patch.object(vibe_execute.check_ollama, "select_best_model", return_value={"model": "qwen2.5:14b", "resident": False}), \
-                patch.object(vibe_execute.check_ollama, "warm_model", return_value={"success": True, "verified": True}) as warm, \
-                patch.object(vibe_execute.check_ollama, "request_json", return_value=(200, {"message": {"content": "Response"}}, 0.1)):
+        self.inventory["models"][0]["resident"] = False
+        with patch.object(check_ollama, "warm_model", return_value={"success": True, "verified": True}) as warm, \
+                patch.object(check_ollama, "request_json", return_value=(200, {"message": {"content": "Response"}}, 0.1)):
             result = vibe_execute.execute_local("Synthetic task")
         self.assertTrue(result["success"])
-        warm.assert_called_once_with("qwen2.5:14b", keep_alive="5m")
+        warm.assert_called_once_with(LOCAL_TAG, keep_alive="5m", host="http://127.0.0.1:11434", options=None)
 
     def test_execute_local_rejects_missing_or_empty_content(self):
-        for response in ({}, {"message": None}, {"message": {"content": ""}}, {"message": {"content": 123}}):
+        for response in (None, [], "text", {}, {"message": None}, {"message": {"content": ""}}, {"message": {"content": 123}}):
             with self.subTest(response=response):
-                with patch.object(vibe_execute.check_ollama, "get_status", return_value={"online": True}), \
-                        patch.object(vibe_execute.check_ollama, "select_best_model", return_value={"model": "qwen2.5:14b", "resident": True}), \
-                        patch.object(vibe_execute.check_ollama, "request_json", return_value=(200, response, 0.1)):
+                with patch.object(check_ollama, "request_json", return_value=(200, response, 0.1)):
                     result = vibe_execute.execute_local("Synthetic task")
                 self.assertFalse(result["success"])
                 self.assertEqual(result["returncode"], 1)
                 self.assertTrue(result["error"])
 
     def test_execute_router_dispatches_local(self):
-        with patch("vibe_execute.execute_local", return_value={"success": True, "provider": "ollama"}) as mock_local:
+        with patch("vibe_execute._dispatch_local", return_value={"success": True, "provider": "ollama"}) as mock_local:
             res = vibe_execute.execute("prompt", model="local")
             mock_local.assert_called_once()
             self.assertEqual(res["provider"], "ollama")
 
+    def test_missing_selection_and_stale_identity_never_infer(self):
+        missing = vibe_execute.execute("Write a function")
+        self.assertFalse(missing["success"])
+        self.assertEqual(missing["returncode"], 2)
+        stale = vibe_execute.execute(
+            "Write a function", provider="ollama", model=LOCAL_TAG, expect_identity="0" * 64,
+        )
+        self.assertFalse(stale["success"])
+        self.assertEqual(stale["returncode"], 2)
+
+    def test_local_prefix_is_not_a_provider_and_permissions_are_not_ignored(self):
+        result = vibe_execute.execute("Task", model="local-unlisted")
+        self.assertFalse(result["success"])
+        result = vibe_execute.execute("Task", model=LOCAL_TAG, provider="ollama", auto_approve=True)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["returncode"], 2)
+
+    def test_minimum_context_is_passed_to_inference(self):
+        with patch.object(check_ollama, "request_json", return_value=(
+            200, {"message": {"content": "Result"}}, 0.1,
+        )) as request:
+            result = vibe_execute.execute(
+                "Task", provider="ollama", model=LOCAL_TAG, min_context=8192,
+            )
+        self.assertTrue(result["success"])
+        self.assertEqual(request.call_args.kwargs["data"]["options"]["num_ctx"], 8192)
+
+    def test_hosted_delivery_dispatches_via_vibe_subprocess(self):
+        with patch.object(model_inventory, "discover", side_effect=DISCOVER_MODELS), \
+                patch("vibe_execute.find_vibe", return_value="/usr/local/bin/vibe"), \
+                patch("subprocess.run") as mock_run:
+            mock_run.return_value = unittest.mock.Mock(returncode=0, stdout="Hosted answer", stderr="")
+            result = vibe_execute.execute("Task", provider="mistral", model="large")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["stdout"], "Hosted answer")
+        self.assertEqual(result["provider"], "mistral")
+        mock_run.assert_called_once()
+        self.assertIn("--model", mock_run.call_args[0][0])
+        self.assertIn("large", mock_run.call_args[0][0])
+
+    def test_hosted_delivery_is_blocked_under_local_policy(self):
+        result = vibe_execute.execute("Task", provider="mistral", model="large", local_only=True)
+        self.assertFalse(result["success"])
+        self.assertIn("Local-only policy rejects hosted execution", result["error"])
+
+    def test_empty_mode_is_not_silently_defaulted(self):
+        result = vibe_execute.execute("Task", provider="ollama", model=LOCAL_TAG, mode="")
+        self.assertFalse(result["success"])
+        self.assertEqual(result["returncode"], 2)
+
+    def test_reported_model_mismatch_is_not_success(self):
+        with patch.object(check_ollama, "request_json", return_value=(
+            200, {"model": "another:tag", "message": {"content": "Result"}}, 0.1,
+        )):
+            result = vibe_execute.execute("Task", provider="ollama", model=LOCAL_TAG)
+        self.assertFalse(result["success"])
+        self.assertIn("model", result["error"].lower())
+
+    def test_identity_change_after_warming_prevents_inference(self):
+        self.inventory["models"][0]["resident"] = False
+        changed = deepcopy(self.inventory)
+        changed["models"][0]["digest"] = "changed"
+        changed["models"][0]["identity_fingerprint"] = model_inventory.fingerprint(
+            changed["models"][0], "http://127.0.0.1:11434",
+        )
+        self.discovery.side_effect = [self.inventory, changed]
+        with patch.object(check_ollama, "warm_model", return_value={"success": True, "verified": True}) as warm, \
+                patch.object(check_ollama, "request_json") as request, \
+                patch("vibe_execute.time.perf_counter", side_effect=[10.0, 11.0, 15.0]):
+            result = vibe_execute.execute("Task", provider="ollama", model=LOCAL_TAG)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["elapsed_sec"], 5.0)
+        warm.assert_called_once()
+        request.assert_not_called()
+
+    def triage(self, text):
+        return vibe_execute.triage_compound_task(text, model=LOCAL_TAG, provider="ollama", local_only=True)
+
     def test_triage_compound_task_parses_manifest(self):
         fake_manifest = self._manifest()
         with patch("vibe_execute.execute", return_value={"success": True, "stdout": json.dumps(fake_manifest), "model_used": "large", "elapsed_sec": 1.2}):
-            res = vibe_execute.triage_compound_task("1. Item A\n2. Item B\n3. Item C")
+            res = self.triage("1. Item A\n2. Item B\n3. Item C")
             self.assertTrue(res["success"])
             self.assertIsNotNone(res["manifest"])
             self.assertEqual(len(res["manifest"]["waves"]), 3)
@@ -662,7 +797,7 @@ class VibeExecuteTests(unittest.TestCase):
     def test_triage_compound_task_extracts_fenced_json(self):
         fake_json = "```json\n" + json.dumps(self._manifest()) + "\n```"
         with patch("vibe_execute.execute", return_value={"success": True, "stdout": fake_json, "model_used": "large", "elapsed_sec": 1.5}):
-            res = vibe_execute.triage_compound_task("items")
+            res = self.triage("items")
             self.assertTrue(res["success"])
             self.assertEqual(res["manifest"]["summary"], "Triage three items")
 
@@ -672,7 +807,7 @@ class VibeExecuteTests(unittest.TestCase):
         two_wave["waves"][1]["items"][0]["dependency"] = 1
         two_wave["total_items"] = 99
         with patch("vibe_execute.execute", return_value={"success": True, "stdout": json.dumps(two_wave), "model_used": "large", "elapsed_sec": 0.8}):
-            res = vibe_execute.triage_compound_task("1. Contract\n2. Docs")
+            res = self.triage("1. Contract\n2. Docs")
         self.assertTrue(res["success"])
         self.assertEqual([w["wave"] for w in res["manifest"]["waves"]], [1, 3])
         self.assertEqual(res["manifest"]["total_items"], 2)
@@ -698,7 +833,7 @@ class VibeExecuteTests(unittest.TestCase):
         for output in invalid_outputs:
             with self.subTest(output=output):
                 with patch("vibe_execute.execute", return_value={"success": True, "stdout": output}):
-                    result = vibe_execute.triage_compound_task("Synthetic items")
+                    result = self.triage("Synthetic items")
                 self.assertFalse(result["success"])
                 self.assertIsNone(result["manifest"])
                 self.assertTrue(result["error"])
@@ -718,16 +853,33 @@ class VibeExecuteTests(unittest.TestCase):
         with patch("vibe_execute.triage_compound_task", return_value={
             "success": True, "manifest": self._manifest(),
         }) as triage, patch.object(sys, "argv", [
-            "vibe_execute.py", "triage", "Synthetic items", "--local", "--model", "large",
+            "vibe_execute.py", "triage", "Synthetic items", "--local", "--provider", "ollama", "--model", LOCAL_TAG,
         ]), redirect_stdout(io.StringIO()):
             self.assertEqual(vibe_execute.main(), 0)
-        self.assertEqual(triage.call_args.kwargs["model"], "local")
+        self.assertEqual(triage.call_args.kwargs["model"], LOCAL_TAG)
+        self.assertTrue(triage.call_args.kwargs["local_only"])
 
     def test_triage_compound_task_handles_failure(self):
         with patch("vibe_execute.execute", return_value={"success": False, "error": "Execution timed out", "stdout": ""}):
-            res = vibe_execute.triage_compound_task("items")
+            res = self.triage("items")
             self.assertFalse(res["success"])
             self.assertIn("timed out", res["error"])
+
+    def test_triage_preserves_partial_discovery_diagnostics(self):
+        self.inventory["status"] = "partial"
+        self.inventory["diagnostics"] = [{"code": "PARTIAL_SOURCE", "message": "An unrelated detail probe failed."}]
+        with patch("vibe_execute.execute", return_value={"success": True, "stdout": json.dumps(self._manifest())}):
+            result = self.triage("items")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["diagnostics"], self.inventory["diagnostics"])
+
+    def test_triage_rejects_an_invented_wave_engine(self):
+        manifest = self._manifest()
+        manifest["waves"][0]["recommended_engine"] = "ollama/default/not-installed"
+        with patch("vibe_execute.execute", return_value={"success": True, "stdout": json.dumps(manifest)}):
+            result = self.triage("items")
+        self.assertFalse(result["success"])
+        self.assertIsNone(result["manifest"])
 
 
 if __name__ == "__main__":

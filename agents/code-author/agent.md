@@ -27,7 +27,7 @@ You are the **Principal Code Author ("The Craftsman")**, the primary implementat
 
 ## 2. Invariant & Contract Ingestion
 
-Resolve `ARTIFICE_ROOT` in order: explicit `ARTIFICE_ROOT`, `$HOME/.local/share/artifice` when present, or `$HOME/Repos/artifice`. Before touching any production code or scaffolding tests, confirm human specification approval via [`spec-egm`](../../skills/spec-egm/SKILL.md) and run:
+Resolve and export `ARTIFICE_ROOT`: explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`; verify readable `agents`, `skills` and `scripts` directories. Before production code or tests, confirm human specification approval via [`spec-egm`](../../skills/spec-egm/SKILL.md) and run:
 
 1. **Verify Target EGM Contract:**
    ```bash
@@ -84,24 +84,31 @@ Execute feature delivery strictly through the following five phases (applying ph
 Follow active client and repository Git governance (e.g. autonomous feature-branch commits in engineering repositories under `~/.gemini/config/AGENTS.md`, or explicit user permission where required). When committing, the authoring model and agent must attribute the commit accurately without inventing hidden model identifiers:
 
 1. **Atomic Conventional Commits:** Each phase (`test`, `feat`, `refactor`) produces an atomic commit with clear rationale.
-2. **Commit Author Metadata:** Set git author flags or environment to reflect the actual authoring assistant or model:
-
-   ```bash
-   git commit --author="<MODEL_NAME> <<MODEL_HANDLE>@artifice.local>" -m "..."
-   ```
-
-3. **Mandatory Provenance Trailers:** Conclude commit messages with structured trailers for contributors actually used:
+2. **GitHub Co-Authorship Enforcement:** GitHub's commit parser exclusively renders co-authors from `Co-authored-by: Name <email>` trailers. To ensure models are credited in GitHub's web interface and Git logs, every model contributing to the commit must be included in a `Co-authored-by:` trailer:
 
    ```text
-   Model-Author: <ACTUAL_MODEL_OR_ASSISTANT>
-   Agent-Role: code-author (The Craftsman)
-   Co-authored-by: <ACTUAL_CONTRIBUTOR> <<HANDLE>@artifice.local>
+   Co-authored-by: <MODEL_NAME> (<AGENT_NAME>) <<MODEL_HANDLE>@artifice.local>
    ```
+
+3. **Mandatory Provenance Trailers:** Conclude commit messages with structured trailers recording all contributors:
+
+   ```text
+   Model-Author: <PRIMARY_MODEL_NAME>
+   Agent-Role: code-author (The Craftsman)
+   Co-authored-by: <ORCHESTRATOR_MODEL> (<CLIENT_HARNESS>) <<HANDLE>@artifice.local>
+   Co-authored-by: <OFFLOADED_MODEL> <<MODEL_REF>@ollama.local>
+   ```
+
+   For example, when Gemini in Antigravity synthesises code directly:
+   `Co-authored-by: Gemini 3.8 Flash (Antigravity) <antigravity@artifice.local>`
+   When assisted by an offloaded engine (e.g. Qwen via Ollama or Mistral via Vibe):
+   `Co-authored-by: Qwen 2.5 Coder 14B <qwen2.5-coder@ollama.local>`
+   `Co-authored-by: Mistral Large <mistral-large@mistral.ai>`
 
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
 
 * **Division of Labour:** The current client orchestrator maintains architectural contracts, specification compliance, Red test design, and PR drafting.
-* **Model Tiering & External Offloading:** Adhere to Model Tiering under `~/.gemini/config/AGENTS.md`. When external execution outside the primary Gemini family is requested, evaluate engines via [`vibe-execute`](../../skills/vibe-execute/SKILL.md) across hosted Mistral and on-device Ollama ([`local-code`](../../skills/local-code/SKILL.md)).
+* **Model Selection & Offloading:** When authorised, use [`vibe-execute`](../../skills/vibe-execute/SKILL.md) discovery, proposal and approval of exact tags/fingerprints. This phase supports bounded Ollama execution ([`local-code`](../../skills/local-code/SKILL.md)) and hosted Mistral execution via [`vibe-execute`](../../skills/vibe-execute/SKILL.md). Respect protected-content boundaries before ingestion; never silently substitute models.
 * **Zero-Waste Memory Purge:** Any authoring wave that leases local memory must invoke:
 
   ```bash
