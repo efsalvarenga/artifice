@@ -39,7 +39,7 @@ python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" discove
 
 `discover [--local] [--workdir DIR]` accepts no task text. Inspect the entire versioned inventory: exact tags, references, fingerprints, capabilities, context, locality, size and residency evidence, including explicit unknowns. It performs metadata operations only: no warming, inference, unloading or configuration mutation, and no quality ranking.
 
-When Vibe CLI is present and `--local` is not set, configured hosted models (`mistral-large-4`, `codestral-latest`, etc.) are enumerated alongside Ollama. Filter known incompatibilities, then propose at most three inventory choices with evidence and uncertainty. Obtain approval of exact identity/fingerprint, requirements, mode and workdir; reuse an explicit request or still-valid approval for this task.
+When Vibe CLI is present and `--local` is not set, configured hosted models (`mistral-large-4`, `codestral-latest`, etc.) are enumerated alongside Ollama. Filter known incompatibilities, then propose at most three inventory choices with evidence and uncertainty. Present candidate proposals interactively via the native `ask_question` tool, prefixing the top candidate with `(Recommended)` and detailing engine locality, context limits, and identity fingerprint. Obtain approval of exact identity/fingerprint, requirements, mode and workdir; reuse an explicit request or still-valid approval for this task.
 
 ## 3. Exact Dispatch
 
