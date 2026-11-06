@@ -34,7 +34,7 @@ Stop on selection/execution failure; never substitute. Explicit tags precede `AR
 
 ## 3. Verify & Release
 
-Probe 2–3 boundary conditions and verify native Red/Green tests before accepting changes. Record the actual model tag in authorised Git provenance. Hosted support is deferred, never a fallback.
+Probe 2–3 boundary conditions and verify native Red/Green tests before accepting changes. Record the actual model tag in authorised Git provenance (`Co-authored-by: <MODEL_NAME> <<TAG>@ollama.local>`). Hosted support is deferred, never a fallback.
 
 Retain the existing post-wave [lifecycle policy](../../scripts/check_ollama.py):
 

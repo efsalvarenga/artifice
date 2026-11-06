@@ -83,4 +83,4 @@ Execute waves sequentially with native checks between them. `--local` constrains
 
 ## 5. Verification, Provenance & Teardown
 
-Check exit status and stdout/stderr; run native verification on applied changes. Report actual provider, exact model, identity and elapsed time, not practical assumptions. Preserve existing declared wave lifecycle policy (`check_ollama.py unload --all` after leased local work); discovery never mutates residency.
+Check exit status and stdout/stderr; run native verification on applied changes. Report actual provider, exact model, identity and elapsed time, not practical assumptions. When changes synthesised by an engine are committed, attribute that engine in `Co-authored-by:` Git trailers. Preserve existing declared wave lifecycle policy (`check_ollama.py unload --all` after leased local work); discovery never mutates residency.
