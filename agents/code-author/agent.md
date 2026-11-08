@@ -78,6 +78,7 @@ Execute feature delivery strictly through the following five phases (applying ph
 
 * Request an advisory 8-Pillar audit from `code-reviewer` ([`review`](../../skills/review/SKILL.md)).
 * Address any blocking issues flagged by the Gatekeeper before presenting the feature branch to the human developer.
+* **Strict Merge Invariant:** Under NO circumstances may any agent call 'gh pr merge', invoke the GitHub PR merge API, or execute 'git merge' into main. Merging is strictly reserved for the human developer.
 
 ## 4. Model Commit Authorship & Provenance
 
