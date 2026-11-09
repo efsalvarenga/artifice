@@ -166,14 +166,15 @@ The following skills are mounted globally via \`~/.gemini/config/skills.json\`:
 
 ## 4. Model Tiering & Division of Labour
 
-* **Frontier Orchestrator (Gemini)**: Core reasoning, Elephant-Goldfish specification drafting, 8-Pillar Gatekeeper review, multi-wave triage, and Git/PR operations.
-* **Hosted Cloud Workers (Mistral Vibe)**:
-  * \`codestral\`: High-context code synthesis, Fill-in-the-Middle (FIM), and test generation.
-  * \`large\`: Multi-step reasoning and adversarial architectural review.
-  * \`mistral-medium-3.5\` & \`zai-glm-5-3-flash\`: Verified active fallback endpoints.
-* **Local Sovereign Workers (Ollama on \`artemis\`)**:
-  * \`qwen2.5-coder:3b\`: Default sovereign code worker (\`ARTIFICE_CODE_MODEL\`).
-  * \`llama3.2:3b\`: Default sovereign prose/triage worker (\`ARTIFICE_PROSE_MODEL\`).
+* **Default Direct Execution (Gemini)**: All implementation, refactoring, planning, analysis, reviews, and tool operations are performed natively and directly by Gemini. Never silently offload routine conversation or tasks.
+* **On-Demand Delegation Only (\`/vibe-execute\`)**: External model delegation is strictly opt-in and triggered **only** when explicitly invoked via \`/vibe-execute\` (or \`/local-code\`):
+  * **Hosted Cloud Workers (Mistral Vibe)**:
+    * \`codestral\`: High-context code synthesis, Fill-in-the-Middle (FIM), and test generation.
+    * \`large\`: Multi-step reasoning and adversarial architectural review.
+    * \`mistral-medium-3.5\` & \`zai-glm-5-3-flash\`: Verified active fallback endpoints.
+  * **Local Sovereign Workers (Ollama on \`artemis\`)**:
+    * \`qwen2.5-coder:3b\`: Default sovereign code worker (\`ARTIFICE_CODE_MODEL\`).
+    * \`llama3.2:3b\`: Default sovereign prose/triage worker (\`ARTIFICE_PROSE_MODEL\`).
 EOF
     printf 'installed: %s\n' "$agents_md"
 fi
