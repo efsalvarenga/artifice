@@ -30,13 +30,11 @@ MODES = ("bounded_chat", "cli_agent")
 LOCAL_ALIASES = ("local", "ollama", "local-code")
 
 DEFAULT_MISTRAL_MODELS = (
-    {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
     {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
-    {"alias": "mistral-medium-3.5", "name": "mistral-medium-3.5", "display_name": "Mistral Medium 3.5", "context": 131072},
+    {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
     {"alias": "fast", "name": "mistral-vibe-cli-fast", "display_name": "Mistral Vibe Fast", "context": 32768},
     {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 131072},
     {"alias": "ministral", "name": "ministral-8b-latest", "display_name": "Ministral 8B", "context": 131072},
-    {"alias": "zai-glm-5-3-flash", "name": "zai-glm-5-3-flash", "display_name": "ZAI GLM 5.3 Flash", "context": 131072},
 )
 
 
@@ -67,7 +65,26 @@ def find_vibe() -> str:
 
 
 def read_vibe_models(workdir: str = None) -> list:
-    """Read configured models from ~/.vibe/config.toml or return canonical Mistral defaults."""
+    """Read configured models from user settings or fallback to canonical defaults."""
+    user_config = Path(os.environ.get("GEMINI_VIBE_MODELS", Path.home() / ".gemini" / "config" / "vibe_models.json")).expanduser()
+    if user_config.is_file():
+        try:
+            items = json.loads(user_config.read_text(encoding="utf-8"))
+            if isinstance(items, list) and items:
+                normalized = []
+                for entry in items:
+                    if isinstance(entry, dict) and entry.get("name"):
+                        normalized.append({
+                            "alias": entry.get("alias", entry["name"]),
+                            "name": entry["name"],
+                            "display_name": entry.get("display_name", entry["name"]),
+                            "context": entry.get("context", 131072),
+                        })
+                if normalized:
+                    return normalized
+        except (OSError, json.JSONDecodeError):
+            pass
+
     vibe_home = Path(os.environ.get("VIBE_HOME", Path.home() / ".vibe")).expanduser()
     config_file = vibe_home / "config.toml"
     discovered = []
