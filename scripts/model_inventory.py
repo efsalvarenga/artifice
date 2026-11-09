@@ -30,11 +30,13 @@ MODES = ("bounded_chat", "cli_agent")
 LOCAL_ALIASES = ("local", "ollama", "local-code")
 
 DEFAULT_MISTRAL_MODELS = (
+    {"alias": "mistral-medium-3.5", "name": "mistral-medium-3.5", "display_name": "Mistral Medium 3.5", "context": 131072},
     {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
     {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
     {"alias": "fast", "name": "mistral-vibe-cli-fast", "display_name": "Mistral Vibe Fast", "context": 32768},
     {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 131072},
     {"alias": "ministral", "name": "ministral-8b-latest", "display_name": "Ministral 8B", "context": 131072},
+    {"alias": "zai-glm-5-3-flash", "name": "zai-glm-5-3-flash", "display_name": "ZAI GLM 5.3 Flash", "context": 131072},
 )
 
 
@@ -54,7 +56,11 @@ def find_vibe() -> str:
     found = shutil.which("vibe")
     if found:
         return found
-    for candidate in ("/opt/homebrew/bin/vibe", "/usr/local/bin/vibe"):
+    for candidate in (
+        os.path.expanduser("~/.local/bin/vibe"),
+        "/opt/homebrew/bin/vibe",
+        "/usr/local/bin/vibe",
+    ):
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return ""
