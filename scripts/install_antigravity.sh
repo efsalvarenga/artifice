@@ -163,6 +163,17 @@ The following skills are mounted globally via \`~/.gemini/config/skills.json\`:
 * \`/coach-frameworks\`: Strategic framework scouting and developer ergonomics coaching.
 * \`/vibe-execute\`: Metadata-led model selection, discovery, proposal approval, and exact dispatch.
 * \`/local-code\`: Bounded algorithmic refactoring and test synthesis via local Ollama models.
+
+## 4. Model Tiering & Division of Labour
+
+* **Frontier Orchestrator (Gemini)**: Core reasoning, Elephant-Goldfish specification drafting, 8-Pillar Gatekeeper review, multi-wave triage, and Git/PR operations.
+* **Hosted Cloud Workers (Mistral Vibe)**:
+  * \`codestral\`: High-context code synthesis, Fill-in-the-Middle (FIM), and test generation.
+  * \`large\`: Multi-step reasoning and adversarial architectural review.
+  * \`mistral-medium-3.5\` & \`zai-glm-5-3-flash\`: Verified active fallback endpoints.
+* **Local Sovereign Workers (Ollama on \`artemis\`)**:
+  * \`qwen2.5-coder:3b\`: Default sovereign code worker (\`ARTIFICE_CODE_MODEL\`).
+  * \`llama3.2:3b\`: Default sovereign prose/triage worker (\`ARTIFICE_PROSE_MODEL\`).
 EOF
     printf 'installed: %s\n' "$agents_md"
 fi

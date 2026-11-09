@@ -30,9 +30,9 @@ MODES = ("bounded_chat", "cli_agent")
 LOCAL_ALIASES = ("local", "ollama", "local-code")
 
 DEFAULT_MISTRAL_MODELS = (
-    {"alias": "mistral-medium-3.5", "name": "mistral-medium-3.5", "display_name": "Mistral Medium 3.5", "context": 131072},
-    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
     {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
+    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
+    {"alias": "mistral-medium-3.5", "name": "mistral-medium-3.5", "display_name": "Mistral Medium 3.5", "context": 131072},
     {"alias": "fast", "name": "mistral-vibe-cli-fast", "display_name": "Mistral Vibe Fast", "context": 32768},
     {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 131072},
     {"alias": "ministral", "name": "ministral-8b-latest", "display_name": "Ministral 8B", "context": 131072},
@@ -418,12 +418,18 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
                 name = item["name"]
                 disp = item.get("display_name", name)
                 is_codestral = "codestral" in name.lower() or "codestral" in alias.lower()
+                extra_aliases = []
+                if "large" in alias or "large" in name:
+                    extra_aliases.extend(["mistral-large", "mistral-large-latest"])
+                elif "codestral" in alias or "codestral" in name:
+                    extra_aliases.extend(["codestral", "codestral-latest"])
+                aliases = sorted(set(([alias] if alias != name else []) + [a for a in extra_aliases if a != name]))
                 c = {
                     "identity": ["mistral", "vibe", name],
                     "model_id": name,
                     "reference": "mistral/vibe/" + name,
                     "execution_ref": alias,
-                    "aliases": [alias] if alias != name else [],
+                    "aliases": aliases,
                     "display_name": disp,
                     "provider": "mistral",
                     "digest": "vibe-cli-" + name,
