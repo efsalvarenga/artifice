@@ -21,6 +21,7 @@ artifice/
 │   └── reviews/                  # Adversarial Goldfish reviews
 ├── scripts/
 │   ├── check_ollama.py           # Ollama residency, selection & wave-leasing controller
+│   ├── install_antigravity.sh    # Non-overwriting personal Antigravity symlink installer
 │   ├── install_copilot.sh        # Non-overwriting personal Copilot symlink installer
 │   ├── lint.py                   # Unified static governance & Core Diet linter
 │   ├── lint.sh                   # Execution wrapper for lint.py
@@ -122,17 +123,14 @@ This Ollama phase permits only configured loopback endpoints and verified on-dev
 
 ## Integration with Antigravity
 
-Mounted globally inside `~/.gemini/config/skills.json` (with agent symlinks in `~/.gemini/config/agents/`):
+Install user-level symlinks and configuration once from any working directory:
 
-```json
-{
-  "entries": [
-    {
-      "path": "~/Repos/artifice/skills"
-    }
-  ]
-}
+```bash
+bash scripts/install_antigravity.sh
+bash scripts/install_antigravity.sh --check
 ```
+
+The installer derivation validates the anchor (`$HOME/.local/share/artifice`), registers directory symlinks (`skills`, `agents`) under `~/.gemini/config/`, and configures `~/.gemini/config/skills.json` using fully-resolved absolute paths (Antigravity's Go runtime requires absolute paths and rejects unresolved `~` paths). It also ensures `~/.gemini/config/AGENTS.md` is present for global governance.
 
 Shared roles and skills use the validated, exported `ARTIFICE_ROOT` described above.
 
