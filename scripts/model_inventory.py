@@ -30,10 +30,9 @@ MODES = ("bounded_chat", "cli_agent")
 LOCAL_ALIASES = ("local", "ollama", "local-code")
 
 DEFAULT_MISTRAL_MODELS = (
-    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
+    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 1048576},
     {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
-    {"alias": "fast", "name": "mistral-vibe-cli-fast", "display_name": "Mistral Vibe Fast", "context": 32768},
-    {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 131072},
+    {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 262144},
     {"alias": "ministral", "name": "ministral-8b-latest", "display_name": "Ministral 8B", "context": 131072},
 )
 

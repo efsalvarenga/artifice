@@ -202,10 +202,26 @@ class AntigravityInstallerTests(unittest.TestCase):
         self.assertEqual((self.home / ".gemini/config/agents").resolve(), (REPO_ROOT / "agents").resolve())
         self.assertEqual((self.home / ".gemini/config/skills").resolve(), (REPO_ROOT / "skills").resolve())
         self.assertTrue((self.home / ".gemini/config/skills.json").is_file())
-        self.assertTrue((self.home / ".gemini/config/AGENTS.md").is_file())
         # Idempotence: check should now pass
         self.assertEqual(self.run_installer("--check").returncode, 0)
         self.assertEqual(self.run_installer().returncode, 0)
+
+    def test_conflicts_and_bad_parents_never_overwritten(self):
+        existing = self.home / ".gemini/config/agents"
+        existing.mkdir(parents=True)
+        marker = existing / "keep.md"
+        marker.write_text("user file\n", encoding="utf-8")
+
+        res = self.run_installer()
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("conflict:", res.stdout)
+        self.assertTrue(marker.is_file())
+        self.assertFalse((self.home / ".local/share/artifice").exists())
+
+        bad_home = Path(self.tmp.name) / "bad_home"
+        bad_home.mkdir()
+        (bad_home / ".gemini").write_text("file not dir\n", encoding="utf-8")
+        self.assertEqual(self.run_installer(home=bad_home).returncode, 1)
 
     def test_tilde_in_skills_json_triggers_conflict(self):
         self.assertEqual(self.run_installer().returncode, 0)

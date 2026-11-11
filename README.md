@@ -130,7 +130,7 @@ bash scripts/install_antigravity.sh
 bash scripts/install_antigravity.sh --check
 ```
 
-The installer derivation validates the anchor (`$HOME/.local/share/artifice`), registers directory symlinks (`skills`, `agents`) under `~/.gemini/config/`, and configures `~/.gemini/config/skills.json` using fully-resolved absolute paths (Antigravity's Go runtime requires absolute paths and rejects unresolved `~` paths). It also ensures `~/.gemini/config/AGENTS.md` is present for global governance.
+The installer derivation validates the anchor (`$HOME/.local/share/artifice`), registers directory symlinks (`skills`, `agents`) under `~/.gemini/config/`, and configures `~/.gemini/config/skills.json` using fully-resolved absolute paths (Antigravity's Go runtime requires absolute paths and rejects unresolved `~` paths).
 
 Shared roles and skills use the validated, exported `ARTIFICE_ROOT` described above.
 

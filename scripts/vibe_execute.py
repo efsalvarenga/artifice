@@ -125,16 +125,17 @@ def _prepare(prompt: str, model: str = None, provider: str = None, task_type: st
     if model is not None:
         model_inventory.role_override("utility", model)
     classified = classify_task(prompt, is_local_preferred=local_only)
-    local_only = model_inventory.local_policy(classified["local_only"], workdir)
+    policy_enforced = model_inventory.local_policy(local_only, workdir)
+    effective_local = policy_enforced or (provider is None and classified["local_only"])
     if provider is None and model in model_inventory.LOCAL_ALIASES:
         provider, model = "ollama", None
     elif provider is None and model is not None:
         provider = "mistral"
-    elif provider is None and local_only:
+    elif provider is None and effective_local:
         provider = "ollama"
     if provider is None:
         raise model_inventory.SelectionError("Discover engines and choose an explicit provider/model before running.")
-    if local_only and provider != "ollama":
+    if policy_enforced and provider != "ollama":
         raise model_inventory.SelectionError("Local-only policy rejects hosted execution.")
     if auto_approve and provider == "ollama":
         raise model_inventory.SelectionError("The bounded Ollama runner has no autonomous tool loop.")
@@ -142,7 +143,7 @@ def _prepare(prompt: str, model: str = None, provider: str = None, task_type: st
         task=classified["task"] if task_type is None else task_type,
         mode=classified["mode"] if mode is None else mode,
         required_capabilities=required_capabilities, min_context=min_context,
-        accept_unknown=accept_unknown, local_only=local_only,
+        accept_unknown=accept_unknown, local_only=policy_enforced,
     )
     snapshot = model_inventory.discover(local_only=requested["local_only"], workdir=workdir)
     if snapshot["status"] == "unavailable" and provider == "ollama":
@@ -603,7 +604,14 @@ def main():
             print(json.dumps(result["manifest"], indent=2))
             return 0
         if args.command == "run":
-            result = execute(args.prompt, auto_approve=args.auto_approve, **_selection_options(args))
+            prompt = args.prompt
+            if os.path.isfile(prompt):
+                try:
+                    with open(prompt, "r", encoding="utf-8") as stream:
+                        prompt = stream.read()
+                except OSError:
+                    pass
+            result = execute(prompt, auto_approve=args.auto_approve, **_selection_options(args))
             for diagnostic in result.get("diagnostics", []):
                 print(json.dumps(diagnostic, sort_keys=True), file=sys.stderr)
             if args.json:

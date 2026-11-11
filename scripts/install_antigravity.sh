@@ -6,7 +6,7 @@ usage() {
         'Usage: bash scripts/install_antigravity.sh [--check | --help]' \
         'Register Artifice agents, skills, and configuration in personal Antigravity directories.' \
         '  Anchor:  $HOME/.local/share/artifice -> checkout' \
-        '  Config:  ${GEMINI_HOME:-$HOME/.gemini}/config/{agents,skills,skills.json,AGENTS.md}'
+        '  Config:  ${GEMINI_HOME:-$HOME/.gemini}/config/{agents,skills,skills.json}'
 }
 
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
@@ -42,7 +42,13 @@ anchor="$(resolve_parent_path "$home/.local/share")/artifice"
 gemini_home=$(resolve_parent_path "$raw_gemini")
 gemini_config="$gemini_home/config"
 
-inside() { [[ "$1" == "$2" || "$1" == "$2/"* ]]; }
+inside() {
+    local c1 c2
+    c1=$(realpath -s -m -- "$1" 2>/dev/null || echo "$1")
+    c2=$(realpath -s -m -- "$2" 2>/dev/null || echo "$2")
+    [[ "$c1" == "$c2" || "$c1" == "$c2/"* ]]
+}
+
 inside "$gemini_home" "$anchor" && fail 'GEMINI_HOME cannot reside inside the resource anchor.'
 inside "$gemini_home" "$repo_root" && fail 'GEMINI_HOME cannot reside inside the checkout.'
 
@@ -64,6 +70,13 @@ done
 for i in 0 1 2; do
     dest=${destinations[$i]}
     inside "$dest" "$repo_root" && fail "Destination cannot reside inside checkout: $dest"
+    
+    parent="$(dirname "$dest")"
+    while [[ ! -d "$parent" && -n "$parent" && "$parent" != "/" ]]; do
+        parent="$(dirname "$parent")"
+    done
+    [[ -w "$parent" ]] || fail "Parent directory not writable: $parent"
+
     state=missing
     if [[ -L "$dest" ]]; then
         state=conflict
@@ -94,14 +107,6 @@ else
     [[ "$mode" == check ]] && errors=1 || true
 fi
 
-agents_md="$gemini_config/AGENTS.md"
-if [[ -f "$agents_md" ]]; then
-    printf 'present: %s\n' "$agents_md"
-else
-    printf 'missing: %s\n' "$agents_md"
-    [[ "$mode" == check ]] && errors=1 || true
-fi
-
 [[ "$errors" == 0 ]] || fail 'Preflight failed; no filesystem changes were made.'
 if [[ "$mode" == check ]]; then
     printf 'PASS: Antigravity symlink registration verified.\n'
@@ -126,57 +131,6 @@ if [[ ! -f "$skills_json" ]]; then
 }
 EOF
     printf 'installed: %s\n' "$skills_json"
-fi
-
-if [[ ! -f "$agents_md" ]]; then
-    cat << EOF > "$agents_md"
-# Global Agent Governance & Harness (Artifice)
-
-## 1. System Topology & Anchors
-
-* **Artifice Root**: The canonical Artifice harness is anchored at \`\$HOME/.local/share/artifice\` (exported as \`ARTIFICE_ROOT\`).
-* **Canonical Roles & Personas**:
-  * \`code-author\`: Principal Code Author ("The Craftsman") - contract-first TDD, minimal deterministic implementations, model-attributed Git commits, pre-review green baseline gating. Defined at [agent.md](file://$anchor/agents/code-author/agent.md).
-  * \`code-reviewer\`: Principal Code Reviewer ("The Gatekeeper") - universal 8-Pillar evaluation, Conventional Comments, hybrid offloading. Defined at [agent.md](file://$anchor/agents/code-reviewer/agent.md).
-  * \`developer-coach\`: Principal Developer Coach ("The Catalyst") - framework evaluation, ecosystem DX coaching, 4-Test Lesson Acceptance Gate. Defined at [agent.md](file://$anchor/agents/developer-coach/agent.md).
-
-## 2. Invariable Standards
-
-* **Language Constraint**: Always write code comments, documentation, commit messages, and agent responses in **British English** (e.g. *behaviour*, *synchronise*, *colour*, *prioritise*, *artefact*, *optimise*).
-* **Markdown Cleanliness**: Every Markdown heading (\`#\`, \`##\`, \`###\`, \`####\`) must be immediately followed by a blank line.
-* **Contract-First Delivery**: Prior to implementing features or refactorings under an Elephant-Goldfish specification, validate target contracts using:
-  \`\`\`bash
-  python3 "\${ARTIFICE_ROOT:-\$HOME/.local/share/artifice}/scripts/validate_egm.py" . --spec <ID>
-  \`\`\`
-* **Git Operations & Authorship**: When committing on behalf of the user or agent roles, append provenance trailers:
-  \`\`\`text
-  Model-Author: <MODEL_NAME>
-  Agent-Role: <ROLE_NAME>
-  Co-authored-by: <AGENT_NAME> <<MODEL_HANDLE>@antigravity.local>
-  \`\`\`
-
-## 3. Skills & Gateway Workflows
-
-The following skills are mounted globally via \`~/.gemini/config/skills.json\`:
-* \`/spec-egm\`: Pre-spec empirical reconnaissance, Grill-Me alignment, no-code Elephant specs, zero-context Goldfish reviews.
-* \`/review\`: Universal 8-Pillar code and architectural review with optional on-device \`--local\` privacy mode.
-* \`/coach-frameworks\`: Strategic framework scouting and developer ergonomics coaching.
-* \`/vibe-execute\`: Metadata-led model selection, discovery, proposal approval, and exact dispatch.
-* \`/local-code\`: Bounded algorithmic refactoring and test synthesis via local Ollama models.
-
-## 4. Model Tiering & Division of Labour
-
-* **Default Direct Execution (Gemini)**: All implementation, refactoring, planning, analysis, reviews, and tool operations are performed natively and directly by Gemini. Never silently offload routine conversation or tasks.
-* **On-Demand Delegation Only (\`/vibe-execute\`)**: External model delegation is strictly opt-in and triggered **only** when explicitly invoked via \`/vibe-execute\` (or \`/local-code\`):
-  * **Hosted Cloud Workers (Mistral Vibe)**:
-    * \`codestral\`: High-context code synthesis, Fill-in-the-Middle (FIM), and test generation.
-    * \`large\`: Multi-step reasoning and adversarial architectural review.
-    * \`mistral-medium-3.5\` & \`zai-glm-5-3-flash\`: Verified active fallback endpoints.
-  * **Local Sovereign Workers (Ollama on \`artemis\`)**:
-    * \`qwen2.5-coder:3b\`: Default sovereign code worker (\`ARTIFICE_CODE_MODEL\`).
-    * \`llama3.2:3b\`: Default sovereign prose/triage worker (\`ARTIFICE_PROSE_MODEL\`).
-EOF
-    printf 'installed: %s\n' "$agents_md"
 fi
 
 printf 'PASS: Antigravity symlinks and configuration installed. Start a fresh Antigravity session to refresh discovery.\n'
