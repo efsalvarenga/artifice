@@ -14,6 +14,16 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+MAX_FILE_BYTES = 50 * 1024 * 1024  # 50 MiB, matching Mistral OCR limits
+
+SUPPORTED_MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+}
+
 
 def get_api_key() -> str:
     """Resolve Mistral API key from environment or ~/.vibe/.env."""
@@ -21,7 +31,8 @@ def get_api_key() -> str:
     if key:
         return key.strip()
 
-    vibe_env = Path.home() / ".vibe" / ".env"
+    vibe_home = Path(os.environ.get("VIBE_HOME", Path.home() / ".vibe")).expanduser()
+    vibe_env = vibe_home / ".env"
     if vibe_env.is_file():
         try:
             for line in vibe_env.read_text(encoding="utf-8").splitlines():
@@ -54,10 +65,19 @@ def process_document(
         if not path.is_file():
             raise FileNotFoundError(f"File not found: {source_path_or_url}")
 
-        mime_type, _ = mimetypes.guess_type(str(path))
-        if not mime_type:
-            mime_type = "application/pdf" if path.suffix.lower() == ".pdf" else "image/png"
+        suffix = path.suffix.lower()
+        if suffix not in SUPPORTED_MIME_TYPES:
+            raise ValueError(
+                f"Unsupported file format '{suffix}'. Supported: {', '.join(sorted(SUPPORTED_MIME_TYPES.keys()))}"
+            )
 
+        st_size = path.stat().st_size
+        if st_size > MAX_FILE_BYTES:
+            raise ValueError(
+                f"File size ({st_size} bytes) exceeds maximum limit of {MAX_FILE_BYTES} bytes (50 MB)"
+            )
+
+        mime_type = SUPPORTED_MIME_TYPES[suffix]
         raw_bytes = path.read_bytes()
         b64_content = base64.b64encode(raw_bytes).decode("ascii")
         data_uri = f"data:{mime_type};base64,{b64_content}"
