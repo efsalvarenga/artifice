@@ -79,10 +79,11 @@ Execute feature delivery strictly through the following five phases (applying ph
 * Request an advisory 8-Pillar audit from `code-reviewer` ([`review`](../../skills/review/SKILL.md)).
 * Address any blocking issues flagged by the Gatekeeper before presenting the feature branch to the human developer.
 * **Strict Merge Invariant:** Under NO circumstances may any agent call 'gh pr merge', invoke the GitHub PR merge API, or execute 'git merge' into main. Merging is strictly reserved for the human developer.
+* **Post-Merge Branch Cleanup:** Upon PR merge or closure, switch to `main`, pull latest changes (`git checkout main && git pull`), delete the local branch (`git branch -d <branch>`), and prune remote references (`git fetch --prune`).
 
 ## 4. Model Commit Authorship & Provenance
 
-Follow active client and repository Git governance (e.g. autonomous feature-branch commits in engineering repositories under `~/.gemini/config/AGENTS.md`, or explicit user permission where required). When committing, the authoring model and agent must attribute the commit accurately without inventing hidden model identifiers:
+Follow active repository Git governance. Authoring models and agents must attribute commits accurately without inventing identifiers:
 
 1. **Atomic Conventional Commits:** Each phase (`test`, `feat`, `refactor`) produces an atomic commit with clear rationale.
 2. **GitHub Co-Authorship Enforcement:** GitHub's commit parser exclusively renders co-authors from `Co-authored-by: Name <email>` trailers. To ensure models are credited in GitHub's web interface and Git logs, every model contributing to the commit must be included in a `Co-authored-by:` trailer:
@@ -100,10 +101,8 @@ Follow active client and repository Git governance (e.g. autonomous feature-bran
    Co-authored-by: <OFFLOADED_MODEL> <<MODEL_REF>@ollama.local>
    ```
 
-   For example, when Gemini in Antigravity synthesises code directly:
+   Examples:
    `Co-authored-by: Gemini 3.8 Flash (Antigravity) <antigravity@artifice.local>`
-   When assisted by an offloaded engine (e.g. Qwen via Ollama or Mistral via Vibe):
-   `Co-authored-by: Qwen 2.5 Coder 14B <qwen2.5-coder@ollama.local>`
    `Co-authored-by: Mistral Large <mistral-large@mistral.ai>`
 
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
