@@ -1,6 +1,5 @@
-"""Tests for mistral_ocr.py and mistral_embed.py specialised modality scripts."""
+"""Tests for mistral_ocr.py specialised modality script."""
 
-import io
 import json
 import os
 import sys
@@ -14,11 +13,10 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-import mistral_embed  # noqa: E402
 import mistral_ocr  # noqa: E402
 
 
-class MistralModalityTests(unittest.TestCase):
+class MistralOCRTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -26,7 +24,6 @@ class MistralModalityTests(unittest.TestCase):
     def test_get_api_key_from_env(self):
         with patch.dict(os.environ, {"MISTRAL_API_KEY": "secret-test-key"}):
             self.assertEqual(mistral_ocr.get_api_key(), "secret-test-key")
-            self.assertEqual(mistral_embed.get_api_key(), "secret-test-key")
 
     def test_get_api_key_from_vibe_env(self):
         vibe_dir = Path(self.tmp.name) / ".vibe"
@@ -36,7 +33,6 @@ class MistralModalityTests(unittest.TestCase):
 
         with patch.dict(os.environ, {}, clear=True), patch("pathlib.Path.home", return_value=Path(self.tmp.name)):
             self.assertEqual(mistral_ocr.get_api_key(), "vibe-secret-key")
-            self.assertEqual(mistral_embed.get_api_key(), "vibe-secret-key")
 
     def test_ocr_process_document_url(self):
         mock_response = MagicMock()
@@ -66,22 +62,6 @@ class MistralModalityTests(unittest.TestCase):
             body = json.loads(req.data.decode("utf-8"))
             self.assertEqual(body["document"]["type"], "document_url")
             self.assertTrue(body["document"]["document_url"].startswith("data:application/pdf;base64,"))
-
-    def test_generate_embeddings_request(self):
-        mock_response = MagicMock()
-        mock_response.read.return_value = json.dumps({
-            "data": [{"embedding": [0.1, 0.2, 0.3]}],
-            "usage": {"total_tokens": 5},
-        }).encode("utf-8")
-        mock_response.__enter__.return_value = mock_response
-
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
-            res = mistral_embed.generate_embeddings(["test text"], model="mistral-embed", api_key="test-key")
-            self.assertEqual(len(res["data"]), 1)
-            req = mock_urlopen.call_args[0][0]
-            body = json.loads(req.data.decode("utf-8"))
-            self.assertEqual(body["model"], "mistral-embed")
-            self.assertEqual(body["input"], ["test text"])
 
 
 if __name__ == "__main__":
