@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INSTALLER = REPO_ROOT / "scripts" / "install_copilot.sh"
+ANTIGRAVITY_INSTALLER = REPO_ROOT / "scripts" / "install_antigravity.sh"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import check_ollama  # noqa: E402
@@ -168,6 +169,67 @@ class InstallerTests(unittest.TestCase):
         (broken_home / ".copilot").mkdir(parents=True)
         (broken_home / ".copilot/skills").symlink_to("/nonexistent/artifice/skills")
         self.assertEqual(self.run_installer(home=broken_home).returncode, 1)
+
+
+class AntigravityInstallerTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.home = Path(self.tmp.name) / "home dir"
+        self.home.mkdir()
+
+    def run_installer(self, *args, home=None, gemini_home=None, extra_env=None):
+        env = {"PATH": os.environ["PATH"], "HOME": str(home if home is not None else self.home)}
+        if gemini_home is not None:
+            env["GEMINI_HOME"] = str(gemini_home)
+        env.update(extra_env or {})
+        return subprocess.run(
+            ["bash", str(ANTIGRAVITY_INSTALLER), *args],
+            cwd=self.tmp.name, env=env, text=True, capture_output=True,
+        )
+
+    def test_cli_help_and_invalid_args(self):
+        self.assertEqual(self.run_installer("--help").returncode, 0)
+        self.assertEqual(self.run_installer("--unknown").returncode, 2)
+        self.assertFalse((self.home / ".gemini").exists())
+
+    def test_check_install_and_idempotence(self):
+        self.assertEqual(self.run_installer("--check").returncode, 1)
+        res = self.run_installer()
+        self.assertEqual(res.returncode, 0, res.stderr)
+        anchor = self.home / ".local/share/artifice"
+        self.assertEqual(anchor.resolve(), REPO_ROOT.resolve())
+        self.assertEqual((self.home / ".gemini/config/agents").resolve(), (REPO_ROOT / "agents").resolve())
+        self.assertEqual((self.home / ".gemini/config/skills").resolve(), (REPO_ROOT / "skills").resolve())
+        self.assertTrue((self.home / ".gemini/config/skills.json").is_file())
+        # Idempotence: check should now pass
+        self.assertEqual(self.run_installer("--check").returncode, 0)
+        self.assertEqual(self.run_installer().returncode, 0)
+
+    def test_conflicts_and_bad_parents_never_overwritten(self):
+        existing = self.home / ".gemini/config/agents"
+        existing.mkdir(parents=True)
+        marker = existing / "keep.md"
+        marker.write_text("user file\n", encoding="utf-8")
+
+        res = self.run_installer()
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("conflict:", res.stdout)
+        self.assertTrue(marker.is_file())
+        self.assertFalse((self.home / ".local/share/artifice").exists())
+
+        bad_home = Path(self.tmp.name) / "bad_home"
+        bad_home.mkdir()
+        (bad_home / ".gemini").write_text("file not dir\n", encoding="utf-8")
+        self.assertEqual(self.run_installer(home=bad_home).returncode, 1)
+
+    def test_tilde_in_skills_json_triggers_conflict(self):
+        self.assertEqual(self.run_installer().returncode, 0)
+        skills_json = self.home / ".gemini/config/skills.json"
+        skills_json.write_text('{"entries": [{"path": "~/.local/share/artifice/skills"}]}\n', encoding="utf-8")
+        res = self.run_installer("--check")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("unresolved tilde", res.stdout)
 
 
 class ModelSelectionTests(unittest.TestCase):
@@ -737,6 +799,7 @@ class VibeExecuteTests(unittest.TestCase):
 
     def test_hosted_delivery_dispatches_via_vibe_subprocess(self):
         with patch.object(model_inventory, "discover", side_effect=DISCOVER_MODELS), \
+                patch("model_inventory.find_vibe", return_value="/usr/local/bin/vibe"), \
                 patch("vibe_execute.find_vibe", return_value="/usr/local/bin/vibe"), \
                 patch("subprocess.run") as mock_run:
             mock_run.return_value = unittest.mock.Mock(returncode=0, stdout="Hosted answer", stderr="")

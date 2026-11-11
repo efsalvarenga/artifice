@@ -30,10 +30,9 @@ MODES = ("bounded_chat", "cli_agent")
 LOCAL_ALIASES = ("local", "ollama", "local-code")
 
 DEFAULT_MISTRAL_MODELS = (
-    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 131072},
+    {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 1048576},
     {"alias": "codestral", "name": "codestral-latest", "display_name": "Codestral", "context": 262144},
-    {"alias": "fast", "name": "mistral-vibe-cli-fast", "display_name": "Mistral Vibe Fast", "context": 32768},
-    {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 131072},
+    {"alias": "small", "name": "mistral-small-latest", "display_name": "Mistral Small", "context": 262144},
     {"alias": "ministral", "name": "ministral-8b-latest", "display_name": "Ministral 8B", "context": 131072},
 )
 
@@ -54,14 +53,37 @@ def find_vibe() -> str:
     found = shutil.which("vibe")
     if found:
         return found
-    for candidate in ("/opt/homebrew/bin/vibe", "/usr/local/bin/vibe"):
+    for candidate in (
+        os.path.expanduser("~/.local/bin/vibe"),
+        "/opt/homebrew/bin/vibe",
+        "/usr/local/bin/vibe",
+    ):
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return ""
 
 
 def read_vibe_models(workdir: str = None) -> list:
-    """Read configured models from ~/.vibe/config.toml or return canonical Mistral defaults."""
+    """Read configured models from user settings or fallback to canonical defaults."""
+    user_config = Path(os.environ.get("GEMINI_VIBE_MODELS", Path.home() / ".gemini" / "config" / "vibe_models.json")).expanduser()
+    if user_config.is_file():
+        try:
+            items = json.loads(user_config.read_text(encoding="utf-8"))
+            if isinstance(items, list) and items:
+                normalized = []
+                for entry in items:
+                    if isinstance(entry, dict) and entry.get("name"):
+                        normalized.append({
+                            "alias": entry.get("alias", entry["name"]),
+                            "name": entry["name"],
+                            "display_name": entry.get("display_name", entry["name"]),
+                            "context": entry.get("context", 131072),
+                        })
+                if normalized:
+                    return normalized
+        except (OSError, json.JSONDecodeError):
+            pass
+
     vibe_home = Path(os.environ.get("VIBE_HOME", Path.home() / ".vibe")).expanduser()
     config_file = vibe_home / "config.toml"
     discovered = []
@@ -412,12 +434,18 @@ def discover(local_only: bool = False, workdir: str = None, timeout_sec: float =
                 name = item["name"]
                 disp = item.get("display_name", name)
                 is_codestral = "codestral" in name.lower() or "codestral" in alias.lower()
+                extra_aliases = []
+                if "large" in alias or "large" in name:
+                    extra_aliases.extend(["mistral-large", "mistral-large-latest"])
+                elif "codestral" in alias or "codestral" in name:
+                    extra_aliases.extend(["codestral", "codestral-latest"])
+                aliases = sorted(set(([alias] if alias != name else []) + [a for a in extra_aliases if a != name]))
                 c = {
                     "identity": ["mistral", "vibe", name],
                     "model_id": name,
                     "reference": "mistral/vibe/" + name,
                     "execution_ref": alias,
-                    "aliases": [alias] if alias != name else [],
+                    "aliases": aliases,
                     "display_name": disp,
                     "provider": "mistral",
                     "digest": "vibe-cli-" + name,
