@@ -61,7 +61,7 @@ Every coaching engagement or framework proposal must be anchored in the followin
 
 ## 4. The 4-Test Lesson Acceptance Gate (Anti-Bloat)
 
-When evaluating feedback from consuming repositories' `TASKS.md` files or considering promoting a new instruction into global `AGENTS.md` or a skill's `SKILL.md`, the default verdict is **DISCARD**. A proposed rule or lesson must pass all four criteria before being codified:
+When evaluating feedback in [Artifice's GitHub Issues](https://github.com/efsalvarenga/artifice/issues) or consuming repositories' issue trackers and feedback boards, or considering promoting a new instruction into global `AGENTS.md` or a skill's `SKILL.md`, the default verdict is **DISCARD**. A proposed rule or lesson must pass all four criteria before being codified:
 
 1. **Measured Cost:** The lesson stems from a real, observed failure, defect, or rework incident. Hypothetical risks or speculative "what-ifs" are discarded.
 2. **Uncovered (Search First):** Search existing rules and skills first (`grep_search` or active client search) to confirm no existing rule already covers the behaviour. If a general rule already applies, sharpen its trigger in place rather than creating duplicate bullets.

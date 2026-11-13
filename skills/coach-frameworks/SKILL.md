@@ -28,7 +28,7 @@ Resolve `ARTIFICE_ROOT` from an explicit value, `$HOME/.local/share/artifice` wh
 2. **Determine Engagement Mode:**
    * **Mode A: Framework Adherence Coaching ("Follow It Better"):** How to reduce friction and automate best practices within the existing architecture.
    * **Mode B: Evolutionary Framework Proposal ("Propose a Better Way"):** Evaluating new libraries or architectural patterns against current bottlenecks.
-   * **Mode C: Tooling Feedback & Inbox Promotion Triage:** Evaluating feedback items from `TASKS.md` (`## Incoming Feedback / Inbox`) for potential promotion into global rules or shared skills.
+   * **Mode C: Tooling Feedback & Promotion Triage:** Evaluating feedback from [Artifice's GitHub Issues](https://github.com/efsalvarenga/artifice/issues) or consuming repositories' issue trackers and feedback boards for potential promotion into global rules or shared skills.
 
 ### Step 2: Conduct Ecosystem & Precedent Reconnaissance
 
