@@ -9,7 +9,6 @@ A curated, version-controlled collection of shared agent skills, procedures, and
 ```text
 artifice/
 ├── README.md
-├── TASKS.md                      # Roadmap board & incoming tooling feedback inbox
 ├── agents/
 │   ├── code-author/              # Principal Code Author ("The Craftsman")
 │   ├── code-reviewer/            # Principal Code Reviewer ("The Gatekeeper")
@@ -37,6 +36,14 @@ artifice/
 │   └── local-code/               # Algorithmic refactoring & tests via local Ollama
 └── tests/                        # Standard-library unit & black-box installer tests
 ```
+
+## Task Tracking & Feedback
+
+[GitHub Issues](https://github.com/efsalvarenga/artifice/issues) is the source of truth for active tasks, roadmap work, and cross-project tooling feedback. Create or update an issue rather than maintaining a local task board.
+
+For incoming feedback, record the source project/branch and date, autonomy mode (`[AUTO]`, `[SEMI]`, or `[HUMAN]`), affected component, operational context, observed friction or defect, and actionable remediation. Keep progress in the issue and link delivery PRs; close the issue when the work is delivered.
+
+Before promoting feedback into shared guidance, apply the [4-Test Lesson Acceptance Gate](agents/developer-coach/agent.md#4-the-4-test-lesson-acceptance-gate-anti-bloat). Completed entries from the former board remain in Git history.
 
 ## Available Agents
 
