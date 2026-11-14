@@ -2,13 +2,11 @@
 """Validate explicit commit-message provenance without changing Git or messages."""
 
 import argparse
-from contextlib import nullcontext
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
-import tempfile
 from typing import Optional
 
 REQUIRED = ("Model-Author", "Agent-Role", "Co-authored-by")
@@ -31,16 +29,15 @@ def git(arguments: list[str], repo: Optional[Path] = None, message: Optional[str
         "GIT_NO_LAZY_FETCH": "1",
         "GIT_TERMINAL_PROMPT": "0",
     })
-    # Even --parse rewrites configured aliases; parse outside every repository.
-    location = tempfile.TemporaryDirectory(prefix="artifice-provenance-") if repo is None else nullcontext(str(repo))
-    with location as directory:
-        if repo is None:
-            env["GIT_CEILING_DIRECTORIES"] = os.path.realpath(directory)
-        result = subprocess.run(
-            ["git", "--no-pager", "--no-replace-objects", "-C", directory, *arguments],
-            input=message.encode("utf-8") if message is not None else None,
-            env=env, capture_output=True,
-        )
+    # Even --parse rewrites configured aliases, so message parsing must not see any repository.
+    if repo is None:
+        env["GIT_DIR"] = os.devnull
+    location = ["-C", str(repo)] if repo is not None else []
+    result = subprocess.run(
+        ["git", "--no-pager", "--no-replace-objects", *location, *arguments],
+        input=message.encode("utf-8") if message is not None else None,
+        env=env, capture_output=True,
+    )
     if result.returncode:
         detail = result.stderr.decode("utf-8").strip() or f"exit {result.returncode}"
         raise ValueError(f"Git {arguments[0]} failed: {detail}")
@@ -96,6 +93,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         parser.error("--repo is only valid with --commit or --range")
     if args.message_file is None and not args.repo:
         parser.error("--repo is required with --commit or --range")
+    if args.message_file is not None and not args.message_file:
+        parser.error("--message-file requires an explicit path")
     if args.commit is not None and not args.commit:
         parser.error("--commit requires an explicit revision")
     endpoints = []

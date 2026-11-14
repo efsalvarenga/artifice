@@ -46,9 +46,7 @@ class GovernanceInstallerTests(unittest.TestCase):
         checkout = self.root / name
         checkout.mkdir()
         for directory in ("agents", "integrations", "skills", "scripts", "rules"):
-            source = ROOT / directory
-            if source.is_dir():
-                shutil.copytree(source, checkout / directory, ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copytree(ROOT / directory, checkout / directory, ignore=shutil.ignore_patterns("__pycache__"))
         return checkout
 
     def test_installs_global_policy_and_checks_without_writes(self):
@@ -72,7 +70,6 @@ class GovernanceInstallerTests(unittest.TestCase):
     def test_both_installation_orders_share_one_live_policy(self):
         checkout = self.checkout("live checkout")
         source = checkout / "rules/global-agents.md"
-        source.parent.mkdir(exist_ok=True)
         source.write_text("# Shared rules\n\nFirst.\n", encoding="utf-8")
         for order in (self.clients, tuple(reversed(self.clients))):
             with self.subTest(order=order):
@@ -96,8 +93,7 @@ class GovernanceInstallerTests(unittest.TestCase):
                     policy.parent.mkdir(parents=True)
                     content = "# Personal policy\n\nKeep me.\n"
                     if kind == "identical":
-                        source = ROOT / "rules/global-agents.md"
-                        content = source.read_text(encoding="utf-8") if source.is_file() else content
+                        content = (ROOT / "rules/global-agents.md").read_text(encoding="utf-8")
                     if kind in ("file", "identical"):
                         policy.write_text(content, encoding="utf-8")
                     elif kind == "directory":
@@ -144,12 +140,10 @@ class GovernanceInstallerTests(unittest.TestCase):
                 with self.subTest(client=client, kind=kind):
                     checkout = self.checkout(f"checkout-{client}-{kind}")
                     source = checkout / "rules/global-agents.md"
-                    if source.exists():
-                        source.unlink()
+                    source.unlink()
                     if kind == "directory":
-                        source.mkdir(parents=True)
+                        source.mkdir()
                     elif kind == "unreadable":
-                        source.parent.mkdir(parents=True, exist_ok=True)
                         source.write_text("# Rules\n\nFixture.\n", encoding="utf-8")
                         source.chmod(0)
                         self.addCleanup(source.chmod, 0o644)
@@ -242,6 +236,8 @@ class GovernanceInstallerTests(unittest.TestCase):
                     })
                     self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
                     self.assertNotIn("PASS:", result.stdout)
+                    self.assertIn("conflict:", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
                     if kind == "directory":
                         self.assertEqual(list(policy.iterdir()), [policy / "keep"])
                     else:
@@ -311,7 +307,7 @@ class GlobalPolicyTests(unittest.TestCase):
         self.policy.write_text("# Shared rules\n\nFixture.\n", encoding="utf-8")
 
     def diet(self, override=None):
-        with patch.object(lint, "CANONICAL_GLOBAL_AGENTS_MD", str(self.policy), create=True), \
+        with patch.object(lint, "CANONICAL_GLOBAL_AGENTS_MD", str(self.policy)), \
              patch.object(lint, "GLOBAL_AGENTS_MD", override), redirect_stdout(io.StringIO()):
             return lint.check_core_diet(str(self.root))
 

@@ -142,14 +142,17 @@ class ProvenanceTests(unittest.TestCase):
         self.check_message(VALID.replace(TRAILERS[2], "Co-authored-by: Fixture <a+b_c.d@example-domain.test>"))
 
     def test_aliases_and_configured_separators_cannot_change_acceptance(self):
-        self.git("config", "trailer.Alias.key", "Model-Author")
-        self.git("config", "trailer.Model-Author.key", "Renamed")
+        # A single, non-cancelling alias: if repository config leaked, "ma:" would become Model-Author.
+        self.git("config", "trailer.ma.key", "Model-Author")
         self.git("config", "trailer.separators", "=")
         self.git("config", "trailer.ifExists", "replace")
-        self.check_message(VALID, cwd=self.repo, extra_env={"TMPDIR": str(self.repo)})
-        self.check_message(VALID.replace("Model-Author:", "Alias:"), 1, cwd=self.repo)
-        self.check_message(VALID.replace("Model-Author:", "Model-Author="), 1, cwd=self.repo)
-        self.check_message(VALID + "model-author: duplicate\n", 1, cwd=self.repo)
+        inside = self.repo / "tmp"
+        inside.mkdir()
+        env = {"TMPDIR": str(inside)}
+        self.check_message(VALID, cwd=inside, extra_env=env)
+        self.check_message(VALID.replace("Model-Author:", "ma:"), 1, cwd=inside, extra_env=env)
+        self.check_message(VALID.replace("Model-Author:", "Model-Author="), 1, cwd=inside, extra_env=env)
+        self.check_message(VALID + "model-author: duplicate\n", 1, cwd=inside, extra_env=env)
 
     def test_global_system_environment_configuration_and_commands_are_ignored(self):
         marker = self.root / "command-ran"
@@ -243,6 +246,7 @@ class ProvenanceTests(unittest.TestCase):
             ("--repo", str(self.repo), "--range", "HEAD.."),
             ("--repo", str(self.repo), "--range", "HEAD...HEAD"),
             ("--repo", str(self.repo), "--commit", ""),
+            ("--message-file", ""),
         )
         for args in cases:
             with self.subTest(args=args):

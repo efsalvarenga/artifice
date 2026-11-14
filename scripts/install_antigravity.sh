@@ -70,13 +70,7 @@ for ((i=0; i<${#destinations[@]}; i++)); do
     state=missing
     if [[ -L "$dest" ]]; then
         state=conflict
-        if [[ -d "${physical[$i]}" && -d "$dest" ]]; then
-            actual=$(cd "$dest" && pwd -P)
-            [[ $(readlink "$dest") == "${targets[$i]}" || "$actual" == "${physical[$i]}" ]] && state=correct-link
-        elif [[ -f "${physical[$i]}" && -f "$dest" && -r "$dest" ]]; then
-            actual=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$dest")
-            [[ "$actual" == "${physical[$i]}" ]] && state=correct-link
-        fi
+        [[ "$dest" -ef "${physical[$i]}" ]] && state=correct-link
     elif [[ -e "$dest" ]]; then
         state=conflict
     fi
@@ -116,7 +110,13 @@ fi
 for ((i=0; i<${#destinations[@]}; i++)); do
     [[ "${states[$i]}" == missing ]] || continue
     mkdir -p "${destinations[$i]%/*}"
-    python3 -c 'import os, sys; os.symlink(sys.argv[1], sys.argv[2])' "${targets[$i]}" "${destinations[$i]}"
+    python3 -c '
+import os, sys
+try:
+    os.symlink(sys.argv[1], sys.argv[2])
+except FileExistsError:
+    sys.exit("conflict: %s appeared after preflight; migrate it manually before retrying." % sys.argv[2])
+' "${targets[$i]}" "${destinations[$i]}"
 done
 
 mkdir -p "$gemini_config"
