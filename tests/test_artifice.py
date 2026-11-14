@@ -383,6 +383,9 @@ class LintAndContractTests(unittest.TestCase):
             scripts.mkdir(parents=True)
             for name in ("lint.sh", "lint.py"):
                 shutil.copyfile(REPO_ROOT / "scripts" / name, scripts / name)
+            policy = tooling / "rules/global-agents.md"
+            policy.parent.mkdir()
+            policy.write_text("# Shared rules\n\nFixture policy.\n", encoding="utf-8")
             tests = tooling / "tests"
             tests.mkdir()
             (tests / "test_sentinel.py").write_text(
@@ -502,7 +505,7 @@ class LintAndContractTests(unittest.TestCase):
             bad_sh = root / "scripts/broken.sh"
             bad_sh.parent.mkdir(parents=True)
             bad_sh.write_text("#!/usr/bin/env bash\nif [\n", encoding="utf-8")
-            with patch.object(lint, "GLOBAL_AGENTS_MD", str(root / "none.md")), redirect_stdout(io.StringIO()):
+            with patch.object(lint, "GLOBAL_AGENTS_MD", None), redirect_stdout(io.StringIO()):
                 self.assertEqual(lint.check_core_diet(str(root)), 1)
                 self.assertEqual(lint.check_bash_syntax(str(root)), 1)
 
@@ -563,12 +566,11 @@ class GlobalAgentsPathTests(unittest.TestCase):
                         result = lint.check_core_diet(tmp)
                     self.assertEqual(result, 0)
 
-    def test_default_global_agents_path_used_when_env_not_set(self):
-        default_path = os.path.expanduser("~/.gemini/config/AGENTS.md")
-        with patch.dict(os.environ, {}, clear=True):
-            with patch.object(lint, "GLOBAL_AGENTS_MD", default_path):
+    def test_canonical_policy_used_without_a_personal_file(self):
+        with tempfile.TemporaryDirectory() as consumer, patch.dict(os.environ, {}, clear=True):
+            with patch.object(lint, "GLOBAL_AGENTS_MD", None):
                 with redirect_stdout(io.StringIO()):
-                    lint.check_core_diet("/tmp")
+                    self.assertEqual(lint.check_core_diet(consumer), 0)
 
 
 class BashSyntaxRecursiveTests(unittest.TestCase):

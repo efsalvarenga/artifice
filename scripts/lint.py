@@ -15,7 +15,6 @@ import sys
 BOLD = "\033[1m"
 GREEN = "\033[0;32m"
 RED = "\033[0;31m"
-YELLOW = "\033[1;33m"
 BLUE = "\033[0;34m"
 NC = "\033[0m"
 
@@ -24,9 +23,10 @@ FENCED_CODE_PATTERN = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_PATTERN = re.compile(r"`[^`\n]+`")
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
-GLOBAL_AGENTS_MD = os.environ.get(
-    "GLOBAL_AGENTS_PATH", os.path.expanduser("~/.gemini/config/AGENTS.md")
+CANONICAL_GLOBAL_AGENTS_MD = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "rules", "global-agents.md"
 )
+GLOBAL_AGENTS_MD = os.environ.get("GLOBAL_AGENTS_PATH")
 GLOBAL_LINE_LIMIT = 140
 GLOBAL_WORD_LIMIT = 1400
 SKILL_LINE_LIMIT = 180
@@ -273,27 +273,35 @@ def check_yaml_frontmatter(target_dir: str) -> int:
     return errors
 
 
+def policy_paths() -> list:
+    paths = [CANONICAL_GLOBAL_AGENTS_MD]
+    if GLOBAL_AGENTS_MD is not None:
+        paths.append(GLOBAL_AGENTS_MD)
+    return list(dict.fromkeys(paths))
+
+
 def check_core_diet(target_dir: str) -> int:
     diet_errors = 0
-
-    # Ceiling A: Global AGENTS.md
-    if os.path.isfile(GLOBAL_AGENTS_MD):
-        with open(GLOBAL_AGENTS_MD, "r", encoding="utf-8") as f:
-            text = f.read()
+    for path in policy_paths():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read()
+        except (OSError, UnicodeError) as error:
+            print(f"    {RED}Global policy error{NC}: {path}: {error}")
+            diet_errors += 1
+            continue
         lines = len(text.splitlines())
         words = len(text.split())
 
         if lines <= GLOBAL_LINE_LIMIT and words <= GLOBAL_WORD_LIMIT:
             print(
-                f"  {GREEN}✓{NC} Global AGENTS.md is within budget ({lines}/{GLOBAL_LINE_LIMIT} lines, {words}/{GLOBAL_WORD_LIMIT} words)."
+                f"  {GREEN}✓{NC} Global policy {path} is within budget ({lines}/{GLOBAL_LINE_LIMIT} lines, {words}/{GLOBAL_WORD_LIMIT} words)."
             )
         else:
             print(
-                f"    {RED}Global AGENTS.md exceeded budget:{NC} {lines} lines (max {GLOBAL_LINE_LIMIT}), {words} words (max {GLOBAL_WORD_LIMIT})."
+                f"    {RED}Global policy exceeded budget{NC}: {path}: {lines} lines (max {GLOBAL_LINE_LIMIT}), {words} words (max {GLOBAL_WORD_LIMIT})."
             )
             diet_errors += 1
-    else:
-        print(f"    {YELLOW}Warning: Global AGENTS.md not found at {GLOBAL_AGENTS_MD}.{NC}")
 
     for directory, filename, word_limit, line_limit in (
         ("skills", "SKILL.md", SKILL_WORD_LIMIT, SKILL_LINE_LIMIT),
@@ -350,7 +358,12 @@ def lint_repository(target_dir: str) -> int:
     print(f"Target directory: {target_dir}\n")
 
     total_errors = 0
-    md_files = find_markdown_files(target_dir)
+    policies = policy_paths()
+    physical_policies = {os.path.realpath(path) for path in policies if path}
+    md_files = sorted({
+        os.path.realpath(path) if os.path.realpath(path) in physical_policies else path
+        for path in find_markdown_files(target_dir) + policies if path
+    })
 
     # Gate 1 & 3: Markdown Cleanliness & Link Resolution
     heading_errors, link_errors = check_markdown_cleanliness_and_links(
