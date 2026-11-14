@@ -18,6 +18,8 @@ artifice/
 ├── docs/
 │   ├── designs/                  # Approved design specifications
 │   └── reviews/                  # Adversarial Goldfish reviews
+├── rules/
+│   └── global-agents.md          # Canonical cross-project governance and provenance
 ├── scripts/
 │   ├── check_ollama.py           # Ollama residency, selection & wave-leasing controller
 │   ├── install_antigravity.sh    # Non-overwriting personal Antigravity symlink installer
@@ -27,6 +29,7 @@ artifice/
 │   ├── model_inventory.py        # Shared metadata inventory & identity validation
 │   ├── vibe_execute.py           # Discovery, task classification & exact dispatch
 │   ├── validate_egm.py           # Portable EGM contract validator (--spec support)
+│   ├── validate_provenance.py    # Explicit, read-only message and commit audit
 │   └── build_review_dossier.py   # Compact repository invariant digest compiler
 ├── skills/
 │   ├── spec-egm/                 # Elephant-Goldfish Model specification workflow
@@ -93,9 +96,38 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 
 * `./scripts/vibe_execute.py`: Shared discovery, requirements-only classification, approved exact-model execution and compound triage. No static model defaults or automatic fallback.
 * `./scripts/check_ollama.py`: Ollama residency and selection controller (`status`, `select --task <role>`, `warm <model> --lease 5m`, `unload --all`). Exact CLI models take precedence over `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` role overrides. Without an explicit choice, selection requires an override or one known-compatible candidate; ambiguity fails rather than taking the first model.
-* `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, and Bash syntax. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
+* `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, and Bash syntax. It always checks the canonical global policy from the physical Artifice checkout, even when targeting a consuming project. `GLOBAL_AGENTS_PATH` adds an explicit external policy check; missing, unreadable or oversized policies fail rather than bypassing the canonical check. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
 * `./scripts/validate_egm.py`: Validates EGM specification sections and matching approved Goldfish reviews (`--spec <id>`).
+* `python3 scripts/validate_provenance.py`: Validates prepared messages or explicitly selected commit history without writing messages, hooks, Git configuration, history, the index or the worktree.
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
+
+## Shared Governance & Commit Provenance
+
+[The canonical policy](rules/global-agents.md) owns cross-project constraints and commit attribution. Detailed workflows stay in agents and skills. Both client installers link this same file, so edits need no compilation or reinstall; a fresh client session may still be necessary.
+
+Before an authorised agent-generated commit, prepare its message and validate it:
+
+```bash
+python3 "$ARTIFICE_ROOT/scripts/validate_provenance.py" --message-file /path/to/prepared-message.txt
+python3 "$ARTIFICE_ROOT/scripts/validate_provenance.py" --repo /path/to/repository --commit HEAD
+python3 "$ARTIFICE_ROOT/scripts/validate_provenance.py" --repo /path/to/repository --range HEAD~3..HEAD
+```
+
+History modes require an explicit repository and validate every selected commit, including merges and human-authored commits. Empty ranges and invalid revisions fail; there is no default history scan or authorship guessing. Exit `0` means every selected message has valid structure, `1` reports invalid provenance or an operational failure, and `2` reports invalid CLI usage.
+
+Record an unavailable model identifier as the literal `unavailable`, with the actual agent role and known, legitimate co-authorship. Never invent contributor identities. The validator enforces the [approved structural contract](docs/designs/005_shared_governance_and_commit_provenance.md#provenance-trailer-contract), not whether a contributor actually participated. Git's native trailer parser runs with isolated configuration and in-memory message input; no temporary message or configuration files are written.
+
+Installers require Bash and Python 3; provenance validation also requires Git. Symlink creation uses Python's atomic create-if-absent primitive so a destination appearing after preflight cannot be overwritten or treated as a directory to write into.
+
+### Safe Migration & Runtime Acceptance
+
+Existing instruction files, byte-identical copies, directories and mismatched or broken symlinks are conflicts. Installation aborts before registration writes and explains manual migration; no personal policy is automatically merged, backed up, replaced or adopted. Review conflicting content yourself before retrying. `--check` is read-only. A later I/O failure may leave earlier newly created registrations; rerun `--check` to inspect actual state rather than assume rollback.
+
+Client-root overrides must be normalised absolute paths, without dot, parent or doubled-slash components, and cannot point inside the checkout or resource anchor. Known non-writable parents block new registrations before writes; already-correct readable registrations can be checked without write permission. Policy-symlink Markdown links are checked from the physical policy directory.
+
+Filesystem registration is not proof that a client loaded the policy. The [approved runtime matrix](docs/designs/005_shared_governance_and_commit_provenance.md#fresh-client-acceptance) requires fresh-session inclusion evidence for Antigravity, Copilot CLI, the VS Code Copilot harness, and Copilot CLI with `COPILOT_HOME`. These live checks remain pending separate installation permission. Other relocated client combinations are installer-test-only, not claimed runtime support.
+
+Issue #19 remains open until the required runtime evidence is delivered. Issue #23 remains partial: backup scripts, MCP templates and sidecars are deferred.
 
 ## Discovery & Model Approval
 
@@ -137,25 +169,26 @@ bash scripts/install_antigravity.sh
 bash scripts/install_antigravity.sh --check
 ```
 
-The installer derivation validates the anchor (`$HOME/.local/share/artifice`), registers directory symlinks (`skills`, `agents`) under `~/.gemini/config/`, and configures `~/.gemini/config/skills.json` using fully-resolved absolute paths (Antigravity's Go runtime requires absolute paths and rejects unresolved `~` paths).
+The installer validates the anchor (`$HOME/.local/share/artifice`), registers directory symlinks (`skills`, `agents`) under `${GEMINI_HOME:-$HOME/.gemini}/config/`, links `AGENTS.md` there to the canonical policy, and configures `skills.json` using fully-resolved absolute paths (Antigravity's Go runtime requires absolute paths and rejects unresolved `~` paths).
 
 Shared roles and skills use the validated, exported `ARTIFICE_ROOT` described above.
 
 ## Integration with Copilot
 
-Install user-level directory symlinks once from any working directory:
+Install user-level agent, skill and governance symlinks once from any working directory:
 
 ```bash
 bash scripts/install_copilot.sh
 bash scripts/install_copilot.sh --check
 ```
 
-The installer derives the physical checkout from its own path and validates sources, parent directories and targets before writing. If a parent cannot be resolved, installation aborts without creating links or directories. It never overwrites existing files, directories or mismatched links, and creates three symlinks:
+The installer derives the physical checkout from its own path and validates sources, parent directories and targets before writing. If a parent cannot be resolved, installation aborts without creating links or directories. It never overwrites existing files, directories or mismatched links, and creates four symlinks:
 
 ```text
 $HOME/.local/share/artifice                  -> physical Artifice checkout
 ${COPILOT_HOME:-$HOME/.copilot}/agents       -> $HOME/.local/share/artifice/integrations/copilot/agents
 ${COPILOT_HOME:-$HOME/.copilot}/skills       -> $HOME/.local/share/artifice/skills
+${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md -> $HOME/.local/share/artifice/rules/global-agents.md
 ```
 
 Thin adapters in `integrations/copilot/agents/` configure Copilot tool permissions and load the canonical `agents/<role>/agent.md` body without duplicating prompts. Use unindented, single-line string values for `name` and non-empty `description`, and an inline `tools` list. Quote YAML indicators, colon-space text such as `"Review: code"`, and null or boolean literals. Start a fresh Copilot chat or reload the window after installation if discovery is stale.

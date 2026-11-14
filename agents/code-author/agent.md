@@ -83,27 +83,15 @@ Execute feature delivery strictly through the following five phases (applying ph
 
 ## 4. Model Commit Authorship & Provenance
 
-Follow active repository Git governance. Authoring models and agents must attribute commits accurately without inventing identifiers:
+Follow active repository Git permissions and the single [shared provenance contract](../../rules/global-agents.md#commit-provenance). Read it from the validated canonical `ARTIFICE_ROOT`, not a client symlink directory. Do not invent identifiers or contributor email addresses.
 
-1. **Atomic Conventional Commits:** Each phase (`test`, `feat`, `refactor`) produces an atomic commit with clear rationale.
-2. **GitHub Co-Authorship Enforcement:** GitHub's commit parser exclusively renders co-authors from `Co-authored-by: Name <email>` trailers. To ensure models are credited in GitHub's web interface and Git logs, every model contributing to the commit must be included in a `Co-authored-by:` trailer:
+Keep authorised phase commits atomic and conventional. Before each commit, prepare its message and run:
 
-   ```text
-   Co-authored-by: <MODEL_NAME> (<AGENT_NAME>) <<MODEL_HANDLE>@artifice.local>
-   ```
+```bash
+python3 "$ARTIFICE_ROOT/scripts/validate_provenance.py" --message-file /path/to/prepared-message.txt
+```
 
-3. **Mandatory Provenance Trailers:** Conclude commit messages with structured trailers recording all contributors:
-
-   ```text
-   Model-Author: <PRIMARY_MODEL_NAME>
-   Agent-Role: code-author (The Craftsman)
-   Co-authored-by: <ORCHESTRATOR_MODEL> (<CLIENT_HARNESS>) <<HANDLE>@artifice.local>
-   Co-authored-by: <OFFLOADED_MODEL> <<MODEL_REF>@ollama.local>
-   ```
-
-   Examples:
-   `Co-authored-by: Gemini 3.8 Flash (Antigravity) <antigravity@artifice.local>`
-   `Co-authored-by: Mistral Large <mistral-large@mistral.ai>`
+A failed check blocks the commit. The validator checks structure, not contributor identity; it neither grants Git permission nor rewrites the message. Audit only explicitly selected history, never all commits by default.
 
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
 

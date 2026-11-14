@@ -66,7 +66,7 @@ Further technical changes require their own appropriate review. Human technical 
 * **Verdict:** Approved for the reviewed feature-design and structural scope.
 * **Convergence:** Two consecutive clean rounds; four requested reviewers completed; zero open findings.
 * **Human technical approval:** Explicitly granted on 2026-11-13, including the intentional compatibility changes and approval-record synchronisation.
-* **Implementation authorisation:** Not granted. No authoring agent may be released from this record alone.
+* **Implementation authorisation:** Separately granted by the developer on 2026-11-14 for code and automated tests. Live installation, commits, pushes and PR creation remain unauthorised. This later permission is not an implementation-review verdict.
 * **History:** The initial audit and its `Revisions Required` verdict are preserved verbatim below.
 
 ### Initial Audit Snapshot

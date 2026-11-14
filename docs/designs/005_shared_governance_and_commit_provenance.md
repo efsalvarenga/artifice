@@ -6,7 +6,7 @@
 **Target Milestone:** Shared governance and provenance delivery for issues #23 and #19  
 **Workshop Date:** 2026-11-13  
 **Technical Approval:** Explicit developer sign-off on 2026-11-13  
-**Implementation Authorisation:** Not granted  
+**Implementation Authorisation:** Granted by the developer on 2026-11-14 for code and automated tests only  
 
 ---
 
@@ -15,6 +15,8 @@
 Establish one version-controlled, cross-project governance policy that Antigravity and Copilot actually load, and provide explicit validation of agent-generated Git commit provenance.
 
 The developer approved the workshop canvas, the resolution edits and this final technical specification. This sign-off authorises approval-record synchronisation only, not implementation, installation, commits, pushes or PR creation.
+
+On 2026-11-14, the developer separately authorised implementation using Occam's Razor and independent subagent review where possible. Live installation, commits, pushes and PR creation remain unauthorised.
 
 ### Empirical Starting Point
 
@@ -311,6 +313,6 @@ Issue #19 may be proposed for closure only after the shared guidance, explicit v
 - [x] Zero-context Goldfish review completed and recorded without fabricated review provenance
 - [x] Logic contradictions and edge-case holes addressed
 - [x] Human developer approves this technical specification and intentional compatibility changes
-- [ ] Human developer explicitly authorises implementation
+- [x] Human developer explicitly authorises implementation
 
-The current [Review 005](../reviews/005_shared_governance_and_commit_provenance_review.md) records `Verdict: Approved` after two consecutive clean review-loop rounds. Its [initial audit snapshot](../reviews/005_shared_governance_and_commit_provenance_review.md#initial-audit-snapshot) preserves the earlier `Revisions Required` report verbatim. Human technical sign-off is recorded above; implementation still requires separate explicit authorisation.
+The current [Review 005](../reviews/005_shared_governance_and_commit_provenance_review.md) records `Verdict: Approved` after two consecutive clean review-loop rounds. Its [initial audit snapshot](../reviews/005_shared_governance_and_commit_provenance_review.md#initial-audit-snapshot) preserves the earlier `Revisions Required` report verbatim. Human technical sign-off and the later implementation authorisation are recorded above; live installation and Git operations still require separate permission.

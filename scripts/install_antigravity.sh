@@ -4,9 +4,9 @@ set -eo pipefail
 usage() {
     printf '%s\n' \
         'Usage: bash scripts/install_antigravity.sh [--check | --help]' \
-        'Register Artifice agents, skills, and configuration in personal Antigravity directories.' \
+        'Register Artifice agents, skills, governance, and personal Antigravity configuration.' \
         '  Anchor:  $HOME/.local/share/artifice -> checkout' \
-        '  Config:  ${GEMINI_HOME:-$HOME/.gemini}/config/{agents,skills,skills.json}'
+        '  Config:  ${GEMINI_HOME:-$HOME/.gemini}/config/{agents,skills,skills.json,AGENTS.md}'
 }
 
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
@@ -19,11 +19,12 @@ case "$#:${1:-}" in
     *) usage >&2; exit 2 ;;
 esac
 
+command -v python3 >/dev/null || fail 'Python 3 is required for safe symlink registration.'
 [[ "${HOME:-}" == /* && -d "$HOME" ]] || fail 'HOME must be an existing absolute directory.'
 home=$(cd "$HOME" && pwd -P)
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 raw_gemini=${GEMINI_HOME:-$home/.gemini}
-[[ "$raw_gemini" == /* && "$raw_gemini" != "/" && "/$raw_gemini/" != *'/../'* && "/$raw_gemini/" != *'/./'* ]] || \
+[[ "$raw_gemini" == /* && "$raw_gemini" != "/" && "$raw_gemini" != *'//'* && "/$raw_gemini/" != *'/../'* && "/$raw_gemini/" != *'/./'* ]] || \
     fail 'GEMINI_HOME must be a normalised absolute path.'
 
 resolve_parent_path() {
@@ -40,52 +41,51 @@ resolve_parent_path() {
 
 anchor="$(resolve_parent_path "$home/.local/share")/artifice"
 gemini_home=$(resolve_parent_path "$raw_gemini")
-gemini_config="$gemini_home/config"
+gemini_config=$(resolve_parent_path "$gemini_home/config")
 
-inside() {
-    local c1 c2
-    c1=$(realpath -s -m -- "$1" 2>/dev/null || echo "$1")
-    c2=$(realpath -s -m -- "$2" 2>/dev/null || echo "$2")
-    [[ "$c1" == "$c2" || "$c1" == "$c2/"* ]]
-}
+inside() { [[ "$1" == "$2" || "$1" == "$2/"* ]]; }
 
 inside "$gemini_home" "$anchor" && fail 'GEMINI_HOME cannot reside inside the resource anchor.'
 inside "$gemini_home" "$repo_root" && fail 'GEMINI_HOME cannot reside inside the checkout.'
 
-destinations=("$anchor" "$gemini_config/agents" "$gemini_config/skills")
-targets=("$repo_root" "$anchor/agents" "$anchor/skills")
-physical=("$repo_root" "$repo_root/agents" "$repo_root/skills")
+destinations=("$anchor" "$gemini_config/agents" "$gemini_config/skills" "$gemini_config/AGENTS.md")
+targets=("$repo_root" "$anchor/agents" "$anchor/skills" "$anchor/rules/global-agents.md")
+physical=("$repo_root" "$repo_root/agents" "$repo_root/skills" "$repo_root/rules/global-agents.md")
 states=()
 errors=0
 
 for src in agents/{code-author,code-reviewer,developer-coach}/agent.md \
+    rules/global-agents.md \
     skills/{spec-egm,review,coach-frameworks,local-code,vibe-execute}/SKILL.md \
-    scripts/{validate_egm,build_review_dossier,check_ollama,vibe_execute}.py; do
+    scripts/{validate_egm,validate_provenance,build_review_dossier,check_ollama,vibe_execute}.py; do
     [[ -f "$repo_root/$src" && -r "$repo_root/$src" ]] || {
         printf 'Missing source: %s\n' "$repo_root/$src" >&2
         errors=1
     }
 done
 
-for i in 0 1 2; do
+for ((i=0; i<${#destinations[@]}; i++)); do
     dest=${destinations[$i]}
     inside "$dest" "$repo_root" && fail "Destination cannot reside inside checkout: $dest"
-    
-    parent="$(dirname "$dest")"
-    while [[ ! -d "$parent" && -n "$parent" && "$parent" != "/" ]]; do
-        parent="$(dirname "$parent")"
-    done
-    [[ -w "$parent" ]] || fail "Parent directory not writable: $parent"
-
     state=missing
     if [[ -L "$dest" ]]; then
         state=conflict
-        if [[ -d "$dest" ]]; then
+        if [[ -d "${physical[$i]}" && -d "$dest" ]]; then
             actual=$(cd "$dest" && pwd -P)
             [[ $(readlink "$dest") == "${targets[$i]}" || "$actual" == "${physical[$i]}" ]] && state=correct-link
+        elif [[ -f "${physical[$i]}" && -f "$dest" && -r "$dest" ]]; then
+            actual=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$dest")
+            [[ "$actual" == "${physical[$i]}" ]] && state=correct-link
         fi
     elif [[ -e "$dest" ]]; then
         state=conflict
+    fi
+    if [[ "$mode" == install && "$state" == missing ]]; then
+        parent=${dest%/*}
+        while [[ ! -d "$parent" ]]; do
+            parent=${parent%/*}; parent=${parent:-/}
+        done
+        [[ -w "$parent" ]] || fail "Parent directory not writable: $parent"
     fi
     states+=("$state")
     printf '%s: %s -> %s\n' "$state" "$dest" "${targets[$i]}"
@@ -107,16 +107,16 @@ else
     [[ "$mode" == check ]] && errors=1 || true
 fi
 
-[[ "$errors" == 0 ]] || fail 'Preflight failed; no filesystem changes were made.'
+[[ "$errors" == 0 ]] || fail 'Preflight failed; no filesystem changes were made. Review conflicts and migrate personal entries manually before retrying.'
 if [[ "$mode" == check ]]; then
     printf 'PASS: Antigravity symlink registration verified.\n'
     exit 0
 fi
 
-for i in 0 1 2; do
+for ((i=0; i<${#destinations[@]}; i++)); do
     [[ "${states[$i]}" == missing ]] || continue
     mkdir -p "${destinations[$i]%/*}"
-    ln -s "${targets[$i]}" "${destinations[$i]}"
+    python3 -c 'import os, sys; os.symlink(sys.argv[1], sys.argv[2])' "${targets[$i]}" "${destinations[$i]}"
 done
 
 mkdir -p "$gemini_config"
