@@ -75,5 +75,5 @@ Before writing implementation code or dispatching authoring subagents:
 2. Confirm exit code `0` (verifying required sections and an approved Goldfish review).
 3. **The Craftsman Handoff (`code-author`):**
    * Proceed via [`code-author`](../../agents/code-author/agent.md) ("The Craftsman") following the contract-first TDD cycle: Red (failing invariant assertions) $\rightarrow$ Green (minimal deterministic logic) $\rightarrow$ Refactor (Occam's Razor) $\rightarrow$ Pre-Review Baseline Gate (`./scripts/lint.sh`).
-   * When commits are authorised by active client/repository Git rules, author atomic phase commits with accurate model provenance trailers (`Model-Author`, `Agent-Role`, and GitHub-rendered `Co-authored-by`).
+   * When commits are authorised by active client/repository Git rules, author atomic phase commits following the [shared provenance contract](../../rules/global-agents.md#commit-provenance) and its explicit message-validation gate.
    * **Strict Merge Invariant:** Under NO circumstances may any agent call 'gh pr merge', invoke the GitHub PR merge API, or execute 'git merge' into main. Merging is strictly reserved for the human developer.
