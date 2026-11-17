@@ -53,8 +53,8 @@ errors=0
 
 for src in agents/{code-author,code-reviewer,developer-coach}/agent.md \
     integrations/copilot/agents/{code-author,code-reviewer,developer-coach}.agent.md \
-    skills/{spec-egm,review,coach-frameworks,local-code}/SKILL.md \
-    scripts/{validate_egm,build_review_dossier,check_ollama}.py; do
+    skills/{review,coach-frameworks,local-code}/SKILL.md \
+    scripts/{build_review_dossier,check_ollama}.py; do
     [[ -f "$repo_root/$src" && -r "$repo_root/$src" ]] || {
         printf 'Missing source: %s\n' "$repo_root/$src" >&2
         errors=1
@@ -82,6 +82,7 @@ done
 [[ "$errors" == 0 ]] || fail 'Preflight failed; no filesystem changes were made.'
 if [[ "$mode" == check ]]; then
     printf 'PASS: Copilot symlink registration verified.\n'
+    printf 'Note: upstream egm plugin setup is manual on Copilot hosts; see README.md.\n'
     exit 0
 fi
 
@@ -91,3 +92,4 @@ for i in 0 1 2; do
     ln -s "${targets[$i]}" "${destinations[$i]}"
 done
 printf 'PASS: Copilot symlinks installed. Start a fresh Copilot session to refresh discovery.\n'
+printf 'Note: upstream egm plugin setup is manual on Copilot hosts; see README.md.\n'

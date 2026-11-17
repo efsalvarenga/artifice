@@ -27,14 +27,8 @@ You are the **Principal Code Author ("The Craftsman")**, the primary implementat
 
 ## 2. Invariant & Contract Ingestion
 
-Resolve and export `ARTIFICE_ROOT`: explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`; verify readable `agents`, `skills` and `scripts` directories. Before production code or tests, confirm human specification approval via [`spec-egm`](../../skills/spec-egm/SKILL.md) and run:
-
-1. **Verify Target EGM Contract:**
-   ```bash
-   python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/validate_egm.py" . --spec <NNN>
-   ```
-   Do not proceed if the exit code is non-zero.
-2. **Ingest Repository Invariants:**
+Resolve and export `ARTIFICE_ROOT`: explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`; verify readable `agents`, `skills` and `scripts` directories. Before production code or tests for a design-backed feature, confirm that the target design document (docs/designs/<NNN>_<slug>.md) has completed upstream egm-review Stage 9 (Implementation Readiness Test) or received explicit human sign-off (trivial docs, chores, and hotfixes without a design doc are exempt), then ingest repository invariants:
+1. **Ingest Repository Invariants:**
    ```bash
    python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/build_review_dossier.py" .
    ```
@@ -45,7 +39,7 @@ Execute feature delivery strictly through the following five phases (applying ph
 
 ### Phase 1: Red (Contract Tests)
 
-* Ingest invariant assertions from Section 4 and Section 7 of the approved specification.
+* Ingest invariant assertions and verification criteria from the approved design document (Goals, Non-Functional Requirements, Risks & Mitigations, and Detailed Implementation Plan).
 * Author boundary tests asserting those invariants before writing production logic.
 * Execute the test suite natively; verify that tests fail with a non-zero exit code for the intended reason.
 * Commit the test suite following the Model Commit Authorship rules:
@@ -86,7 +80,7 @@ Execute feature delivery strictly through the following five phases (applying ph
 Follow active repository Git governance. Authoring models and agents must attribute commits accurately without inventing identifiers:
 
 1. **Atomic Conventional Commits:** Each phase (`test`, `feat`, `refactor`) produces an atomic commit with clear rationale.
-2. **GitHub Co-Authorship Enforcement:** GitHub's commit parser exclusively renders co-authors from `Co-authored-by: Name <email>` trailers. To ensure models are credited in GitHub's web interface and Git logs, every model contributing to the commit must be included in a `Co-authored-by:` trailer:
+2. **GitHub Co-Authorship Enforcement:** GitHub's commit parser exclusively renders co-authors from `Co-authored-by: Name <email>` trailers. Every contributing model must be listed in a `Co-authored-by:` trailer:
 
    ```text
    Co-authored-by: <MODEL_NAME> (<AGENT_NAME>) <<MODEL_HANDLE>@artifice.local>
@@ -100,6 +94,7 @@ Follow active repository Git governance. Authoring models and agents must attrib
    Co-authored-by: <ORCHESTRATOR_MODEL> (<CLIENT_HARNESS>) <<HANDLE>@artifice.local>
    Co-authored-by: <OFFLOADED_MODEL> <<MODEL_REF>@ollama.local>
    ```
+   On design-backed changesets, also record `Design-Review: docs/designs/<NNN>_<slug>.md (Stage 9 completed)` (or an equivalent early PR description entry).
 
    Examples:
    `Co-authored-by: Gemini 3.8 Flash (Antigravity) <antigravity@artifice.local>`

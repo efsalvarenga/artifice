@@ -19,10 +19,10 @@ INSTALLER = REPO_ROOT / "scripts" / "install_copilot.sh"
 ANTIGRAVITY_INSTALLER = REPO_ROOT / "scripts" / "install_antigravity.sh"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
+import build_review_dossier  # noqa: E402
 import check_ollama  # noqa: E402
 import lint  # noqa: E402
 import model_inventory  # noqa: E402
-import validate_egm  # noqa: E402
 import vibe_execute  # noqa: E402
 
 
@@ -466,7 +466,7 @@ class LintAndContractTests(unittest.TestCase):
 
         canonical = [
             *(REPO_ROOT / "agents" / r / "agent.md" for r in ("code-author", "code-reviewer", "developer-coach")),
-            *(REPO_ROOT / "skills" / s / "SKILL.md" for s in ("spec-egm", "review", "coach-frameworks", "local-code")),
+            *(REPO_ROOT / "skills" / s / "SKILL.md" for s in ("review", "coach-frameworks", "local-code")),
         ]
         total_words = sum(len(p.read_text(encoding="utf-8").split()) for p in canonical)
         self.assertLessEqual(total_words, 4158)
@@ -507,45 +507,52 @@ class LintAndContractTests(unittest.TestCase):
                 self.assertEqual(lint.check_bash_syntax(str(root)), 1)
 
 
-class PathTraversalTests(unittest.TestCase):
-    """Tests for path traversal vulnerability fixes."""
-
-    def test_sanitise_spec_path_rejects_traversal_sequences(self):
-        designs_dir = "/tmp/docs/designs"
-        with self.assertRaises(ValueError) as ctx:
-            validate_egm.sanitise_spec_path("../../../etc/passwd", designs_dir)
-        self.assertIn("path traversal", str(ctx.exception))
-
-        with self.assertRaises(ValueError) as ctx:
-            validate_egm.sanitise_spec_path("..", designs_dir)
-        self.assertIn("path traversal", str(ctx.exception))
-
-        with self.assertRaises(ValueError) as ctx:
-            validate_egm.sanitise_spec_path("./test", designs_dir)
-        self.assertIn("path traversal", str(ctx.exception))
-
-        with self.assertRaises(ValueError) as ctx:
-            validate_egm.sanitise_spec_path("test\\..\\test", designs_dir)
-        self.assertIn("path traversal", str(ctx.exception))
-
-    def test_sanitise_spec_path_accepts_valid_names(self):
-        designs_dir = "/tmp/docs/designs"
-        self.assertEqual(validate_egm.sanitise_spec_path("123-spec.md", designs_dir), "123-spec.md")
-        self.assertEqual(validate_egm.sanitise_spec_path("spec-001", designs_dir), "spec-001")
-        self.assertEqual(validate_egm.sanitise_spec_path("  spec-001  ", designs_dir), "spec-001")
-        self.assertEqual(validate_egm.sanitise_spec_path("123", designs_dir), "123")
-        self.assertIsNone(validate_egm.sanitise_spec_path(None, designs_dir))
-
-    def test_validate_repo_rejects_traversal_in_spec_argument(self):
+    def test_lint_allows_upstream_egm_design_doc_without_legacy_sections(self):
         with tempfile.TemporaryDirectory() as tmp:
-            designs_dir = Path(tmp) / "docs" / "designs"
-            designs_dir.mkdir(parents=True)
-            spec_file = designs_dir / "001-test.md"
-            spec_file.write_text("# 1. Overview & Objectives\n\n# 3. State Schema\n\n# 4. Invariants & Rules\n\n# 7. Verification\n\n---\nStatus: Approved\n", encoding="utf-8")
+            root = Path(tmp)
+            designs = root / "docs" / "designs"
+            designs.mkdir(parents=True)
+            (designs / "001_sample.md").write_text(
+                "# Sample Upstream EGM Design\n"
+                "\n"
+                "## Overview\n"
+                "\n"
+                "Upstream-formatted design document without legacy numbered sections.\n"
+                "\n"
+                "## Goals\n"
+                "\n"
+                "* Deliver the feature.\n",
+                encoding="utf-8",
+            )
+            with patch.object(lint, "GLOBAL_AGENTS_MD", str(root / "absent.md")):
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(lint.lint_repository(str(root)), 0)
 
-            with redirect_stdout(io.StringIO()):
-                result = validate_egm.validate_repo(str(Path(tmp).resolve()), "../../../etc/passwd")
-            self.assertEqual(result, 1)
+    def test_build_review_dossier_omits_spec_invariant_scraper(self):
+        self.assertFalse(hasattr(build_review_dossier, "extract_spec_invariants"))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "AGENTS.md").write_text(
+                "# Rules\n"
+                "\n"
+                "* **Rule one:** Be deterministic.\n"
+                "* **Rule two:** Be lean.\n",
+                encoding="utf-8",
+            )
+            designs = root / "docs" / "designs"
+            designs.mkdir(parents=True)
+            (designs / "001_legacy.md").write_text(
+                "# Legacy Spec\n"
+                "\n"
+                "## 4. Invariants & Rules\n"
+                "\n"
+                "* legacy scraper bait invariant\n",
+                encoding="utf-8",
+            )
+            dossier = build_review_dossier.build_dossier(str(root), [])
+            self.assertIn("Rule one", dossier)
+            self.assertNotIn("legacy scraper bait invariant", dossier)
+            self.assertNotIn("Spec (", dossier)
 
 
 class GlobalAgentsPathTests(unittest.TestCase):

@@ -16,8 +16,8 @@ artifice/
 ├── integrations/
 │   └── copilot/agents/           # Thin Copilot adapters delegating to canonical roles
 ├── docs/
-│   ├── designs/                  # Approved design specifications
-│   └── reviews/                  # Adversarial Goldfish reviews
+│   ├── designs/                  # Design specifications (001–004 are legacy historical records from the retired internal EGM format)
+│   └── reviews/                  # Goldfish reviews (001–004 are legacy historical records from the retired internal EGM format)
 ├── scripts/
 │   ├── check_ollama.py           # Ollama residency, selection & wave-leasing controller
 │   ├── install_antigravity.sh    # Non-overwriting personal Antigravity symlink installer
@@ -26,10 +26,8 @@ artifice/
 │   ├── lint.sh                   # Execution wrapper for lint.py
 │   ├── model_inventory.py        # Shared metadata inventory & identity validation
 │   ├── vibe_execute.py           # Discovery, task classification & exact dispatch
-│   ├── validate_egm.py           # Portable EGM contract validator (--spec support)
 │   └── build_review_dossier.py   # Compact repository invariant digest compiler
 ├── skills/
-│   ├── spec-egm/                 # Elephant-Goldfish Model specification workflow
 │   ├── review/                   # Universal 8-Pillar code & architecture review
 │   ├── coach-frameworks/         # Framework evaluation & ecosystem DX coaching
 │   ├── vibe-execute/             # Discovery-led model proposals & execution gateway
@@ -64,27 +62,22 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 
 ## Available Skills
 
-### 1. `spec-egm`
-
-* **Trigger:** `/spec-egm [init | review | validate]`
-* **Role:** Orchestrates the [Elephant-Goldfish Model (EGM)](skills/spec-egm/SKILL.md) workflow: pre-spec empirical reconnaissance, front-loaded Grill-Me workshops, no-code Elephant specs, zero-context Goldfish reviews, and mechanical contract validation.
-
-### 2. `review`
+### 1. `review`
 
 * **Trigger:** `/review [--local] [PR_NUMBER | branch | <file_or_doc_path>]`
 * **Role:** [Universal 8-Pillar evaluation](skills/review/SKILL.md) using the current client orchestrator with optional wave-leased Ollama worker streams (`code_model` + `prose_model`) and strict `--local` on-device privacy mode.
 
-### 3. `coach-frameworks`
+### 2. `coach-frameworks`
 
 * **Trigger:** `/coach-frameworks`
 * **Role:** [Strategic framework evaluation](skills/coach-frameworks/SKILL.md), sibling-repository scouting, and developer ergonomics coaching filtered through the 4-Test Lesson Acceptance Gate.
 
-### 4. `local-code`
+### 3. `local-code`
 
 * **Trigger:** `/local-code`
 * **Role:** [Bounded algorithmic refactoring](skills/local-code/SKILL.md), unit test generation, and Fill-in-the-Middle (FIM) synthesis via an installed Ollama coding model.
 
-### 5. `vibe-execute`
+### 4. `vibe-execute`
 
 * **Trigger:** `/vibe-execute [discover | classify | triage | run]`
 * **Role:** [Discover, filter, propose, confirm, execute](skills/vibe-execute/SKILL.md): metadata-led model selection across local Ollama and hosted Mistral, exact identity-bound dispatch and compound execution.
@@ -93,9 +86,17 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 
 * `./scripts/vibe_execute.py`: Shared discovery, requirements-only classification, approved exact-model execution and compound triage. No static model defaults or automatic fallback.
 * `./scripts/check_ollama.py`: Ollama residency and selection controller (`status`, `select --task <role>`, `warm <model> --lease 5m`, `unload --all`). Exact CLI models take precedence over `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` role overrides. Without an explicit choice, selection requires an override or one known-compatible candidate; ambiguity fails rather than taking the first model.
-* `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, EGM contracts, and Bash syntax. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
-* `./scripts/validate_egm.py`: Validates EGM specification sections and matching approved Goldfish reviews (`--spec <id>`).
+* `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, and Bash syntax. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
+
+## External Prerequisites (Upstream EGM)
+
+Specification workflows (`/egm-brainstorm`, `/egm-draft`, `/egm-review`, `/egm-review-loop`) come from the upstream [google/elephant-goldfish-model](https://github.com/google/elephant-goldfish-model) plugin, not from this repository; Artifice no longer ships an internal EGM skill or validator.
+
+* **Tested baseline:** `version 0.1.1`, commit `270b103`.
+* **Antigravity install:** `agy plugin install https://github.com/google/elephant-goldfish-model`
+* **Manual host verification:** `~/.gemini/config/plugins/egm/plugin.json` reports `"version": "0.1.1"`, `git -C ~/.gemini/config/plugins/egm rev-parse HEAD` matches `270b103...`, and `/egm-review` loads in a fresh session.
+* **Copilot scope:** upstream `egm`'s `docs/harnesses.md` omits Copilot, its `docs/copilot.md` leaves `copilot plugin install` unverified (lines 59–61), and it does not establish VS Code or cloud-agent support (lines 6–7); Copilot hosts need manual plugin setup, and `scripts/install_copilot.sh` prints a non-probing reminder.
 
 ## Discovery & Model Approval
 
