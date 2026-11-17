@@ -3,7 +3,7 @@
 **Author:** efsalvarenga  
 **Status:** Proposed  
 **Date:** 2026-11-15  
-**Tracking PR:** [Draft PR #29](https://github.com/efsalvarenga/artifice/pull/29)
+**Tracking PR:** [PR #29](https://github.com/efsalvarenga/artifice/pull/29)
 
 ## Overview
 
@@ -16,8 +16,8 @@ This design removes Artifice's built-in EGM implementation and establishes the u
 Maintaining a bespoke EGM implementation inside Artifice creates three problems:
 
 1.  **Duplicate workflow and compliance overhead:** Artifice's `spec-egm` skill and `validate_egm.py` script enforce fixed numbered headings (`1. Overview & Objectives`, `3. State Schema`, `4. Invariants & Rules`, `7. Verification`) and a separate `docs/reviews/` verdict file. When the author uses upstream `egm` (`egm-brainstorm`, `egm-draft`, `egm-review`, `egm-review-loop`), Artifice's validator rejects upstream-formatted design documents unless they are rewritten into legacy numbered sections with a `docs/reviews/` verdict file. Similarly, `extract_spec_invariants` in `scripts/build_review_dossier.py` scrapes `## 4. Invariants & Rules`, which only matches legacy Artifice specs.
-2.  **High Gemini token spend during multi-lens EGM reviews:** Upstream `egm` spawns `7` Goldfish lenses during brainstorming (`skills/egm-brainstorm/SKILL.md:162-174`) and `10` Goldfish dispatches across a full five-stage review (`skills/egm-review/SKILL.md:315-426`). Running every stateless Goldfish reviewer through native Google Antigravity harness subagents (`invoke_subagent`) consumes Gemini quota, whereas routing the entire EGM workflow through `scripts/vibe_execute.py` breaks stateful Elephant phases that depend on multi-turn conversation memory and native interactive UI gates (`ask_question`).
-3.  **Undocumented cross-harness expectations:** Artifice supports both Google Antigravity and GitHub Copilot, whereas upstream `egm` documents Antigravity installation (`~/.gemini/config/plugins/egm/`) but omits a Copilot installation workflow in `docs/harnesses.md`. Leaving this implicit causes mid-workflow failures when `/egm-*` skills are invoked on unconfigured hosts.
+2.  **High Gemini token spend during multi-lens EGM reviews:** Upstream `egm` spawns `7` stateless (`Goldfish`) lenses during brainstorming (`skills/egm-brainstorm/SKILL.md:162-174`) and `10` Goldfish dispatches across a full five-stage review (`skills/egm-review/SKILL.md:315-426`). Running every stateless Goldfish reviewer through native Google Antigravity harness subagents (`invoke_subagent`) consumes Gemini quota, whereas routing the entire EGM workflow through `scripts/vibe_execute.py` breaks stateful (`Elephant`) phases that depend on multi-turn conversation memory and native interactive UI gates (`ask_question`).
+3.  **Undocumented cross-harness expectations:** Artifice supports both Google Antigravity and GitHub Copilot, whereas upstream `egm` documents Antigravity installation (`~/.gemini/config/plugins/egm/`) but omits Copilot from `docs/harnesses.md`, while its experimental `docs/copilot.md` leaves `copilot plugin install` unverified (`lines 59–61`) and does not establish VS Code or cloud-agent support (`lines 6–7`). Leaving this implicit causes mid-workflow failures when `/egm-*` skills are invoked on unconfigured hosts.
 
 The proposed solution deletes Artifice's internal EGM skill, validator, lint gate, and dossier regex scraper, and documents the upstream `egm` prerequisite and Antigravity-vs.-Copilot scope in `README.md`. It also shifts design-readiness accountability to PR/commit Stage 9 provenance audited during `/review`, and adds a reference guide under `skills/vibe-execute/` defining which stateless EGM phases offload to Mistral.
 
@@ -45,7 +45,7 @@ The proposed solution deletes Artifice's internal EGM skill, validator, lint gat
 
 *   **Given**: A developer clones or updates Artifice on an Antigravity or Copilot host and runs `./scripts/install_antigravity.sh` or `./scripts/install_copilot.sh`.
 *   **When**: The installer runs preflight checks and the developer consults `README.md` for specification workflow prerequisites.
-*   **Then**: The installer succeeds without checking for `skills/spec-egm/SKILL.md` or `scripts/validate_egm.py` (with `install_copilot.sh` printing a short non-probing reminder about manual Copilot setup), and `README.md` provides the tested `google/elephant-goldfish-model` baseline (`0.1.1` / `270b103`), the Antigravity install command, a manual check for `~/.gemini/config/plugins/egm/plugin.json`, and explicit Copilot limitations.
+*   **Then**: The installer succeeds without checking for `skills/spec-egm/SKILL.md` or `scripts/validate_egm.py` (with `install_copilot.sh` printing a short non-probing reminder about manual Copilot setup), and `README.md` provides the tested `google/elephant-goldfish-model` baseline (`0.1.1` / `270b103`), the Antigravity install command, a manual check (`~/.gemini/config/plugins/egm/plugin.json` for `0.1.1` and `git -C ~/.gemini/config/plugins/egm rev-parse HEAD` for commit `270b103`), and explicit Copilot limitations.
 
 ### CUJ 2: Author Runs `/egm-review /vibe-execute` to Offload Goldfish Reviews to Mistral
 
@@ -56,7 +56,7 @@ The proposed solution deletes Artifice's internal EGM skill, validator, lint gat
 ### CUJ 3: Craftsman Implements an Approved Design and Gatekeeper Audits Provenance
 
 *   **Given**: A design document has completed upstream `egm-review` Stage 9 (Implementation Readiness Test) and received human sign-off.
-*   **When**: `code-author` begins contract-first TDD, opens an early PR, runs `./scripts/lint.sh`, and hands off to `code-reviewer` (`/review`).
+*   **When**: `code-author` begins contract-first Test-Driven Development (TDD), opens an early PR, runs `./scripts/lint.sh`, and hands off to `code-reviewer` (`/review`).
 *   **Then**: `code-author` ingests invariants from the approved design document without calling `validate_egm.py`, records the design document path and Stage 9 sign-off in the PR description or commit trailers (`Design-Review:`), `./scripts/lint.sh` passes without running Gate 5 against `docs/designs/`, and `code-reviewer` verifies the Stage 9 provenance under Pillar 1.
 
 ## Technical Plan (Architecture)
@@ -65,6 +65,7 @@ The architecture replaces Artifice's internal EGM subsystem with three decoupled
 
 ### Terminology & Harness Primitives
 
+*   **Elephant & Goldfish**: The two EGM execution roles: the **Elephant** is the stateful primary orchestrator retaining multi-turn conversation memory; a **Goldfish** is an isolated, zero-context reviewer agent run in a fresh context window with no conversation history.
 *   **`scripts/vibe_execute.py` (`/vibe-execute`)**: Artifice's existing CLI gateway script and skill for discovering, fingerprint-verifying, and dispatching bounded prompts to external hosted Mistral Vibe or local Ollama models in fresh one-shot subprocesses.
 *   **`ask_question` & `invoke_subagent`**: Google Antigravity primary-harness tools: `ask_question` renders interactive single-select or multi-select UI gates for user confirmation, and `invoke_subagent` spawns native child subagent conversations on Gemini.
 *   **`egm-synthesizer`**: Upstream `egm`'s intermediate subagent coordinator (`agents/synthesizer.md`) that fans out review lenses via `invoke_subagent`; bypassed under `/vibe-execute` offloading so Mistral calls do not incur wrapper Gemini subagent turns.
@@ -74,7 +75,7 @@ The architecture replaces Artifice's internal EGM subsystem with three decoupled
 *   **Upstream `egm` Workflows (`v0.1.1`, commit `270b103`)**:
     *   `egm-brainstorm`: Interactive concept clarification (`Step 1`), followed by a `7`-lens parallel Goldfish brainstorm (`Step 2`: `egm-design`, `egm-codebase-details`, `egm-zoom-out`, `egm-comprehension`, `egm-implementation-readiness`, `egm-structural`, `egm-inventive-catalyst`; `skills/egm-brainstorm/SKILL.md:162-174`), brief synthesis (`Step 3`), and handoff (`Step 4`).
     *   `egm-draft`: Interactive section-by-section drafting workflow that creates design specifications split cleanly between architectural sections and a `## Detailed Implementation Plan`.
-    *   `egm-review` & **Stage 9 (`Implementation Readiness Test`)**: A 9-stage specification review workflow (`skills/egm-review/SKILL.md:1-10, 82-224, 315-426`). **Stages 1–4** handle interactive intake, pipeline preset selection, semantic boundary split (`FeatureRange` vs. `DetailedRange`), and staging strategy. **Stages 5–9** execute five Goldfish review phases (`10` Goldfish worker dispatches across a full pass): Stage 5 Initial Zoom Out (`egm-zoom-out`, `egm-inventive-catalyst`), Stage 6 Comprehension Test (`egm-comprehension`), Stage 7 Critic Review (`egm-design`, `egm-structural`, `egm-style`), Stage 8 Intermediate Zoom Out (`egm-zoom-out`), and **Stage 9 Implementation Readiness Test** (`egm-implementation-readiness`, `egm-codebase-details`, `egm-style` auditing `DetailedRange` against `resources/document_standards/implementation-readiness-standard.md` for Zero-Decision phased executability and verified repository symbol accuracy).
+    *   `egm-review` & **Stage 9 (`Implementation Readiness Test`)**: A 9-stage specification review workflow (`skills/egm-review/SKILL.md:1-10, 82-224, 315-426`) whose consolidated output artefact is `consolidated_review_report.md` (with a `Reviewer Status` table tracking `completed` vs. `not run` lenses). **Stages 1–4** handle interactive intake, pipeline preset selection, semantic boundary split (`FeatureRange` vs. `DetailedRange`), and staging strategy. **Stages 5–9** execute five Goldfish review phases (`10` Goldfish worker dispatches across a full pass): Stage 5 Initial Zoom Out (`egm-zoom-out`, `egm-inventive-catalyst`), Stage 6 Comprehension Test (`egm-comprehension`), Stage 7 Critic Review (`egm-design`, `egm-structural`, `egm-style`), Stage 8 Intermediate Zoom Out (`egm-zoom-out`), and **Stage 9 Implementation Readiness Test** (`egm-implementation-readiness`, `egm-codebase-details`, `egm-style` auditing `DetailedRange` against `resources/document_standards/implementation-readiness-standard.md` for Zero-Decision readiness — leaving no design or file-target choices to the implementer — with phased executability and verified repository symbol accuracy).
     *   `egm-review-loop`, `egm-resolve`, `egm-drift-report`, `egm-bootstrap`: Supporting `egm` skills that iterate review/resolve rounds (up to 5), negotiate finding fixes interactively (`egm-resolve`), audit spec-vs.-code drift (`egm-drift-report`), and generate directory documentation via leaf workers (`egm-bootstrap`).
 
 ### 1. Subsystem Removal and Governance Cleanup
@@ -82,7 +83,7 @@ The architecture replaces Artifice's internal EGM subsystem with three decoupled
 Artifice's internal EGM files (`skills/spec-egm/` and `scripts/validate_egm.py`) are deleted. Four repository consumers that previously referenced them are updated:
 
 *   **Static Linter (`scripts/lint.py`)**: Gate 5 (`Validating EGM Specification Contracts`) is removed so `lint.py` no longer imports or executes `validate_egm` when `docs/designs/` is present. Gate 6 (`Checking Native Bash Syntax`) is renumbered to Gate 5. Core Diet ceilings and Markdown heading/link validation remain unchanged.
-*   **Review Dossier (`scripts/build_review_dossier.py`)**: `extract_spec_invariants` (which regex-matched `## 4. Invariants & Rules` in `docs/designs/*.md`) is removed so `build_dossier` compiles repository-level invariants from `AGENTS.md` without assuming legacy section headers.
+*   **Review Dossier (`scripts/build_review_dossier.py`)**: `extract_spec_invariants` (which regex-matched `## 4. Invariants & Rules` in `docs/designs/*.md`) is removed so `build_dossier` compiles repository-level invariants from `AGENTS.md` when present (or falls back to its built-in rules block at `lines 15–26` / `lines 110–130` when absent) without assuming legacy section headers.
 *   **Symlink Installers (`scripts/install_antigravity.sh` and `scripts/install_copilot.sh`)**: Preflight file-existence loops drop `skills/spec-egm/SKILL.md` and `scripts/validate_egm.py`; `install_copilot.sh` adds a short non-probing informational notice referencing `README.md`.
 *   **Unit Test Suite (`tests/test_artifice.py`)**: Removes `import validate_egm`, drops `"spec-egm"` from the canonical word-budget list, and deletes `PathTraversalTests` (which tested `validate_egm.sanitise_spec_path` and `validate_egm.validate_repo`).
 
@@ -133,7 +134,7 @@ To remain within `skills/vibe-execute/SKILL.md`'s 1,000-word Core Diet ceiling e
 ### Alternative A: Keep a Thin Validator, File Marker, or Automated Plugin Probe in `lint.py` / Installers
 
 *   **Pros**: Provides an automated CI or install-time signal verifying that the upstream `egm` plugin is present on the host or that new `docs/designs/` documents carry an explicit readiness stamp.
-*   **Cons**: Couples repository scripts (`lint.py`, `install_antigravity.sh`, `install_copilot.sh`) to out-of-repo `~/.gemini` host state, leaves Copilot without parity (since upstream `egm` omits a Copilot install workflow), and risks rubber-stamped header markers replacing substantive review.
+*   **Cons**: Couples repository scripts (`lint.py`, `install_antigravity.sh`, `install_copilot.sh`) to out-of-repo `~/.gemini` host state, leaves Copilot without parity (since upstream `egm` omits Copilot from `docs/harnesses.md` and leaves `copilot plugin install` unverified in `docs/copilot.md`), and risks rubber-stamped header markers replacing substantive review.
 *   **Reason for Rejection**: Rejected: keeping host-coupled probes or custom file-header stamps recreates the maintenance and compliance overhead described in `## The Problem`; Git/PR Stage 9 provenance audited during `/review` preserves accountability without custom linters.
 
 ### Alternative B: Broaden or Retain `extract_spec_invariants` in `scripts/build_review_dossier.py`
@@ -233,7 +234,7 @@ Apply the 14 target file edits in three ordered phases:
 #### 6. `scripts/build_review_dossier.py` (`[Modify]`)
 
 *   **Type / Scope**: Invariant dossier compiler
-*   **Proposed Changes**: Remove `extract_spec_invariants` (`lines 70–95`) and its call/output loop in `build_dossier` (`lines 102, 138–139`) so the dossier no longer regex-scrapes `## 4. Invariants & Rules` from `docs/designs/*.md`. Keep `find_repo_agents_md`, `extract_invariants`, repository-specific rules, CLI flags (`repo_root`, `--files`), and the 40-line cap intact.
+*   **Proposed Changes**: Remove `extract_spec_invariants` (`lines 70–95`) and its call/output loop in `build_dossier` (`lines 102, 138–139`) so the dossier no longer regex-scrapes `## 4. Invariants & Rules` from `docs/designs/*.md`. Keep `find_repo_agents_md` (plus built-in rules fallback when `AGENTS.md` is absent), `extract_invariants`, CLI flags (`repo_root`, `--files`), and the `dossier_lines[:38]` (`<= 40 lines`) cap (`lines 141–142`) intact.
 
 #### 7. `scripts/install_antigravity.sh` (`[Modify]`)
 
@@ -270,7 +271,7 @@ Apply the 14 target file edits in three ordered phases:
 
 *   **Type / Scope**: Skill reference guide
 *   **Proposed Changes**: Author the operational contract using this exact structure and content specification:
-    *   **Baseline Pin & Drift Check:** State pinned upstream baseline `google/elephant-goldfish-model` `version 0.1.1` (commit `270b103`). Before dispatching step-numbered workflows, instruct the orchestrator to inspect `~/.gemini/config/plugins/egm/plugin.json` against the pinned version and flag any upstream drift (or run `egm-drift-report` if stale).
+    *   **Baseline Pin & Drift Check:** State pinned upstream baseline `google/elephant-goldfish-model` `version 0.1.1` (commit `270b103`). Before dispatching step-numbered workflows, instruct the orchestrator to check `~/.gemini/config/plugins/egm/plugin.json` (`version: 0.1.1`) and `git -C ~/.gemini/config/plugins/egm rev-parse HEAD` (`270b103...`) against the pinned baseline and flag any upstream drift (or run `egm-drift-report` if stale).
     *   **Routing Split Table:**
 
         | Workflow / Step | Memory Role | Execution Engine | Notes |
@@ -291,8 +292,8 @@ Apply the 14 target file edits in three ordered phases:
 *   **Type / Scope**: Repository documentation
 *   **Proposed Changes**:
     *   Remove `validate_egm.py` (`line 29`), `spec-egm/` (`line 32`), `### 1. spec-egm` (`lines 67–70`, renumbering `review`, `coach-frameworks`, `local-code`, `vibe-execute` to `1–4`), and `validate_egm.py` (`line 97`), and remove `"EGM contracts,"` from the `lint.sh` summary (`line 96`).
-    *   In `## Directory Structure` (`lines 18–20`), update the `docs/designs/` and `docs/reviews/` comments to note that `001`–`004` are legacy historical records preserved from the retired internal EGM format.
-    *   Immediately after `## Core Scripts & Verification` (`line 99`, before `## Discovery & Model Approval`), insert `## External Prerequisites (Upstream EGM)` containing: the upstream repository URL (`https://github.com/google/elephant-goldfish-model`), tested baseline (`version 0.1.1`, commit `270b103`), the Antigravity CLI (`agy`) install command (`agy plugin install https://github.com/google/elephant-goldfish-model`), the manual host verification step (confirm `~/.gemini/config/plugins/egm/plugin.json` exists and `/egm-review` loads), and explicit Copilot scope noting upstream `egm`'s `docs/harnesses.md` omits a Copilot install workflow.
+    *   In `## Directory Structure` (`lines 19–20`, under `├── docs/` at `line 18`), update the `docs/designs/` and `docs/reviews/` comments to note that `001`–`004` are legacy historical records preserved from the retired internal EGM format.
+    *   Immediately after `## Core Scripts & Verification` (heading at `line 92`, section spanning `lines 92–99` before `## Discovery & Model Approval` at `line 100`), insert `## External Prerequisites (Upstream EGM)` containing: the upstream repository URL (`https://github.com/google/elephant-goldfish-model`), tested baseline (`version 0.1.1`, commit `270b103`), the Antigravity CLI (`agy`) install command (`agy plugin install https://github.com/google/elephant-goldfish-model`), the manual host verification steps (`~/.gemini/config/plugins/egm/plugin.json` reports `0.1.1`, `git -C ~/.gemini/config/plugins/egm rev-parse HEAD` matches `270b103...`, and `/egm-review` loads), and explicit Copilot scope noting upstream `egm`'s `docs/harnesses.md` omits Copilot while `docs/copilot.md` leaves `copilot plugin install` unverified (`lines 59–61`) and does not establish VS Code or cloud-agent support (`lines 6–7`).
 
 #### 14. `tests/test_artifice.py` (`[Modify]`)
 
