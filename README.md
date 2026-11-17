@@ -33,8 +33,7 @@ artifice/
 ├── skills/
 │   ├── review/                   # Universal 8-Pillar code & architecture review
 │   ├── coach-frameworks/         # Framework evaluation & ecosystem DX coaching
-│   ├── vibe-execute/             # Discovery-led model proposals & execution gateway
-│   └── local-code/               # Algorithmic refactoring & tests via local Ollama
+│   └── vibe-execute/             # Discovery-led model proposals & execution gateway
 └── tests/                        # Standard-library unit & black-box installer tests
 ```
 
@@ -75,12 +74,7 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 * **Trigger:** `/coach-frameworks`
 * **Role:** [Strategic framework evaluation](skills/coach-frameworks/SKILL.md), sibling-repository scouting, and developer ergonomics coaching filtered through the 4-Test Lesson Acceptance Gate.
 
-### 3. `local-code`
-
-* **Trigger:** `/local-code`
-* **Role:** [Bounded algorithmic refactoring](skills/local-code/SKILL.md), unit test generation, and Fill-in-the-Middle (FIM) synthesis via an installed Ollama coding model.
-
-### 4. `vibe-execute`
+### 3. `vibe-execute`
 
 * **Trigger:** `/vibe-execute [discover | classify | triage | run]`
 * **Role:** [Discover, filter, propose, confirm, execute](skills/vibe-execute/SKILL.md): metadata-led model selection across local Ollama and hosted Mistral, exact identity-bound dispatch and compound execution.

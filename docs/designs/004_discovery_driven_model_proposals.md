@@ -233,7 +233,7 @@ The runner must receive and validate the approved task requirements as well as m
 | Surface | Required change |
 | --- | --- |
 | [vibe-execute](../../skills/vibe-execute/SKILL.md) | Replace static tier-to-model menus with discovery and assistant-led proposals. Preserve task complexity as guidance, not a model catalogue. |
-| [local-code](../../skills/local-code/SKILL.md) | Use local-only discovery and an exact approved installed tag; preserve bounded coding/TDD workflows and actual-model provenance. |
+| `local-code` (removed) | Use local-only discovery and an exact approved installed tag; preserve bounded coding/TDD workflows and actual-model provenance. |
 | [review](../../skills/review/SKILL.md) and [its reference](../../skills/review/references/review-framework.md) | Select code/prose workers from shared evidence; one model may serve both roles. Optional workers can be omitted visibly; local-only mode still requires both role assignments before protected ingestion. |
 | `check_ollama.py select --task` | Preserve `model`, `resident` and `fallback` output. Return a model only for a valid explicit override or one unambiguous eligible local candidate; otherwise exit `2` with a reason and `fallback: null`. Never make an implicit choice among several candidates. |
 | Existing `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` | Preserve exact-tag semantics and task-role scope; empty, missing or invalid values still fail explicitly. All selection failures return `fallback: null`. |
