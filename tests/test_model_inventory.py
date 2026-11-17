@@ -168,6 +168,42 @@ class InventoryTests(unittest.TestCase):
             inventory.select_candidate(snapshot, provider="ollama")
         self.assertEqual(inventory.select_candidate(snapshot, provider="ollama", model=TAG)["model_id"], TAG)
 
+    def test_task_preference_narrows_ambiguous_prose_selection(self):
+        self.tags = [installed("qwen2.5:14b"), installed("another:latest")]
+        snapshot = self.discover()
+        chosen = inventory.select_candidate(
+            snapshot, provider="ollama",
+            task_requirements=inventory.requirements(task="prose", local_only=True),
+        )
+        self.assertEqual(chosen["model_id"], "qwen2.5:14b")
+
+    def test_primary_prose_preference_wins_over_fallback(self):
+        self.tags = [installed("qwen2.5:14b"), installed("mistral-nemo:12b")]
+        snapshot = self.discover()
+        chosen = inventory.select_candidate(
+            snapshot, provider="ollama",
+            task_requirements=inventory.requirements(task="prose", local_only=True),
+        )
+        self.assertEqual(chosen["model_id"], "mistral-nemo:12b")
+
+    def test_explicit_model_overrides_task_preference(self):
+        self.tags = [installed("qwen2.5:14b"), installed("mistral-nemo:12b")]
+        snapshot = self.discover()
+        chosen = inventory.select_candidate(
+            snapshot, provider="ollama", model="qwen2.5:14b",
+            task_requirements=inventory.requirements(task="prose", local_only=True),
+        )
+        self.assertEqual(chosen["model_id"], "qwen2.5:14b")
+
+    def test_ambiguity_survives_when_no_preference_matches(self):
+        self.tags = [installed("another:latest"), installed("third:1")]
+        snapshot = self.discover()
+        with self.assertRaisesRegex(inventory.SelectionError, "Several models are compatible"):
+            inventory.select_candidate(
+                snapshot, provider="ollama",
+                task_requirements=inventory.requirements(task="prose", local_only=True),
+            )
+
     def test_fingerprint_binds_digest_and_endpoint(self):
         snapshot = self.discover()
         expected = snapshot["models"][0]["identity_fingerprint"]

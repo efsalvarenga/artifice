@@ -28,6 +28,15 @@ TASKS = ("code", "logic", "fim", "tdd", "prose", "docs", "adr", "architecture", 
 CAPABILITIES = ("chat", "tools", "fim", "vision")
 MODES = ("bounded_chat", "cli_agent")
 LOCAL_ALIASES = ("local", "ollama")
+# Ordered per-task local defaults, applied only when no explicit model is
+# requested (--model / ARTIFICE_*_MODEL always take precedence). An entry
+# matches an exact tag, its family name (before ":"), or a known alias.
+TASK_PREFERENCES = {
+    "prose": ("mistral-nemo", "qwen2.5:14b"),
+    "docs": ("mistral-nemo", "qwen2.5:14b"),
+    "adr": ("mistral-nemo", "qwen2.5:14b"),
+    "architecture": ("mistral-nemo", "qwen2.5:14b"),
+}
 
 DEFAULT_MISTRAL_MODELS = (
     {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 1048576},
@@ -640,6 +649,18 @@ def candidate_issues(candidate: dict, task_requirements: dict) -> list:
     return issues
 
 
+def _prefer(candidates: list, task: str) -> list:
+    """Narrow an ambiguous eligible set to the highest installed task preference."""
+    for name in TASK_PREFERENCES.get(task, ()):
+        matched = [
+            item for item in candidates
+            if name in (item["model_id"], item["model_id"].split(":", 1)[0])
+            or name in item.get("aliases", [])
+        ]
+        if matched:
+            return matched
+    return candidates
+
 def select_candidate(snapshot: dict, provider: str = None, model: str = None,
                      task_requirements: dict = None, expect_identity: str = None) -> dict:
     def reject(message):
@@ -669,6 +690,8 @@ def select_candidate(snapshot: dict, provider: str = None, model: str = None,
     if model is not None and len(matches) > 1:
         reject("The explicit model reference is ambiguous.")
     eligible = [item for item in matches if not candidate_issues(item, requested)]
+    if model is None and len(eligible) > 1:
+        eligible = _prefer(eligible, requested["task"])
     if len(eligible) > 1:
         reject("Several models are compatible; choose an exact model from discovery.")
     if not eligible:

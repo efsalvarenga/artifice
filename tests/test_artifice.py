@@ -284,6 +284,18 @@ class ModelSelectionTests(unittest.TestCase):
             selected = check_ollama.select_best_model("code", model=LOCAL_TAG)
         self.assertEqual(selected["model"], LOCAL_TAG)
 
+    def test_prose_task_falls_back_to_second_preference(self):
+        self.snapshot.return_value = local_inventory(["qwen2.5:14b", LOCAL_TAG])
+        self.assertEqual(check_ollama.select_best_model("prose")["model"], "qwen2.5:14b")
+
+    def test_prose_task_prefers_primary_when_installed(self):
+        self.snapshot.return_value = local_inventory(["qwen2.5:14b", "mistral-nemo:12b"])
+        self.assertEqual(check_ollama.select_best_model("prose")["model"], "mistral-nemo:12b")
+
+    def test_prose_task_stays_ambiguous_without_preferred_models(self):
+        self.snapshot.return_value = local_inventory([LOCAL_TAG, "other:latest"])
+        self.assertIsNone(check_ollama.select_best_model("prose")["model"])
+
     def test_warming_requires_residency_confirmation(self):
         for status, response, success in (
             (200, {"models": [{"name": "qwen2.5:14b"}]}, True),
