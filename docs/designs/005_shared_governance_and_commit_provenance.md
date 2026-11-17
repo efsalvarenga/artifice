@@ -203,7 +203,7 @@ The authoring workflow invokes the checker on a prepared message before an autho
 
 ### Shared Guidance & Documentation
 
-* Make the canonical policy the normative provenance contract referenced by [code-author](../../agents/code-author/agent.md) and [spec-egm](../../skills/spec-egm/SKILL.md), resolving resources through the existing canonical `ARTIFICE_ROOT` rules.
+* Make the canonical policy the normative provenance contract referenced by [code-author](../../agents/code-author/agent.md) and [upstream EGM prerequisite](../../README.md#external-prerequisites-upstream-egm), resolving resources through the existing canonical `ARTIFICE_ROOT` rules.
 * Remove conflicting or duplicated runtime trailer instructions rather than appending another competing schema. Preserve the role-specific TDD workflow and existing prompt budgets.
 * Update the [README](../../README.md) with the policy resource, client paths, safe migration behaviour, validator modes, unavailable-model convention, limitations, and fresh-session verification.
 * Keep historical approved designs/reviews intact. This design changes the future runtime contract, not the recorded history of earlier approvals.

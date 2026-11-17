@@ -8,7 +8,6 @@ to inject into local/cross-family review models (Qwen 2.5 14B / Mistral NeMo 12B
 
 import argparse
 import os
-import re
 import sys
 
 
@@ -67,39 +66,10 @@ def extract_invariants(agents_file: str) -> list:
     return extracted[:8]
 
 
-def extract_spec_invariants(repo_root: str, changed_files: list) -> list:
-    designs_dir = os.path.join(repo_root, "docs", "designs")
-    if not os.path.isdir(designs_dir):
-        return []
-
-    spec_invariants = []
-    for sf in os.listdir(designs_dir):
-        if sf.endswith(".md") and sf != "TEMPLATE.md":
-            with open(
-                os.path.join(designs_dir, sf), "r", encoding="utf-8"
-            ) as f:
-                content = f.read()
-            match = re.search(
-                r"## 4\. Invariants & Rules\s*\n(.*?)(?=\n##|\Z)",
-                content,
-                re.DOTALL,
-            )
-            if match:
-                inv_lines = [
-                    l.strip()
-                    for l in match.group(1).splitlines()
-                    if l.strip().startswith(("*", "-"))
-                ]
-                for il in inv_lines[:3]:
-                    spec_invariants.append(f"Spec ({sf[:7]}): {il}")
-    return spec_invariants[:4]
-
-
 def build_dossier(repo_root: str, changed_files: list) -> str:
     repo_name = os.path.basename(os.path.abspath(repo_root))
     agents_file = find_repo_agents_md(repo_root)
     repo_invariants = extract_invariants(agents_file)
-    spec_invariants = extract_spec_invariants(repo_root, changed_files)
 
     # Core global invariants
     dossier_lines = [
@@ -134,9 +104,6 @@ def build_dossier(repo_root: str, changed_files: list) -> str:
 
     for ri in repo_invariants[:4]:
         dossier_lines.append(f"* {ri}")
-
-    for si in spec_invariants[:3]:
-        dossier_lines.append(f"* {si}")
 
     # Enforce <= 40 lines
     dossier_lines = dossier_lines[:38]

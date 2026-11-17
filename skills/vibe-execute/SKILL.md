@@ -16,6 +16,7 @@ Use **discover → filter → propose → confirm → execute**, not fixed tier-
 * [Dispatch controller](../../scripts/vibe_execute.py) and [shared inventory](../../scripts/model_inventory.py)
 * [Bounded local coding](../local-code/SKILL.md) and [Ollama lifecycle](../../scripts/check_ollama.py)
 * [Review workers and privacy](../review/references/review-framework.md)
+* [EGM Goldfish offloading](references/egm-offloading.md)
 
 Resolve and export `ARTIFICE_ROOT` from its explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`, and resolve links from `ARTIFICE_ROOT/skills/vibe-execute/`. Verify readable `agents`, `skills` and `scripts` directories; stop on failure.
 
@@ -80,6 +81,8 @@ python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" triage 
 Select and approve the triage engine first, carrying the same relevant requirement flags as `run`. Generated `recommended_engine` values must be discovered `provider/source/model` references. Split only the first two slashes, preserving tag namespaces/suffixes. Validate references and manifest structure/dependencies; reject missing, invented or ineligible engines. Approve concrete wave engines and fingerprints before dispatch.
 
 Execute waves sequentially with native checks between them. `--local` constrains triage **and every wave**, regardless of recommendations.
+
+3. **Upstream EGM Offloading:** When pairing /egm-* skills with /vibe-execute, keep stateful Elephant turns (clarification, drafting, resolution) on the primary harness and fan out stateless Goldfish lenses in parallel via scripts/vibe_execute.py run per [EGM Goldfish offloading](references/egm-offloading.md).
 
 ## 5. Verification, Provenance & Teardown
 

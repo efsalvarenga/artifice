@@ -7,7 +7,8 @@ This reference defines the formal evaluation rubric used by the **Principal Code
 ### Pillar 1: Design & Architecture Alignment (`DESIGN`)
 
 * **What to Check:**
-  * **EGM Specification Compliance:** Does the implementation faithfully fulfil the active approved specification in `docs/designs/`?
+  * **Design Specification Alignment:** Does the implementation faithfully fulfil the active approved specification in `docs/designs/` (or linked PR design doc)?
+  * **Stage 9 Readiness Provenance:** For changesets backed by a `docs/designs/` specification, does the PR description or `Design-Review:` commit provenance record upstream `egm-review` Stage 9 (Implementation Readiness Test) completion or explicit human sign-off?
   * Are all state schemas, invariants, and edge cases defined in the specification implemented?
   * Are module boundaries respected (e.g. headless core separated from UI/client)?
   * Is the interface minimal, cohesive, and decoupled?
@@ -16,6 +17,7 @@ This reference defines the formal evaluation rubric used by the **Principal Code
   * Omission of promised specification invariants or edge cases.
   * Unauthorised scope expansion beyond the approved specification.
   * Direct coupling between domain engines and presentation layers.
+  * Missing Stage 9 or human readiness provenance on a design-backed PR.
 
 ### Pillar 2: Functionality & Invariants (`FUNCTIONALITY`)
 
