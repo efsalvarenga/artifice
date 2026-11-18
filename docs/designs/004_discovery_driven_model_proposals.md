@@ -30,7 +30,7 @@ Read-only reconnaissance on 2026-11-05 established:
 ### Goals
 
 * Discover every advertised model from the configured Ollama-compatible service, plus Vibe's effective configured models and authenticated hosted catalogue when permitted.
-* Give `vibe-execute`, `local-code` and `review` one shared inventory contract.
+* Give `vibe-execute` and `review` one shared inventory contract.
 * Keep recommendation reasoning in the current assistant, not a model-name whitelist or numerical quality-ranking engine.
 * Distinguish installation, configuration, account visibility, capabilities and actual dispatch support.
 * Preserve explicit model overrides, local-only privacy boundaries and truthful execution provenance.
@@ -233,7 +233,6 @@ The runner must receive and validate the approved task requirements as well as m
 | Surface | Required change |
 | --- | --- |
 | [vibe-execute](../../skills/vibe-execute/SKILL.md) | Replace static tier-to-model menus with discovery and assistant-led proposals. Preserve task complexity as guidance, not a model catalogue. |
-| `local-code` (removed) | Use local-only discovery and an exact approved installed tag; preserve bounded coding/TDD workflows and actual-model provenance. |
 | [review](../../skills/review/SKILL.md) and [its reference](../../skills/review/references/review-framework.md) | Select code/prose workers from shared evidence; one model may serve both roles. Optional workers can be omitted visibly; local-only mode still requires both role assignments before protected ingestion. |
 | `check_ollama.py select --task` | Preserve `model`, `resident` and `fallback` output. Return a model only for a valid explicit override or one unambiguous eligible local candidate; otherwise exit `2` with a reason and `fallback: null`. Never make an implicit choice among several candidates. |
 | Existing `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` | Preserve exact-tag semantics and task-role scope; empty, missing or invalid values still fail explicitly. All selection failures return `fallback: null`. |
@@ -293,7 +292,7 @@ Use standard-library `unittest`, mocked HTTP/subprocesses, fake clocks and dispo
 * **Privacy:** `--local` produces zero hosted calls; remote endpoints, proxies, redirects, cloud-backed models and unknown execution locality cannot satisfy on-device policy. Protected outputs are not returned into cloud orchestration.
 * **Bounds:** fake-clock tests assert the 15-second aggregate deadline, three-second operation limit, maximum four concurrent operations and explicit partial status on exhaustion. Pagination and detail failures never silently discard discovered identities.
 * **Error/output shape:** assert JSON schema, stable diagnostic codes, stderr separation, redaction and exact exit codes. A partial inventory is never presented as complete.
-* **All consumers:** verify `vibe-execute`, `local-code`, normal/strict-local review and compound triage use the same inventory and identity validator. Unknown manifest identities cannot reach dispatch.
+* **All consumers:** verify `vibe-execute`, normal/strict-local review and compound triage use the same inventory and identity validator. Unknown manifest identities cannot reach dispatch.
 * **Resource stewardship:** discovery leaves residency unchanged; dispatch still checks warming success and preserves existing wave-leasing safeguards.
 
 Run the smallest affected unit selectors during development, then [the native lint/test wrapper](../../scripts/lint.sh) before implementation handoff. Preserve installer, adapter, prompt-budget and existing manifest regression coverage.
