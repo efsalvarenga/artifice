@@ -472,7 +472,7 @@ class LintAndContractTests(unittest.TestCase):
             *(REPO_ROOT / "skills" / s / "SKILL.md" for s in ("review", "coach-frameworks")),
         ]
         total_words = sum(len(p.read_text(encoding="utf-8").split()) for p in canonical)
-        self.assertLessEqual(total_words, 4158)
+        self.assertLessEqual(total_words, 3300)
         for path in canonical:
             text = path.read_text(encoding="utf-8")
             self.assertNotIn("/Users/", text)
