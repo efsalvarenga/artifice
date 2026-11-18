@@ -90,7 +90,7 @@ A failed check blocks the commit. The validator checks structure, not contributo
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
 
 * **Division of Labour:** The current client orchestrator maintains architectural contracts, specification compliance, Red test design, and PR drafting.
-* **Model Selection & Offloading:** When authorised, use [`vibe-execute`](../../skills/vibe-execute/SKILL.md) discovery, proposal and approval of exact tags/fingerprints. This phase supports bounded Ollama execution ([`local-code`](../../skills/local-code/SKILL.md)) and hosted Mistral execution via [`vibe-execute`](../../skills/vibe-execute/SKILL.md). Respect protected-content boundaries before ingestion; never silently substitute models.
+* **Model Selection & Offloading:** When authorised, use [`vibe-execute`](../../skills/vibe-execute/SKILL.md) discovery, proposal and approval of exact tags/fingerprints, with hosted Mistral execution via the same gateway. Respect protected-content boundaries before ingestion; never silently substitute models.
 * **Zero-Waste Memory Purge:** Any authoring wave that leases local memory must invoke:
 
   ```bash

@@ -55,7 +55,7 @@ errors=0
 for src in agents/{code-author,code-reviewer,developer-coach}/agent.md \
     rules/global-agents.md \
     integrations/copilot/agents/{code-author,code-reviewer,developer-coach}.agent.md \
-    skills/{review,coach-frameworks,local-code}/SKILL.md \
+    skills/{review,coach-frameworks}/SKILL.md \
     scripts/{validate_provenance,build_review_dossier,check_ollama}.py; do
     [[ -f "$repo_root/$src" && -r "$repo_root/$src" ]] || {
         printf 'Missing source: %s\n' "$repo_root/$src" >&2

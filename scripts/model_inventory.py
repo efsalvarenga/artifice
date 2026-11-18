@@ -27,7 +27,7 @@ MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 TASKS = ("code", "logic", "fim", "tdd", "prose", "docs", "adr", "architecture", "utility")
 CAPABILITIES = ("chat", "tools", "fim", "vision")
 MODES = ("bounded_chat", "cli_agent")
-LOCAL_ALIASES = ("local", "ollama", "local-code")
+LOCAL_ALIASES = ("local", "ollama")
 
 DEFAULT_MISTRAL_MODELS = (
     {"alias": "large", "name": "mistral-large-4", "display_name": "Mistral Large", "context": 1048576},

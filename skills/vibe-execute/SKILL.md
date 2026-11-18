@@ -14,7 +14,7 @@ Use **discover → filter → propose → confirm → execute**, not fixed tier-
 ## Reference Materials
 
 * [Dispatch controller](../../scripts/vibe_execute.py) and [shared inventory](../../scripts/model_inventory.py)
-* [Bounded local coding](../local-code/SKILL.md) and [Ollama lifecycle](../../scripts/check_ollama.py)
+* [Ollama lifecycle](../../scripts/check_ollama.py)
 * [Review workers and privacy](../review/references/review-framework.md)
 * [EGM Goldfish offloading](references/egm-offloading.md)
 
