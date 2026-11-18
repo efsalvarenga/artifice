@@ -2,8 +2,8 @@
 
 **Target:** `docs/designs/007_unified_harness_mounting.md` (full file; 259 lines at review time, 294 at approval)
 *   **Status:** resolved 2026-11-17 · **Date:** 2026-11-17
-*   **Source reports:** consolidated into [007_unified_harness_mounting_review.md](007_unified_harness_mounting_review.md); the five per-stage reports were working artifacts and are not retained.
-## Prioritized Findings & AI Suggestions
+*   **Source reports:** consolidated into [007_unified_harness_mounting_review.md](007_unified_harness_mounting_review.md); the five per-stage reports were working artefacts and are not retained.
+## Prioritised Findings & AI Suggestions
 
 ### B1 — omp `AGENTS.md` mount specified two contradictory ways — Severity: Blocker
 

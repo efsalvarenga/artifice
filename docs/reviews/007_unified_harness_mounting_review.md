@@ -16,7 +16,7 @@
 
 All ten reviewer runs were true zero-context Goldfish reviews: each child started blank and received only its persona file, the target ranges, the standards, and the GoldfishContext baseline list.
 
-Individual per-stage reports (zoom-out, comprehension, critic, intermediate zoom-out, implementation readiness) were working artifacts; their findings are deduplicated into this file's traceability matrix.
+Individual per-stage reports (zoom-out, comprehension, critic, intermediate zoom-out, implementation readiness) were working artefacts; their findings are deduplicated into this file's traceability matrix.
 
 ## Consolidated findings
 
