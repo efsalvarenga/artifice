@@ -711,6 +711,23 @@ class LintAndContractTests(unittest.TestCase):
             self.assertNotIn("legacy scraper bait invariant", dossier)
             self.assertNotIn("Spec (", dossier)
 
+    def test_find_markdown_files_includes_github_and_skips_forbidden_dirs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            kept = (
+                root / ".github" / "PULL_REQUEST_TEMPLATE.md",
+                root / "node_modules_docs" / "valid.md",
+            )
+            skipped = root / ".git" / "bad.md"
+            for path in kept:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("# Heading\n\nValid.\n", encoding="utf-8")
+            skipped.parent.mkdir(parents=True, exist_ok=True)
+            skipped.write_text("# Heading\n\nSkipped.\n", encoding="utf-8")
+            files = lint.find_markdown_files(str(root))
+            for path in kept:
+                self.assertIn(str(path), files)
+            self.assertNotIn(str(skipped), files)
 
 class GlobalAgentsPathTests(unittest.TestCase):
     """Tests for GLOBAL_AGENTS_PATH environment variable configuration."""

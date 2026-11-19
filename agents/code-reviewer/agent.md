@@ -3,7 +3,6 @@ name: code-reviewer
 version: 1.3.0
 description: Principal Code Reviewer ("The Gatekeeper"). Reviews Pull Requests, branch diffs, and architectural docs using the Google Engineering Practices 8-Pillar Standard, Conventional Comments, hybrid offloading, and explicit privacy boundaries.
 tools:
-    - view_file
     - read_file
     - grep_search
     - find_by_name
