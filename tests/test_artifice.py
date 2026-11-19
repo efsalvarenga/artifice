@@ -17,6 +17,7 @@ from unittest.mock import patch
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INSTALLER = REPO_ROOT / "scripts" / "install_copilot.sh"
 ANTIGRAVITY_INSTALLER = REPO_ROOT / "scripts" / "install_antigravity.sh"
+OMP_INSTALLER = REPO_ROOT / "scripts" / "install_omp.sh"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import build_review_dossier  # noqa: E402
@@ -230,6 +231,129 @@ class AntigravityInstallerTests(unittest.TestCase):
         res = self.run_installer("--check")
         self.assertEqual(res.returncode, 1)
         self.assertIn("unresolved tilde", res.stdout)
+
+
+
+class OmpInstallerTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.home = Path(self.tmp.name) / "home dir"
+        self.home.mkdir()
+
+    def run_installer(self, *args, home=None, agent_dir=None, profile=None, extra_env=None):
+        env = {"PATH": os.environ["PATH"], "HOME": str(home if home is not None else self.home)}
+        if agent_dir is not None:
+            env["PI_CODING_AGENT_DIR"] = str(agent_dir)
+        if profile is not None:
+            env["OMP_PROFILE"] = profile
+        env.update(extra_env or {})
+        return subprocess.run(
+            ["bash", str(OMP_INSTALLER), *args],
+            cwd=self.tmp.name, env=env, text=True, capture_output=True,
+        )
+
+    def test_cli_help_and_invalid_args(self):
+        self.assertEqual(self.run_installer("--help").returncode, 0)
+        self.assertEqual(self.run_installer("--unknown").returncode, 2)
+        self.assertFalse((self.home / ".omp").exists())
+
+    def test_invalid_paths_rejected_without_writes(self):
+        self.assertEqual(self.run_installer(agent_dir="relative/agent").returncode, 1)
+        self.assertEqual(self.run_installer(agent_dir=self.home / ".local/share/artifice/sub").returncode, 1)
+        self.assertEqual(self.run_installer(agent_dir=REPO_ROOT / "sub").returncode, 1)
+        self.assertFalse((self.home / ".local").exists())
+
+    def test_profile_resolution_uses_profile_agent_dir(self):
+        res = self.run_installer(profile="work")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        policy = self.home / ".omp/profiles/work/agent/AGENTS.md"
+        self.assertTrue(policy.is_symlink())
+        self.assertEqual(policy.resolve(), (REPO_ROOT / "rules/global-agents.md").resolve())
+        self.assertFalse((self.home / ".omp/agent").exists())
+
+    def test_check_install_and_idempotence(self):
+        self.assertEqual(self.run_installer("--check").returncode, 1)
+        self.assertFalse((self.home / ".local").exists())
+        res = self.run_installer()
+        self.assertEqual(res.returncode, 0, res.stderr)
+        anchor = self.home / ".local/share/artifice"
+        self.assertEqual(anchor.resolve(), REPO_ROOT.resolve())
+        self.assertEqual((self.home / ".omp/agent/AGENTS.md").resolve(), (REPO_ROOT / "rules/global-agents.md").resolve())
+        self.assertEqual((self.home / ".omp/agent/agents").resolve(), (REPO_ROOT / "integrations/omp/agents").resolve())
+        config = self.home / ".omp/agent/config.yml"
+        self.assertTrue(config.is_file())
+        self.assertIn(str(anchor / "skills"), config.read_text(encoding="utf-8"))
+        self.assertEqual(self.run_installer("--check").returncode, 0)
+        before = config.read_text(encoding="utf-8")
+        self.assertEqual(self.run_installer().returncode, 0)
+        self.assertEqual(config.read_text(encoding="utf-8"), before)
+
+    def test_config_conflict_snippet_and_no_writes(self):
+        agent = self.home / ".omp/agent"
+        agent.mkdir(parents=True)
+        anchor_skills = str(self.home / ".local/share/artifice/skills")
+        fixtures = (
+            "skills:\n  customDirectories:\n    - /other/skills\n",
+            "skills:\n  customDirectories: [/other/skills]\n",
+            "modelRoles:\n  default: x\nskills:\n  hide: []\n",
+            "other:\n  - %s\n" % anchor_skills,
+            "skills:\n  customDirectories:\n    - /other/skills\n  hide:\n    - %s\n" % anchor_skills,
+            "skills:\n  customDirectories: |\n    - %s\n" % anchor_skills,
+        )
+        for original in fixtures:
+            with self.subTest(original=original):
+                (agent / "config.yml").write_text(original, encoding="utf-8")
+                res = self.run_installer()
+                self.assertEqual(res.returncode, 1)
+                self.assertIn("conflict:", res.stdout)
+                self.assertIn(
+                    f"  skills:\n    customDirectories:\n      - {anchor_skills}",
+                    res.stdout,
+                )
+                self.assertEqual((agent / "config.yml").read_text(encoding="utf-8"), original)
+                self.assertFalse((self.home / ".local/share/artifice").exists())
+
+    def test_config_not_regular_file_conflicts(self):
+        agent = self.home / ".omp/agent"
+        agent.mkdir(parents=True)
+        (agent / "config.yml").symlink_to("/nonexistent/config.yml")
+        res = self.run_installer("--check")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("conflict:", res.stdout)
+        (agent / "config.yml").unlink()
+        (agent / "config.yml").mkdir()
+        res = self.run_installer("--check")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("conflict:", res.stdout)
+
+    def test_agent_dir_override_beats_profile(self):
+        res = self.run_installer(profile="work", agent_dir=self.home / "custom agent")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertTrue((self.home / "custom agent/AGENTS.md").is_symlink())
+        self.assertFalse((self.home / ".omp").exists())
+
+    def test_profile_with_slash_rejected(self):
+        res = self.run_installer(profile="a/b")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("single path segment", res.stderr)
+        self.assertFalse((self.home / ".omp").exists())
+
+    def test_conflicts_and_bad_parents_never_overwritten(self):
+        existing = self.home / ".omp/agent/agents"
+        existing.mkdir(parents=True)
+        marker = existing / "keep.md"
+        marker.write_text("user file\n", encoding="utf-8")
+        res = self.run_installer()
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("conflict:", res.stdout)
+        self.assertTrue(marker.is_file())
+        self.assertFalse((self.home / ".local/share/artifice").exists())
+        bad_home = Path(self.tmp.name) / "bad_home"
+        bad_home.mkdir()
+        (bad_home / ".omp").write_text("file not dir\n", encoding="utf-8")
+        self.assertEqual(self.run_installer(home=bad_home).returncode, 1)
+
 
 
 class ModelSelectionTests(unittest.TestCase):
@@ -508,6 +632,36 @@ class LintAndContractTests(unittest.TestCase):
             with patch.object(lint, "GLOBAL_AGENTS_MD", None), redirect_stdout(io.StringIO()):
                 self.assertEqual(lint.check_core_diet(str(root)), 1)
                 self.assertEqual(lint.check_bash_syntax(str(root)), 1)
+
+    def test_omp_adapter_validation(self):
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(lint.check_omp_adapter(
+                "integrations/omp/agents/code-author.md",
+                ["name: code-author", "description: Valid", "tools: [read, grep, glob, edit, write, bash, send_message, task, wait, todo]"],
+                "Read `agents/code-author/agent.md`.",
+            ), 0)
+            self.assertEqual(lint.check_omp_adapter(
+                "integrations/omp/agents/code-author.md",
+                ["name: code-author", "description: Valid", "tools: [read, search, edit, execute, agent]"],
+                "Read `agents/code-author/agent.md`.",
+            ), 1)
+            self.assertEqual(lint.check_omp_adapter(
+                "integrations/omp/agents/code-author.md",
+                ["name: code-author", "description: Valid", "tools: [read, grep, glob, edit, write, bash, send_message, task, wait, todo]"],
+                "Read `agents/code-reviewer/agent.md`.",
+            ), 1)
+
+    def test_adapter_line_ceiling(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ok = root / "integrations/omp/agents/ok.md"
+            ok.parent.mkdir(parents=True)
+            ok.write_text("---\nname: ok\n---\n" + "line\n" * 50, encoding="utf-8")
+            big = root / "integrations/copilot/agents/big.agent.md"
+            big.parent.mkdir(parents=True)
+            big.write_text("---\nname: big\n---\n" + "line\n" * 61, encoding="utf-8")
+            with patch.object(lint, "GLOBAL_AGENTS_MD", None), redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_core_diet(str(root)), 1)
 
 
     def test_lint_allows_upstream_egm_design_doc_without_legacy_sections(self):

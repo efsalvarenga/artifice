@@ -1,6 +1,6 @@
 # Artifice
 
-A curated, version-controlled collection of shared agent skills, procedures, and workflows for Google Antigravity and GitHub Copilot.
+A curated, version-controlled collection of shared agent skills, procedures, and workflows for Google Antigravity, GitHub Copilot, and omp (oh-my-pi).
 
 *Artifice* (English: the craft, the ingenious device; Portuguese *artífice*: the master craftsman, the architect of a work) serves as the centralised repository of capabilities mounted globally across all local development projects.
 
@@ -14,7 +14,8 @@ artifice/
 │   ├── code-reviewer/            # Principal Code Reviewer ("The Gatekeeper")
 │   └── developer-coach/          # Principal Developer Coach ("The Catalyst")
 ├── integrations/
-│   └── copilot/agents/           # Thin Copilot adapters delegating to canonical roles
+│   ├── copilot/agents/           # Thin Copilot adapters delegating to canonical roles
+│   └── omp/agents/               # Thin omp task-agent adapters delegating to canonical roles
 ├── docs/
 │   ├── designs/                  # Design specifications (001–004 are legacy historical records from the retired internal EGM format)
 │   └── reviews/                  # Goldfish reviews (001–004 are legacy historical records from the retired internal EGM format)
@@ -24,6 +25,7 @@ artifice/
 │   ├── check_ollama.py           # Ollama residency, selection & wave-leasing controller
 │   ├── install_antigravity.sh    # Non-overwriting personal Antigravity symlink installer
 │   ├── install_copilot.sh        # Non-overwriting personal Copilot symlink installer
+│   ├── install_omp.sh            # Non-overwriting personal omp (oh-my-pi) installer
 │   ├── lint.py                   # Unified static governance & Core Diet linter
 │   ├── lint.sh                   # Execution wrapper for lint.py
 │   ├── model_inventory.py        # Shared metadata inventory & identity validation
@@ -89,7 +91,7 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 
 ## Shared Governance & Commit Provenance
 
-[The canonical policy](rules/global-agents.md) owns cross-project constraints and commit attribution. Detailed workflows stay in agents and skills. Both client installers link this same file, so edits need no compilation or reinstall; a fresh client session may still be necessary.
+[The canonical policy](rules/global-agents.md) owns cross-project constraints and commit attribution. Detailed workflows stay in agents and skills. All client installers link this same file, so edits need no compilation or reinstall; a fresh client session may still be necessary.
 
 Before an authorised agent-generated commit, prepare its message and validate it:
 
@@ -189,3 +191,14 @@ ${COPILOT_HOME:-$HOME/.copilot}/copilot-instructions.md -> $HOME/.local/share/ar
 Thin adapters in `integrations/copilot/agents/` configure Copilot tool permissions and load the canonical `agents/<role>/agent.md` body without duplicating prompts. Use unindented, single-line string values for `name` and non-empty `description`, and an inline `tools` list. Quote YAML indicators, colon-space text such as `"Review: code"`, and null or boolean literals. Start a fresh Copilot chat or reload the window after installation if discovery is stale.
 
 Copilot's symlink paths are discovery addresses, not resource bases. Resolve linked resources from each canonical `ARTIFICE_ROOT/skills/<skill>/` directory before normalising `..` segments. For example, the review persona belongs under `ARTIFICE_ROOT/agents/code-reviewer/agent.md`, not Copilot's adapter directory; shared scripts likewise belong under `ARTIFICE_ROOT/scripts/`. Links inside a nested reference document use that document's canonical parent directory.
+
+## Integration with omp (oh-my-pi / Paseo)
+
+Install the user-level symlinks and skills configuration once from any working directory:
+
+```bash
+bash scripts/install_omp.sh
+bash scripts/install_omp.sh --check
+```
+
+The installer resolves the active omp agent directory (`PI_CODING_AGENT_DIR`, else `~/.omp/profiles/$OMP_PROFILE/agent` when `OMP_PROFILE` is set, else `~/.omp/agent`), validates the anchor (`$HOME/.local/share/artifice`), and registers `AGENTS.md` and `agents` symlinks in that agent directory. Skills are mounted through the `skills.customDirectories` entry in `config.yml`, not a `skills` symlink, so omp's native user-skill writes stay local: on a fresh machine the file is created from a minimal template, and an existing file is never modified — a missing entry is a conflict that prints the exact three-line YAML snippet to add manually. Thin adapters in `integrations/omp/agents/` carry omp-native frontmatter and delegate to the canonical `agents/<role>/agent.md` bodies. Start a fresh omp session after installation to refresh discovery.

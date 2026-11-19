@@ -18,7 +18,16 @@ import lint  # noqa: E402
 
 
 class GovernanceInstallerTests(unittest.TestCase):
-    clients = ("copilot", "antigravity")
+    clients = ("copilot", "antigravity", "omp")
+
+    def client_root(self, client, home):
+        return {"copilot": home / ".copilot", "antigravity": home / ".gemini", "omp": home / ".omp" / "agent"}[client]
+
+    def override_var(self, client):
+        return {"copilot": "COPILOT_HOME", "antigravity": "GEMINI_HOME", "omp": "PI_CODING_AGENT_DIR"}[client]
+
+    def policy_rel(self, client):
+        return {"copilot": "copilot-instructions.md", "antigravity": "config/AGENTS.md", "omp": "AGENTS.md"}[client]
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -31,8 +40,7 @@ class GovernanceInstallerTests(unittest.TestCase):
         return home
 
     def policy(self, client, home):
-        relative = ".copilot/copilot-instructions.md" if client == "copilot" else ".gemini/config/AGENTS.md"
-        return home / relative
+        return self.client_root(client, home) / self.policy_rel(client)
 
     def run_installer(self, client, home, *args, checkout=ROOT, extra_env=None):
         env = {"PATH": os.environ["PATH"], "HOME": str(home)}
@@ -127,10 +135,10 @@ class GovernanceInstallerTests(unittest.TestCase):
                 self.assertTrue(policy.is_symlink())
                 policy.unlink()
                 policy.symlink_to(ROOT / "rules/global-agents.md")
-                client_root = home / (".copilot" if client == "copilot" else ".gemini")
+                client_root = self.client_root(client, home)
                 alias = home / "client alias"
                 alias.symlink_to(client_root)
-                variable = "COPILOT_HOME" if client == "copilot" else "GEMINI_HOME"
+                variable = self.override_var(client)
                 result = self.run_installer(client, home, "--check", extra_env={variable: str(alias)})
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -160,13 +168,13 @@ class GovernanceInstallerTests(unittest.TestCase):
             with self.subTest(client=client):
                 home = self.home(client)
                 custom = self.root / f"{client} custom profile"
-                variable = "COPILOT_HOME" if client == "copilot" else "GEMINI_HOME"
+                variable = self.override_var(client)
                 result = self.run_installer(client, home, extra_env={variable: str(custom)})
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                policy = custom / ("copilot-instructions.md" if client == "copilot" else "config/AGENTS.md")
+                policy = custom / self.policy_rel(client)
                 self.assertTrue(policy.is_symlink())
                 self.assertEqual(policy.resolve(), ROOT / "rules/global-agents.md")
-                self.assertFalse((home / (".copilot" if client == "copilot" else ".gemini")).exists())
+                self.assertFalse(self.client_root(client, home).exists())
 
     def test_missing_provenance_tool_aborts_before_registration(self):
         for client in self.clients:
@@ -188,6 +196,9 @@ class GovernanceInstallerTests(unittest.TestCase):
                 home = self.home(client)
                 if client == "copilot":
                     (home / ".copilot").symlink_to(settings)
+                elif client == "omp":
+                    (home / ".omp").mkdir()
+                    (home / ".omp/agent").symlink_to(settings)
                 else:
                     (home / ".gemini").mkdir()
                     (home / ".gemini/config").symlink_to(settings)
@@ -202,7 +213,7 @@ class GovernanceInstallerTests(unittest.TestCase):
             with self.subTest(client=client):
                 checkout = self.checkout(f"non-normalised-{client}")
                 home = self.home(client)
-                variable = "COPILOT_HOME" if client == "copilot" else "GEMINI_HOME"
+                variable = self.override_var(client)
                 override = str(home) + "/.local//share/artifice/client-profile"
                 result = self.run_installer(client, home, checkout=checkout, extra_env={variable: override})
                 self.assertEqual(result.returncode, 1, result.stdout + result.stderr)

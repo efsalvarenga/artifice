@@ -38,6 +38,18 @@ COPILOT_TOOLS = {
     "developer-coach": {"read", "search", "edit", "execute", "web"},
 }
 
+OMP_TOOLS = {
+    "code-author": {"read", "grep", "glob", "edit", "write", "bash", "send_message", "task", "wait", "todo"},
+    "code-reviewer": {"read", "grep", "glob", "bash", "send_message", "task", "wait", "todo"},
+    "developer-coach": {"read", "grep", "glob", "bash", "web_search", "send_message"},
+}
+ADAPTER_LINE_LIMIT = 60
+
+ADAPTER_SPECS = {
+    "copilot": {"suffix": ".agent.md", "tools": COPILOT_TOOLS, "label": "Copilot"},
+    "omp": {"suffix": ".md", "tools": OMP_TOOLS, "label": "omp"},
+}
+
 
 def find_markdown_files(root_dir: str) -> list:
     md_files = []
@@ -160,11 +172,13 @@ def _adapter_string(value: str):
     return plain
 
 
-def check_copilot_adapter(path: str, header: list, body: str) -> int:
-    """Validate Copilot adapter frontmatter, tool allowlist, and canonical role target."""
-    role = os.path.basename(path).removesuffix(".agent.md")
+def _check_adapter(path: str, header: list, body: str, spec: dict) -> int:
+    """Validate a harness adapter's frontmatter, tool allowlist, and canonical role target."""
+    suffix, expected_tools, label = spec["suffix"], spec["tools"], spec["label"]
+    base = os.path.basename(path)
+    role = base[: -len(suffix)] if base.endswith(suffix) else base
     fields = {}
-    valid = os.path.basename(path) == f"{role}.agent.md" and role in COPILOT_TOOLS
+    valid = base == f"{role}{suffix}" and role in expected_tools
     for line in header:
         match = re.fullmatch(r"([a-z-]+):[ \t]*(.+)", line.rstrip("\r\n"))
         if not match or match[1] in fields:
@@ -181,12 +195,20 @@ def check_copilot_adapter(path: str, header: list, body: str) -> int:
         and set(fields) == {"name", "description", "tools"}
         and _adapter_string(fields.get("name", "")) == role
         and bool(desc and desc.strip())
-        and len(tools) == len(set(tools)) and set(tools) == COPILOT_TOOLS.get(role)
+        and len(tools) == len(set(tools)) and set(tools) == expected_tools.get(role)
         and bool(targets) and all(t == role for t in targets)
     )
     if not valid:
-        print(f"    {RED}Copilot adapter error{NC}: Invalid metadata or canonical target in {path}")
+        print(f"    {RED}{label} adapter error{NC}: Invalid metadata or canonical target in {path}")
     return 0 if valid else 1
+
+
+def check_copilot_adapter(path: str, header: list, body: str) -> int:
+    return _check_adapter(path, header, body, ADAPTER_SPECS["copilot"])
+
+
+def check_omp_adapter(path: str, header: list, body: str) -> int:
+    return _check_adapter(path, header, body, ADAPTER_SPECS["omp"])
 
 
 def check_yaml_frontmatter(target_dir: str) -> int:
@@ -205,13 +227,18 @@ def check_yaml_frontmatter(target_dir: str) -> int:
             if os.path.isfile(agent_md):
                 targets.append(agent_md)
 
-    adapters_dir = os.path.join(target_dir, "integrations", "copilot", "agents")
-    if os.path.isdir(adapters_dir):
-        targets.extend(
-            os.path.join(adapters_dir, entry)
-            for entry in sorted(os.listdir(adapters_dir))
-            if entry.endswith(".md") and os.path.isfile(os.path.join(adapters_dir, entry))
-        )
+    adapters = {}
+    integrations_dir = os.path.join(target_dir, "integrations")
+    if os.path.isdir(integrations_dir):
+        for harness in sorted(os.listdir(integrations_dir)):
+            agents_subdir = os.path.join(integrations_dir, harness, "agents")
+            if os.path.isdir(agents_subdir):
+                adapters[agents_subdir] = harness
+                targets.extend(
+                    os.path.join(agents_subdir, entry)
+                    for entry in sorted(os.listdir(agents_subdir))
+                    if entry.endswith(".md") and os.path.isfile(os.path.join(agents_subdir, entry))
+                )
 
     if not targets:
         return 0
@@ -265,9 +292,10 @@ def check_yaml_frontmatter(target_dir: str) -> int:
                 f"    {RED}Frontmatter error{NC}: Missing 'description:' field in {rel_path}"
             )
             errors += 1
-        if os.path.dirname(target) == adapters_dir:
-            errors += check_copilot_adapter(
-                rel_path, lines[1:closing_idx], "".join(lines[closing_idx + 1:]),
+        harness = adapters.get(os.path.dirname(target))
+        if harness in ADAPTER_SPECS:
+            errors += _check_adapter(
+                rel_path, lines[1:closing_idx], "".join(lines[closing_idx + 1:]), ADAPTER_SPECS[harness],
             )
 
     return errors
@@ -326,6 +354,25 @@ def check_core_diet(target_dir: str) -> int:
                 print(f"    {RED}Core Diet exceeded{NC}: {directory}/{entry}/{filename} ({measurement}).")
                 diet_errors += 1
 
+    integrations_dir = os.path.join(target_dir, "integrations")
+    if os.path.isdir(integrations_dir):
+        for harness in sorted(os.listdir(integrations_dir)):
+            agents_subdir = os.path.join(integrations_dir, harness, "agents")
+            if not os.path.isdir(agents_subdir):
+                continue
+            for entry in sorted(os.listdir(agents_subdir)):
+                path = os.path.join(agents_subdir, entry)
+                if not entry.endswith(".md") or not os.path.isfile(path):
+                    continue
+                with open(path, "r", encoding="utf-8") as f:
+                    lines = len(f.read().splitlines())
+                rel = os.path.relpath(path, target_dir)
+                if lines <= ADAPTER_LINE_LIMIT:
+                    print(f"  {GREEN}✓{NC} adapter {rel} is within budget ({lines}/{ADAPTER_LINE_LIMIT} lines).")
+                else:
+                    print(f"    {RED}Adapter diet exceeded{NC}: {rel}: {lines} lines (max {ADAPTER_LINE_LIMIT}).")
+                    diet_errors += 1
+
     return diet_errors
 
 
@@ -377,7 +424,7 @@ def lint_repository(target_dir: str) -> int:
         print(f"  {RED}✗{NC} {heading_errors} markdown heading violation(s) found.")
         total_errors += heading_errors
 
-    print(f"\n{BOLD}2. Validating YAML Frontmatter (skills, agents & Copilot adapters)...{NC}")
+    print(f"\n{BOLD}2. Validating YAML Frontmatter (skills, agents & harness adapters)...{NC}")
     frontmatter_errors = check_yaml_frontmatter(target_dir)
     if frontmatter_errors == 0:
         print(f"  {GREEN}✓{NC} All entry points have valid frontmatter and adapter loading directives.")
