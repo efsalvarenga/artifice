@@ -5,6 +5,8 @@
 **Author:** Elephant Agent & Developer  
 **Target Milestone:** Milestone 3 (v1.4.0)  
 
+> **Amendment 2026-11-18:** The `local-code` skill was removed in PR #35 (merge `a3785a5`). The `local-code` mentions below are historical and describe the pre-removal state (issue #40).
+
 ---
 
 ## 1. Overview & Objectives

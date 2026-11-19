@@ -5,6 +5,8 @@
 **Revision:** 2026-11-04 lean preflight edition
 **Author:** Copilot SDK assistant, Gemini 4 Argon & Developer
 
+> **Amendment 2026-11-18:** The `local-code` skill was removed in PR #35 (merge `a3785a5`). The `local-code` mention below is historical and describes the pre-removal state (issue #40).
+
 ## 1. Overview & Objectives
 
 Register Artifice's three canonical roles (`code-author`, `code-reviewer`, `developer-coach`) and four shared skills (`spec-egm`, `review`, `coach-frameworks`, `local-code`) in GitHub Copilot through three personal directory symlinks and thin Copilot adapters, without duplicating canonical prompts or breaking Antigravity workflows.
