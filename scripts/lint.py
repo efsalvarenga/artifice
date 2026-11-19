@@ -293,13 +293,9 @@ def check_yaml_frontmatter(target_dir: str) -> int:
             )
             errors += 1
         harness = adapters.get(os.path.dirname(target))
-        if harness == "copilot":
-            errors += check_copilot_adapter(
-                rel_path, lines[1:closing_idx], "".join(lines[closing_idx + 1:]),
-            )
-        elif harness == "omp":
-            errors += check_omp_adapter(
-                rel_path, lines[1:closing_idx], "".join(lines[closing_idx + 1:]),
+        if harness in ADAPTER_SPECS:
+            errors += _check_adapter(
+                rel_path, lines[1:closing_idx], "".join(lines[closing_idx + 1:]), ADAPTER_SPECS[harness],
             )
 
     return errors

@@ -142,8 +142,8 @@ with open(config, "r", encoding="utf-8") as f:
                 cd_indent = -1
 print("conflict: %s does not register %s under skills.customDirectories; add manually:" % (config, entry))
 print("  skills:")
-print("  customDirectories:")
-print("    - " + entry)
+print("    customDirectories:")
+print("      - " + entry)
 sys.exit(2)
 ' "$config_yml" "$config_entry" || probe_rc=$?
 case "$probe_rc" in

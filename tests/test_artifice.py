@@ -307,8 +307,10 @@ class OmpInstallerTests(unittest.TestCase):
                 res = self.run_installer()
                 self.assertEqual(res.returncode, 1)
                 self.assertIn("conflict:", res.stdout)
-                self.assertIn("customDirectories:", res.stdout)
-                self.assertIn(anchor_skills, res.stdout)
+                self.assertIn(
+                    f"  skills:\n    customDirectories:\n      - {anchor_skills}",
+                    res.stdout,
+                )
                 self.assertEqual((agent / "config.yml").read_text(encoding="utf-8"), original)
                 self.assertFalse((self.home / ".local/share/artifice").exists())
 
