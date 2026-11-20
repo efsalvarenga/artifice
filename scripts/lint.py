@@ -210,7 +210,9 @@ def check_omp_adapter(path: str, header: list, body: str) -> int:
     return _check_adapter(path, header, body, ADAPTER_SPECS["omp"])
 
 
-KEY_RE = re.compile(r"([A-Za-z0-9_][A-Za-z0-9_-]*):(?:[ \t]+(.*))?$")
+KEY_RE = re.compile(
+    r'(?:"(?P<dq>[^"]*)"|\'(?P<sq>[^\']*)\'|(?P<plain>[A-Za-z0-9_][A-Za-z0-9_-]*))[ \t]*:(?:[ \t]+(?P<value>.*))?$'
+)
 ITEM_RE = re.compile(r"-(?:[ \t]+(.*))?$")
 
 
@@ -224,7 +226,13 @@ def _scan_flow(text: str) -> tuple:
         ch = text[i]
         if quote:
             buf += ch
-            if ch == quote:
+            if ch == "\\" and quote == '"' and i + 1 < len(text):
+                i += 1
+                buf += text[i]
+            elif ch == quote and quote == "'" and i + 1 < len(text) and text[i + 1] == "'":
+                i += 1
+                buf += text[i]
+            elif ch == quote:
                 quote = None
         elif ch in "\"'":
             quote = ch
@@ -273,7 +281,7 @@ def _frontmatter_tools(header: list) -> tuple:
                 flow = None
                 current_key = None
                 continue
-            flow += " " + stripped
+            flow += "\n" + stripped
             raw, closed = _scan_flow(flow)
             if closed:
                 tools.extend(_flow_entries(raw))
@@ -288,8 +296,8 @@ def _frontmatter_tools(header: list) -> tuple:
             continue
         if indent == 0:
             key = KEY_RE.match(line.rstrip("\r\n"))
-            current_key = key[1] if key else None
-            value = (key[2] or "").lstrip() if key else ""
+            current_key = next((g for g in (key.group("dq"), key.group("sq"), key.group("plain")) if g), None) if key else None
+            value = (key.group("value") or "").lstrip() if key else ""
             if current_key == "tools" and value.startswith("["):
                 flow = value[1:]
                 raw, closed = _scan_flow(flow)
