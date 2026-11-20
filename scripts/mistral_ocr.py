@@ -118,6 +118,19 @@ def process_document(
         raise RuntimeError(f"OCR API request failed (HTTP {err.code}): {msg}") from err
 
 
+
+def policy_blocks_hosted(start: Path) -> str | None:
+    """Return the matched marker if any AGENTS.md upward from start declares on-device policy."""
+    for directory in (start, *start.parents):
+        candidate = directory / "AGENTS.md"
+        if candidate.is_file():
+            text = candidate.read_text(encoding="utf-8", errors="replace")
+            for marker in ("Privacy: on-device", "Review: local-only"):
+                if marker in text:
+                    return marker
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Extract Markdown and tables from PDFs/images using mistral-ocr-latest."
@@ -132,6 +145,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    marker = policy_blocks_hosted(Path.cwd())
+    if marker:
+        print(f"Error: hosted Mistral dispatch refused: '{marker}' declared in AGENTS.md (policy-marker gate, design 008)", file=sys.stderr)
+        sys.exit(2)
 
     try:
         result = process_document(args.file_or_url, model=args.model)

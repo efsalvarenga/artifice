@@ -89,11 +89,4 @@ A failed check blocks the commit. The validator checks structure, not contributo
 ## 5. Sovereign Hybrid Offloading & Host Stewardship
 
 * **Division of Labour:** The current client orchestrator maintains architectural contracts, specification compliance, Red test design, and PR drafting.
-* **Model Selection & Offloading:** When authorised, use [`vibe-execute`](../../skills/vibe-execute/SKILL.md) discovery, proposal and approval of exact tags/fingerprints, with hosted Mistral execution via the same gateway. Respect protected-content boundaries before ingestion; never silently substitute models.
-* **Zero-Waste Memory Purge:** Any authoring wave that leases local memory must invoke:
-
-  ```bash
-  python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" unload --all
-  ```
-
-  upon wave conclusion to evict resident Ollama models from host memory.
+* **Model Selection & Offloading:** When authorised, use the harness-native subagent facilities and propose exact model tags/fingerprints for approval; respect protected-content boundaries before ingestion; never silently substitute models.
