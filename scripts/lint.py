@@ -49,17 +49,13 @@ ADAPTER_SPECS = {
     "copilot": {"suffix": ".agent.md", "tools": COPILOT_TOOLS, "label": "Copilot"},
     "omp": {"suffix": ".md", "tools": OMP_TOOLS, "label": "omp"},
 }
+SKIP_DIRS = (".git", "node_modules", ".system_generated")
 
 
 def find_markdown_files(root_dir: str) -> list:
     md_files = []
-    for root, _, files in os.walk(root_dir):
-        if (
-            "/.git" in root
-            or "/node_modules" in root
-            or "/.system_generated" in root
-        ):
-            continue
+    for root, dirs, files in os.walk(root_dir):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for f in sorted(files):
             if f.endswith(".md"):
                 md_files.append(os.path.join(root, f))
@@ -381,7 +377,7 @@ def check_bash_syntax(target_dir: str) -> int:
     errors = 0
     for root, dirs, files in os.walk(target_dir):
         # Skip forbidden directories
-        dirs[:] = [d for d in dirs if d not in (".git", "node_modules", ".system_generated")]
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
 
         for filename in sorted(files):
             if not filename.endswith(".sh"):

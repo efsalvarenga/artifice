@@ -3,7 +3,6 @@ name: code-author
 version: 1.4.0
 description: Principal Code Author ("The Craftsman"). Implements features using contract-first Test-Driven Development (TDD), minimal deterministic code, model-attributed Git commits, local hybrid offloading, and pre-review green baseline gating.
 tools:
-    - view_file
     - read_file
     - edit_file
     - write_file

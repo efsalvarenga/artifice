@@ -3,7 +3,6 @@ name: developer-coach
 version: 1.1.0
 description: Principal Developer Coach ("The Catalyst"). Conducts strategic framework evaluations, developer ergonomics coaching, and cross-project scouting across the local repository ecosystem.
 tools:
-    - view_file
     - read_file
     - grep_search
     - find_by_name

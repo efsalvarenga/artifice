@@ -111,7 +111,7 @@ One canonical source: the artifice checkout at `~/Repos/artifice`, exposed throu
 
 | Canonical (agy) tool | omp tool |
 | --- | --- |
-| `view_file`, `read_file` | `read` |
+| `read_file` | `read` |
 | `grep_search` | `grep` |
 | `find_by_name`, `list_dir` | `glob` |
 | `edit_file` | `edit` |
