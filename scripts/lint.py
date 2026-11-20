@@ -210,30 +210,56 @@ def check_omp_adapter(path: str, header: list, body: str) -> int:
     return _check_adapter(path, header, body, ADAPTER_SPECS["omp"])
 
 
+def _flow_items(text: str) -> list:
+    """Parse the inside of a flow list, normalising quotes and comments."""
+    return [e for e in (_adapter_string(t.strip()) for t in text.split(",")) if e]
+
+
 def _frontmatter_tools(header: list) -> list:
-    """Collect entries of a ``tools:`` list, block-style or inline ``[a, b]``."""
+    """Collect entries of the top-level ``tools:`` list, block-style or flow ``[a, b]``.
+
+    Only column-0 keys open a list, so folded scalars (e.g. ``description: >-``)
+    and nested keys can never be mistaken for ``tools:`` content.
+    """
     tools = []
-    in_tools = False
+    current_key = None
+    flow = None
     for line in header:
         stripped = line.strip()
-        field = re.match(r"tools:[ \t]*(.*)", stripped)
-        if field:
-            in_tools = True
-            inline = re.fullmatch(r"\[([^\]]*)\]", field[1].strip())
-            if inline:
-                tools.extend(
-                    entry
-                    for entry in (_adapter_string(t.strip()) for t in inline[1].split(","))
-                    if entry
-                )
+        if not stripped:
             continue
-        item = re.fullmatch(r"-\s*(.+)", stripped)
-        if in_tools and item:
-            entry = _adapter_string(item[1])
-            if entry:
-                tools.append(entry)
-        elif re.match(r"[A-Za-z][A-Za-z0-9-]*:", stripped):
-            in_tools = False
+        indent = len(line) - len(line.lstrip())
+        if flow is not None:
+            flow += " " + stripped
+            if "]" in flow:
+                inner, _, flow = flow.partition("]")
+                tools.extend(_flow_items(inner))
+                flow = None
+            continue
+        if indent == 0:
+            item = re.fullmatch(r"-\s*(.+)", stripped)
+            if current_key == "tools" and item:
+                entry = _adapter_string(item[1])
+                if entry:
+                    tools.append(entry)
+                continue
+            key = re.match(r"([A-Za-z0-9_][A-Za-z0-9_-]*):(?:[ \t]+(.*))?$", line.rstrip("\r\n"))
+            current_key = key[1] if key else None
+            if current_key == "tools" and key[2]:
+                rest = re.split(r"[ \t]+#", key[2], maxsplit=1)[0].strip()
+                if rest.startswith("["):
+                    if "]" in rest:
+                        tools.extend(_flow_items(rest[1:rest.index("]")]))
+                        current_key = None
+                    else:
+                        flow = rest[1:]
+            continue
+        if current_key == "tools":
+            item = re.fullmatch(r"-\s*(.+)", stripped)
+            if item:
+                entry = _adapter_string(item[1])
+                if entry:
+                    tools.append(entry)
     return tools
 
 

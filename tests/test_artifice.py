@@ -539,6 +539,24 @@ class LintAndContractTests(unittest.TestCase):
             )
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(lint.check_yaml_frontmatter(tmp), 1)
+            agent.write_text(
+                "---\nname: demo\ndescription: Demo.\ntools: [view_file, read_file] # main tools\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 1)
+            agent.write_text(
+                "---\nname: demo\ndescription: Demo.\ntools: [view_file,\n  read_file]\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 1)
+            agent.write_text(
+                "---\nname: demo\ndescription: >-\n  Mentions tools: [view_file, read_file] inline.\ntools:\n    - read_file\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 0)
 
     def test_adapter_line_ceiling(self):
         with tempfile.TemporaryDirectory() as tmp:
