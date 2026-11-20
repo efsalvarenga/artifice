@@ -43,6 +43,8 @@ OMP_TOOLS = {
     "code-reviewer": {"read", "grep", "glob", "bash", "send_message", "task", "wait", "todo"},
     "developer-coach": {"read", "grep", "glob", "bash", "web_search", "send_message"},
 }
+
+TOOL_ALIASES = {"view_file": "read_file"}
 ADAPTER_LINE_LIMIT = 60
 
 ADAPTER_SPECS = {
@@ -207,6 +209,21 @@ def check_omp_adapter(path: str, header: list, body: str) -> int:
     return _check_adapter(path, header, body, ADAPTER_SPECS["omp"])
 
 
+def _frontmatter_tools(header: list) -> list:
+    """Collect entries of a block-style YAML ``tools:`` list."""
+    tools = []
+    in_tools = False
+    for line in header:
+        stripped = line.strip()
+        if stripped == "tools:":
+            in_tools = True
+        elif in_tools and stripped.startswith("- "):
+            tools.append(stripped[2:].strip())
+        elif in_tools:
+            in_tools = False
+    return tools
+
+
 def check_yaml_frontmatter(target_dir: str) -> int:
     targets = []
     skills_dir = os.path.join(target_dir, "skills")
@@ -286,6 +303,16 @@ def check_yaml_frontmatter(target_dir: str) -> int:
         if not has_desc:
             print(
                 f"    {RED}Frontmatter error{NC}: Missing 'description:' field in {rel_path}"
+            )
+            errors += 1
+        resolved = [
+            TOOL_ALIASES.get(tool, tool)
+            for tool in _frontmatter_tools(lines[1:closing_idx])
+        ]
+        if len(resolved) != len(set(resolved)):
+            duplicates = sorted({r for r in resolved if resolved.count(r) > 1})
+            print(
+                f"    {RED}Frontmatter error{NC}: Duplicate or aliased tool names {duplicates} in {rel_path}"
             )
             errors += 1
         harness = adapters.get(os.path.dirname(target))
