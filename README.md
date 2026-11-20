@@ -17,25 +17,21 @@ artifice/
 │   ├── copilot/agents/           # Thin Copilot adapters delegating to canonical roles
 │   └── omp/agents/               # Thin omp task-agent adapters delegating to canonical roles
 ├── docs/
-│   ├── designs/                  # Design specifications (001–004 are legacy historical records from the retired internal EGM format)
-│   └── reviews/                  # Goldfish reviews (001–004 are legacy historical records from the retired internal EGM format)
+│   ├── designs/                  # Design specifications (001–004 and 006 are legacy historical records from the retired internal EGM format)
+│   └── reviews/                  # Goldfish reviews (001–004 and 006 are legacy historical records from the retired internal EGM format)
 ├── rules/
 │   └── global-agents.md          # Canonical cross-project governance and provenance
 ├── scripts/
-│   ├── check_ollama.py           # Ollama residency, selection & wave-leasing controller
 │   ├── install_antigravity.sh    # Non-overwriting personal Antigravity symlink installer
 │   ├── install_copilot.sh        # Non-overwriting personal Copilot symlink installer
 │   ├── install_omp.sh            # Non-overwriting personal omp (oh-my-pi) installer
 │   ├── lint.py                   # Unified static governance & Core Diet linter
 │   ├── lint.sh                   # Execution wrapper for lint.py
-│   ├── model_inventory.py        # Shared metadata inventory & identity validation
-│   ├── vibe_execute.py           # Discovery, task classification & exact dispatch
 │   ├── validate_provenance.py    # Explicit, read-only message and commit audit
 │   └── build_review_dossier.py   # Compact repository invariant digest compiler
 ├── skills/
 │   ├── review/                   # Universal 8-Pillar code & architecture review
 │   ├── coach-frameworks/         # Framework evaluation & ecosystem DX coaching
-│   └── vibe-execute/             # Discovery-led model proposals & execution gateway
 └── tests/                        # Standard-library unit & black-box installer tests
 ```
 
@@ -57,7 +53,7 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 ### 2. `code-reviewer`
 
 * **Persona:** [Principal Code Reviewer ("The Gatekeeper")](agents/code-reviewer/agent.md)
-* **Role:** Universal evaluation of Pull Requests, branch diffs, single files, or architectural design specifications using the 8-Pillar Framework, Conventional Comments, and hybrid offloading.
+* **Role:** Universal evaluation of Pull Requests, branch diffs, single files, or architectural design specifications using the 8-Pillar Framework and Conventional Comments.
 
 ### 3. `developer-coach`
 
@@ -68,23 +64,16 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 
 ### 1. `review`
 
-* **Trigger:** `/review [--local] [PR_NUMBER | branch | <file_or_doc_path>]`
-* **Role:** [Universal 8-Pillar evaluation](skills/review/SKILL.md) using the current client orchestrator with optional wave-leased Ollama worker streams (`code_model` + `prose_model`) and strict `--local` on-device privacy mode.
+* **Trigger:** `/review [PR_NUMBER | branch | <file_or_doc_path>]`
+* **Role:** [Universal 8-Pillar evaluation](skills/review/SKILL.md) with the default 4-lens zero-context review runbook (design 008).
 
 ### 2. `coach-frameworks`
 
 * **Trigger:** `/coach-frameworks`
 * **Role:** [Strategic framework evaluation](skills/coach-frameworks/SKILL.md), sibling-repository scouting, and developer ergonomics coaching filtered through the 4-Test Lesson Acceptance Gate.
 
-### 3. `vibe-execute`
-
-* **Trigger:** `/vibe-execute [discover | classify | triage | run]`
-* **Role:** [Discover, filter, propose, confirm, execute](skills/vibe-execute/SKILL.md): metadata-led model selection across local Ollama and hosted Mistral, exact identity-bound dispatch and compound execution.
-
 ## Core Scripts & Verification
 
-* `./scripts/vibe_execute.py`: Shared discovery, requirements-only classification, approved exact-model execution and compound triage. No static model defaults or automatic fallback.
-* `./scripts/check_ollama.py`: Ollama residency and selection controller (`status`, `select --task <role>`, `warm <model> --lease 5m`, `unload --all`). Exact CLI models take precedence over `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` role overrides. Without an explicit choice, selection requires an override or one known-compatible candidate; ambiguity fails rather than taking the first model.
 * `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, and Bash syntax. It always checks the canonical global policy from the physical Artifice checkout, even when targeting a consuming project. `GLOBAL_AGENTS_PATH` adds an explicit external policy check; missing, unreadable or oversized policies fail rather than bypassing the canonical check. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
 * `python3 scripts/validate_provenance.py`: Validates prepared messages or explicitly selected commit history without writing messages, hooks, Git configuration, history, the index or the worktree.
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
@@ -126,36 +115,11 @@ Specification workflows (`/egm-brainstorm`, `/egm-draft`, `/egm-review`, `/egm-r
 * **Manual host verification:** `~/.gemini/config/plugins/egm/plugin.json` reports `"version": "0.1.1"`, `git -C ~/.gemini/config/plugins/egm rev-parse HEAD` matches `270b103...`, and `/egm-review` loads in a fresh session.
 * **Copilot scope:** upstream `egm`'s `docs/harnesses.md` omits Copilot, its `docs/copilot.md` leaves `copilot plugin install` unverified (lines 59–61), and it does not establish VS Code or cloud-agent support (lines 6–7); Copilot hosts need manual plugin setup, and `scripts/install_copilot.sh` prints a non-probing reminder.
 
-## Discovery & Model Approval
+## Model Dispatch Surface (retired)
 
-[Design 004](docs/designs/004_discovery_driven_model_proposals.md) delivers Ollama discovery now, with a [direct contract review](docs/reviews/004_discovery_driven_model_proposals_review.md), not a claim of independent zero-context review. The assistant proposes at most three choices from live evidence; the developer approves the concrete model, requirements, execution mode and working directory before inference. Reuse an explicit request or still-valid task approval. Dispatch revalidates the exact identity fingerprint, capabilities and locality; changed identities or failures never trigger substitution.
+Design 004's discovery CLI (`scripts/vibe_execute.py discover`, `scripts/check_ollama.py select`) and the `skills/vibe-execute/` gateway were retired by [design 008](docs/designs/008_vibe_shrink_review_gh_posting.md); hosted Mistral/Vibe dispatch is deferred (`unavailable` / `unsupported_version`), and privacy survives as a refusal-only `Privacy: on-device` / `Review: local-only` policy-marker scan in the review runbook.
 
-Resolve and export `ARTIFICE_ROOT`: use its explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`. Verify readable `agents`, `skills` and `scripts` directories before invoking shared scripts. These commands inspect live metadata only:
-
-```bash
-if [ "${ARTIFICE_ROOT+x}" != x ]; then
-  if [ -d "$HOME/.local/share/artifice" ]; then
-    ARTIFICE_ROOT="$HOME/.local/share/artifice"
-  else
-    ARTIFICE_ROOT="$HOME/Repos/artifice"
-  fi
-fi
-for resource in agents skills scripts; do
-  if [ ! -d "$ARTIFICE_ROOT/$resource" ] || [ ! -r "$ARTIFICE_ROOT/$resource" ] || [ ! -x "$ARTIFICE_ROOT/$resource" ]; then
-    printf 'Unreadable Artifice resource: %s\n' "$ARTIFICE_ROOT/$resource" >&2
-    exit 1
-  fi
-done
-export ARTIFICE_ROOT
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/vibe_execute.py" discover --local --workdir .
-python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" select --task code
-```
-
-Discovery preserves every advertised Ollama identity and explicit unknown metadata, without ranking, warming, inference or unloading. Partial results and diagnostics must be disclosed, not treated as complete. Selection returns `model`, `resident`, `fallback: null`, `identity_fingerprint` and `reference`; unsuccessful selection exits `2` with a reason.
-
-This Ollama phase permits only configured loopback endpoints and verified on-device inference, even without `--local`. Remote endpoints are diagnosed without contact; cloud-backed or unknown execution locality blocks dispatch. Discovery does not make a cloud conversation air-gapped: protected prompts, source, diffs **and outputs** require local pipelines or verified local sessions. `--accept-unknown` accepts task-specific suitability uncertainty, never a privacy exception.
-
-**Hosted support is deferred.** Absent Vibe is `unavailable`; present Vibe is `unsupported_version` with `HOSTED_DISCOVERY_DEFERRED`, not a selectable model source. CLI presence authorises no configuration, authentication, catalogue or inference access. No hosted model menu or Vibe bridge ships here. See the [gateway workflow](skills/vibe-execute/SKILL.md) for exact run/triage flags; Ollama supports bounded chat, not autonomous filesystem editing.
+Resolve and export `ARTIFICE_ROOT`: use its explicit value when set, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`. Verify readable `agents`, `skills` and `scripts` directories before invoking shared scripts.
 
 ## Integration with Antigravity
 

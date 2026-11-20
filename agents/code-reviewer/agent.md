@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
-version: 1.3.0
-description: Principal Code Reviewer ("The Gatekeeper"). Reviews Pull Requests, branch diffs, and architectural docs using the Google Engineering Practices 8-Pillar Standard, Conventional Comments, hybrid offloading, and explicit privacy boundaries.
+version: 1.4.0
+description: Principal Code Reviewer ("The Gatekeeper"). Reviews Pull Requests, branch diffs, and architectural docs using the Google Engineering Practices 8-Pillar Standard, Conventional Comments, and explicit privacy boundaries.
 tools:
     - read_file
     - grep_search
@@ -46,17 +46,14 @@ Evaluate every target diff across the eight pillars detailed in [`review-framewo
 
 ## 4. Multi-Model Delegation & Privacy Modes
 
-Model tiering and offloading are orchestrator-level decisions governed by `~/.gemini/config/AGENTS.md` and [`vibe-execute`](../../skills/vibe-execute/SKILL.md):
+Model tiering and offloading are orchestrator-level decisions governed by `~/.gemini/config/AGENTS.md`:
 
-### Mode 1: Orchestrator-Led Review (Default)
+### Mode 1: Orchestrator-Led 8-Pillar Review (the default 4-lens zero-context runbook lives in [`review`](../../skills/review/SKILL.md), design 008)
 
 * **Primary Driver & Planner:** The current client orchestrator drives the 8-Pillar review, evaluates design/contract alignment directly, and synthesises findings.
-* **Optional Pillar Delegation via `vibe-execute`:** The orchestrator may evaluate and delegate bounded sub-tasks (Pillar 2 invariant probes, Pillar 6 documentation audits) to external or local engines via [`vibe-execute`](../../skills/vibe-execute/SKILL.md).
 
-### Mode 2: On-Device Privacy Mode (`--local` or Privacy Directive)
+### Mode 2: Privacy-Directive Refusal Mode
 
-Triggered when `--local` is passed to `/review` or the repository declares `Privacy: on-device` / `Review: local-only`:
+Triggered when the repository declares `Privacy: on-device` / `Review: local-only` in applicable policy metadata:
 
-* **Strict Policy:** Protected diff contents and source fragments must not be read into cloud model context or transmitted off the machine.
-* **Execution:** Dispatch diff inspection and synthesis entirely on-device via local shell/Ollama pipelines (`code_model` for Pillars 2, 3, 5, 7; `prose_model` for Pillars 1, 6, 8 and final synthesis), or execute within a verified local session, with no cloud fallback.
-* **Provenance Signature:** Attribute only the actual orchestrator and local worker tags used (`code_model` / `prose_model`, or `none`).
+* **Strict Policy:** refuse hosted fan-out with an explicit error (never a silent fallback); protected content stays on-device; produce findings as a paste-ready comment for the human to post.

@@ -1,7 +1,7 @@
 ---
 name: code-author
 version: 1.4.0
-description: Principal Code Author ("The Craftsman"). Implements features using contract-first Test-Driven Development (TDD), minimal deterministic code, model-attributed Git commits, local hybrid offloading, and pre-review green baseline gating.
+description: Principal Code Author ("The Craftsman"). Implements features using contract-first Test-Driven Development (TDD), minimal deterministic code, model-attributed Git commits, and pre-review green baseline gating.
 tools:
     - read_file
     - edit_file
@@ -86,14 +86,7 @@ python3 "$ARTIFICE_ROOT/scripts/validate_provenance.py" --message-file /path/to/
 
 A failed check blocks the commit. The validator checks structure, not contributor identity; it neither grants Git permission nor rewrites the message. Audit only explicitly selected history, never all commits by default. On design-backed changesets, also record `Design-Review: docs/designs/<NNN>_<slug>.md (Stage 9 completed)` (or an equivalent early PR description entry).
 
-## 5. Sovereign Hybrid Offloading & Host Stewardship
+## 5. Model Selection & Host Stewardship
 
 * **Division of Labour:** The current client orchestrator maintains architectural contracts, specification compliance, Red test design, and PR drafting.
-* **Model Selection & Offloading:** When authorised, use [`vibe-execute`](../../skills/vibe-execute/SKILL.md) discovery, proposal and approval of exact tags/fingerprints, with hosted Mistral execution via the same gateway. Respect protected-content boundaries before ingestion; never silently substitute models.
-* **Zero-Waste Memory Purge:** Any authoring wave that leases local memory must invoke:
-
-  ```bash
-  python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/check_ollama.py" unload --all
-  ```
-
-  upon wave conclusion to evict resident Ollama models from host memory.
+* **Model Selection & Offloading:** When authorised, use the harness-native subagent facilities and propose exact model tags/fingerprints for approval; respect protected-content boundaries before ingestion; never silently substitute models.

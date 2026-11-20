@@ -5,6 +5,8 @@
 **Date:** 2026-11-15  
 **Tracking PR:** [PR #29](https://github.com/efsalvarenga/artifice/pull/29)
 
+> **Historical record:** the `vibe-execute` gateway and `scripts/vibe_execute.py` / `check_ollama.py` / `model_inventory.py` described here were retired by [design 008](008_vibe_shrink_review_gh_posting.md).
+
 ## Overview
 
 Artifice currently ships its own custom Elephant-Goldfish Model (EGM) specification skill, templates, and mechanical section-header validator alongside its core agents and model-dispatch tools. Because the upstream `google/elephant-goldfish-model` (`egm`) plugin is used directly for ideation, drafting, and multi-lens review, Artifice's internal EGM copy duplicates upstream capabilities while enforcing legacy section-number checks that reject upstream-formatted specifications.

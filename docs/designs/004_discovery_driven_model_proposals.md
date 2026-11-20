@@ -22,8 +22,8 @@ Read-only reconnaissance on 2026-11-05 established:
 
 * The configured Ollama-compatible service is reachable and advertises `qwen3.8:27b-mlx`, with no resident models. No model was loaded or queried for inference.
 * The existing Vibe executable resolver finds no CLI on this machine.
-* [Local selection](../../scripts/check_ollama.py) recognises a few preferred model names; it does not select an unfamiliar installed coding or prose model without an override.
-* [Gateway classification and compound triage](../../scripts/vibe_execute.py) embed hosted model names independently of provider availability.
+* `scripts/check_ollama.py` local selection recognises a few preferred model names; it does not select an unfamiliar installed coding or prose model without an override.
+* `scripts/vibe_execute.py` gateway classification and compound triage embed hosted model names independently of provider availability.
 * The selected model-selection and gateway baseline passes: 26 tests in [the existing suite](../../tests/test_artifice.py).
 * The available controller runtime is Python 3.9.6. A design that assumes standard-library `tomllib` would introduce an unacknowledged runtime incompatibility.
 
@@ -165,7 +165,7 @@ even through an uncertainty-acceptance flag.
 
 ### Shared Ownership
 
-Introduce one small `scripts/model_inventory.py` module containing normalisation, identity validation and provider discovery. Keep Ollama lifecycle operations in [check_ollama.py](../../scripts/check_ollama.py), dispatch and compound execution in [vibe_execute.py](../../scripts/vibe_execute.py), and recommendation guidance in the skills.
+Introduce one small `scripts/model_inventory.py` module containing normalisation, identity validation and provider discovery. Keep Ollama lifecycle operations in `scripts/check_ollama.py`, dispatch and compound execution in `scripts/vibe_execute.py`, and recommendation guidance in the skills. (All three were retired by design 008.)
 
 All three consumers use the same inventory and validation helpers. The inventory module must not call task classification or inference.
 
@@ -232,7 +232,7 @@ The runner must receive and validate the approved task requirements as well as m
 
 | Surface | Required change |
 | --- | --- |
-| [vibe-execute](../../skills/vibe-execute/SKILL.md) | Replace static tier-to-model menus with discovery and assistant-led proposals. Preserve task complexity as guidance, not a model catalogue. |
+| `vibe-execute` (retired by design 008) | Replace static tier-to-model menus with discovery and assistant-led proposals. Preserve task complexity as guidance, not a model catalogue. |
 | [review](../../skills/review/SKILL.md) and [its reference](../../skills/review/references/review-framework.md) | Select code/prose workers from shared evidence; one model may serve both roles. Optional workers can be omitted visibly; local-only mode still requires both role assignments before protected ingestion. |
 | `check_ollama.py select --task` | Preserve `model`, `resident` and `fallback` output. Return a model only for a valid explicit override or one unambiguous eligible local candidate; otherwise exit `2` with a reason and `fallback: null`. Never make an implicit choice among several candidates. |
 | Existing `ARTIFICE_CODE_MODEL` / `ARTIFICE_PROSE_MODEL` | Preserve exact-tag semantics and task-role scope; empty, missing or invalid values still fail explicitly. All selection failures return `fallback: null`. |
