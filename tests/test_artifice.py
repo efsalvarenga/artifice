@@ -511,6 +511,35 @@ class LintAndContractTests(unittest.TestCase):
                 "Read `agents/code-reviewer/agent.md`.",
             ), 1)
 
+    def test_agent_frontmatter_rejects_duplicate_aliased_tools(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            agent = root / "agents/demo/agent.md"
+            agent.parent.mkdir(parents=True)
+            header = "---\nname: demo\ndescription: Demo.\ntools:\n"
+            body = "---\n\n# Demo\n"
+            agent.write_text(
+                header + "    - read_file\n    - grep_search\n" + body, encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 0)
+            agent.write_text(
+                header + "    - view_file\n    - read_file\n" + body, encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 1)
+            agent.write_text(
+                header + "    - read_file\n    - read_file\n" + body, encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 1)
+            agent.write_text(
+                "---\nname: demo\ndescription: Demo.\ntools: [view_file, read_file]\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.check_yaml_frontmatter(tmp), 1)
+
     def test_adapter_line_ceiling(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
