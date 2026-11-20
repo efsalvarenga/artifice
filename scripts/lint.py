@@ -210,57 +210,106 @@ def check_omp_adapter(path: str, header: list, body: str) -> int:
     return _check_adapter(path, header, body, ADAPTER_SPECS["omp"])
 
 
-def _flow_items(text: str) -> list:
-    """Parse the inside of a flow list, normalising quotes and comments."""
-    return [e for e in (_adapter_string(t.strip()) for t in text.split(",")) if e]
+KEY_RE = re.compile(r"([A-Za-z0-9_][A-Za-z0-9_-]*):(?:[ \t]+(.*))?$")
+ITEM_RE = re.compile(r"-(?:[ \t]+(.*))?$")
 
 
-def _frontmatter_tools(header: list) -> list:
+def _scan_flow(text: str) -> tuple:
+    """Scan flow-list text, quote- and comment-aware; returns (raw entries, closed)."""
+    entries = []
+    buf = ""
+    quote = None
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if quote:
+            buf += ch
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+            buf += ch
+        elif ch == "#" and (not buf.strip() or buf[-1] in " \t"):
+            newline = text.find("\n", i)
+            i = len(text) if newline == -1 else newline
+            continue
+        elif ch == ",":
+            entries.append(buf)
+            buf = ""
+        elif ch == "]":
+            entries.append(buf)
+            return entries, True
+        else:
+            buf += ch
+        i += 1
+    entries.append(buf)
+    return entries, False
+
+
+def _flow_entries(raw: list) -> list:
+    """Normalise raw flow entries, dropping empties."""
+    return [e for e in (_adapter_string(x.strip()) for x in raw) if e]
+
+
+def _frontmatter_tools(header: list) -> tuple:
     """Collect entries of the top-level ``tools:`` list, block-style or flow ``[a, b]``.
 
-    Only column-0 keys open a list, so folded scalars (e.g. ``description: >-``)
-    and nested keys can never be mistaken for ``tools:`` content.
+    Only a column-0 key opens a list, so folded scalars (e.g. ``description: >-``)
+    and nested keys can never be mistaken for ``tools:`` content. Returns the
+    entries plus a flag set when a flow list was left unterminated (fail closed).
     """
     tools = []
     current_key = None
     flow = None
+    flow_error = False
     for line in header:
         stripped = line.strip()
         if not stripped:
             continue
         indent = len(line) - len(line.lstrip())
         if flow is not None:
-            flow += " " + stripped
-            if "]" in flow:
-                inner, _, flow = flow.partition("]")
-                tools.extend(_flow_items(inner))
+            if indent == 0 and KEY_RE.match(stripped):
+                flow_error = True
                 flow = None
+                current_key = None
+                continue
+            flow += " " + stripped
+            raw, closed = _scan_flow(flow)
+            if closed:
+                tools.extend(_flow_entries(raw))
+                flow = None
+                current_key = None
+            continue
+        item = ITEM_RE.fullmatch(stripped)
+        if current_key == "tools" and item:
+            entry = _adapter_string(item[1] or "")
+            if entry:
+                tools.append(entry)
             continue
         if indent == 0:
-            item = re.fullmatch(r"-\s*(.+)", stripped)
-            if current_key == "tools" and item:
-                entry = _adapter_string(item[1])
-                if entry:
-                    tools.append(entry)
-                continue
-            key = re.match(r"([A-Za-z0-9_][A-Za-z0-9_-]*):(?:[ \t]+(.*))?$", line.rstrip("\r\n"))
+            key = KEY_RE.match(line.rstrip("\r\n"))
             current_key = key[1] if key else None
-            if current_key == "tools" and key[2]:
-                rest = re.split(r"[ \t]+#", key[2], maxsplit=1)[0].strip()
-                if rest.startswith("["):
-                    if "]" in rest:
-                        tools.extend(_flow_items(rest[1:rest.index("]")]))
-                        current_key = None
-                    else:
-                        flow = rest[1:]
+            value = (key[2] or "").lstrip() if key else ""
+            if current_key == "tools" and value.startswith("["):
+                flow = value[1:]
+                raw, closed = _scan_flow(flow)
+                if closed:
+                    tools.extend(_flow_entries(raw))
+                    flow = None
+                    current_key = None
+            elif current_key == "tools" and value:
+                current_key = None
             continue
-        if current_key == "tools":
-            item = re.fullmatch(r"-\s*(.+)", stripped)
-            if item:
-                entry = _adapter_string(item[1])
-                if entry:
-                    tools.append(entry)
-    return tools
+        if current_key == "tools" and stripped.startswith("["):
+            flow = stripped[1:]
+            raw, closed = _scan_flow(flow)
+            if closed:
+                tools.extend(_flow_entries(raw))
+                flow = None
+                current_key = None
+    if flow is not None:
+        flow_error = True
+    return tools, flow_error
 
 
 def check_yaml_frontmatter(target_dir: str) -> int:
@@ -346,7 +395,12 @@ def check_yaml_frontmatter(target_dir: str) -> int:
             errors += 1
         harness = adapters.get(os.path.dirname(target))
         if harness not in ADAPTER_SPECS:
-            tools = _frontmatter_tools(lines[1:closing_idx])
+            tools, flow_error = _frontmatter_tools(lines[1:closing_idx])
+            if flow_error:
+                print(
+                    f"    {RED}Frontmatter error{NC}: Unterminated tools: flow list in {rel_path}"
+                )
+                errors += 1
             resolved = [TOOL_ALIASES.get(tool, tool) for tool in tools]
             if len(resolved) != len(set(resolved)):
                 collisions = sorted(
