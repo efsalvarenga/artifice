@@ -44,6 +44,7 @@ OMP_TOOLS = {
     "developer-coach": {"read", "grep", "glob", "bash", "web_search", "send_message"},
 }
 
+# Antigravity resolves these aliases to the canonical tool name (issue #49 executor failure).
 TOOL_ALIASES = {"view_file": "read_file"}
 ADAPTER_LINE_LIMIT = 60
 
@@ -210,16 +211,28 @@ def check_omp_adapter(path: str, header: list, body: str) -> int:
 
 
 def _frontmatter_tools(header: list) -> list:
-    """Collect entries of a block-style YAML ``tools:`` list."""
+    """Collect entries of a ``tools:`` list, block-style or inline ``[a, b]``."""
     tools = []
     in_tools = False
     for line in header:
         stripped = line.strip()
-        if stripped == "tools:":
+        field = re.match(r"tools:[ \t]*(.*)", stripped)
+        if field:
             in_tools = True
-        elif in_tools and stripped.startswith("- "):
-            tools.append(stripped[2:].strip())
-        elif in_tools:
+            inline = re.fullmatch(r"\[([^\]]*)\]", field[1].strip())
+            if inline:
+                tools.extend(
+                    entry
+                    for entry in (_adapter_string(t.strip()) for t in inline[1].split(","))
+                    if entry
+                )
+            continue
+        item = re.fullmatch(r"-\s*(.+)", stripped)
+        if in_tools and item:
+            entry = _adapter_string(item[1])
+            if entry:
+                tools.append(entry)
+        elif re.match(r"[A-Za-z][A-Za-z0-9-]*:", stripped):
             in_tools = False
     return tools
 
@@ -305,17 +318,20 @@ def check_yaml_frontmatter(target_dir: str) -> int:
                 f"    {RED}Frontmatter error{NC}: Missing 'description:' field in {rel_path}"
             )
             errors += 1
-        resolved = [
-            TOOL_ALIASES.get(tool, tool)
-            for tool in _frontmatter_tools(lines[1:closing_idx])
-        ]
-        if len(resolved) != len(set(resolved)):
-            duplicates = sorted({r for r in resolved if resolved.count(r) > 1})
-            print(
-                f"    {RED}Frontmatter error{NC}: Duplicate or aliased tool names {duplicates} in {rel_path}"
-            )
-            errors += 1
         harness = adapters.get(os.path.dirname(target))
+        if harness not in ADAPTER_SPECS:
+            tools = _frontmatter_tools(lines[1:closing_idx])
+            resolved = [TOOL_ALIASES.get(tool, tool) for tool in tools]
+            if len(resolved) != len(set(resolved)):
+                collisions = sorted(
+                    f"{tool} (resolves to {TOOL_ALIASES.get(tool, tool)})"
+                    for tool in tools
+                    if resolved.count(TOOL_ALIASES.get(tool, tool)) > 1
+                )
+                print(
+                    f"    {RED}Frontmatter error{NC}: Duplicate or aliased tool names [{'; '.join(collisions)}] in {rel_path}"
+                )
+                errors += 1
         if harness in ADAPTER_SPECS:
             errors += _check_adapter(
                 rel_path, lines[1:closing_idx], "".join(lines[closing_idx + 1:]), ADAPTER_SPECS[harness],
