@@ -9,6 +9,8 @@ import base64
 import json
 import mimetypes
 import os
+import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -120,14 +122,22 @@ def process_document(
 
 
 def policy_blocks_hosted(start: Path) -> str | None:
-    """Return the matched marker if any AGENTS.md upward from start declares on-device policy."""
+    """Return the matched marker line if any AGENTS.md from start up to the repo root declares on-device policy."""
+    root = start
+    try:
+        root = Path(subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"], cwd=start, capture_output=True, text=True, check=True,
+        ).stdout.strip())
+    except Exception:
+        pass
     for directory in (start, *start.parents):
         candidate = directory / "AGENTS.md"
         if candidate.is_file():
-            text = candidate.read_text(encoding="utf-8", errors="replace")
-            for marker in ("Privacy: on-device", "Review: local-only"):
-                if marker in text:
-                    return marker
+            for line in candidate.read_text(encoding="utf-8", errors="replace").splitlines():
+                if re.search(r"(?i)(privacy|review)\s*:\s*[^a-z\n]*(on-device|local-only)", line):
+                    return line.strip()
+        if directory == root:
+            break
     return None
 
 

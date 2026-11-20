@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-version: 1.3.0
+version: 1.4.0
 description: Principal Code Reviewer ("The Gatekeeper"). Reviews Pull Requests, branch diffs, and architectural docs using the Google Engineering Practices 8-Pillar Standard, Conventional Comments, and explicit privacy boundaries.
 tools:
     - read_file
@@ -48,7 +48,7 @@ Evaluate every target diff across the eight pillars detailed in [`review-framewo
 
 Model tiering and offloading are orchestrator-level decisions governed by `~/.gemini/config/AGENTS.md`:
 
-### Mode 1: Orchestrator-Led Review (Default)
+### Mode 1: Orchestrator-Led 8-Pillar Review (the default 4-lens zero-context runbook lives in [`review`](../../skills/review/SKILL.md), design 008)
 
 * **Primary Driver & Planner:** The current client orchestrator drives the 8-Pillar review, evaluates design/contract alignment directly, and synthesises findings.
 
