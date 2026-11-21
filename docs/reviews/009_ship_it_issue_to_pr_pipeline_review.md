@@ -75,7 +75,7 @@
 🔴 1 · 🟡 5 · 🟢 8 · **Total: 14** — all resolved as PROPOSE FIX (auto-accept, 2026-11-21); none contested.
 # Goldfish Review Report
 
-**Target:** `/home/efsalvarenga/.paseo/worktrees/2jn3fpwb/flimsy-owl/docs/designs/009_ship_it_issue_to_pr_pipeline.md` (full file, lines 1–170 at review time)
+**Target:** `docs/designs/009_ship_it_issue_to_pr_pipeline.md` (full file, lines 1–170 at review time)
 **Round ID:** design009-r2 · **Date:** 2026-11-21 · **Tracking issue:** [#58](https://github.com/efsalvarenga/artifice/issues/58)
 **Mode:** REVIEW (document audit, round 2 — verifies round-1 repairs and hunts new gaps)
 **Dispatch note:** omp `task` subagent spawning is disabled in this harness, so per the round rules the synthesizer ran all six lenses itself, sequentially, each persona file read first, auditing the full target against its standard. No reviewer timed out or failed; none is `not run`.
