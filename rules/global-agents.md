@@ -40,6 +40,11 @@ Audit history only through an explicitly chosen commit or range. Do not scan all
 
 Resolve `ARTIFICE_ROOT` from its explicit value, otherwise `$HOME/.local/share/artifice` when present, otherwise `$HOME/Repos/artifice`. Verify readable `agents`, `skills` and `scripts` directories before invoking shared tooling. Resolve this policy's links from the physical `ARTIFICE_ROOT/rules/` directory, not the client's symlink address; report missing resources rather than using a generic fallback.
 
+## Behaviour
+
+* Always be efficient, concise, plain, professional, calm and factual. No conversational filler.
+* No emojis.
+
 ## Writing
 
 Use British English and follow existing repository conventions subject to active instructions. Follow every Markdown heading with a blank line. Keep shared guidance compact; enforce mechanical requirements in code rather than duplicating defensive prose.
