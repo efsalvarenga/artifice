@@ -27,8 +27,12 @@ import pr_checklist  # noqa: E402
 
 class PrChecklistTests(unittest.TestCase):
     DESIGN = (
-        "# Design\n\n## Detailed Implementation Plan\n\n### Target Files\n\n"
-        "1. `a.py` — **[Modify]**\n2. `b.py` — **[Delete]**\n\n"
+        "# Design\n\n## Technical Plan (Architecture)\n\n"
+        "- glossary bullet that must NOT appear\n\n"
+        "## Detailed Implementation Plan\n\n### Target Files\n\n"
+        "1. `a.py` — **[Modify]**\n"
+        "   - nested detail that must NOT appear\n"
+        "2. `b.py` — **[Delete]**\n\n"
         "### Verification Plan\n\n* `./scripts/lint.sh`\n\n## Risks & Mitigations\n\n- none\n"
     )
 
@@ -48,6 +52,15 @@ class PrChecklistTests(unittest.TestCase):
             pr.write_text("## Implementation Checklist\n\n- [x] `a.py` — **[Modify]**\n", encoding="utf-8")
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(pr_checklist.main([str(design), "--check", str(pr)]), 1)
+            pr.write_text("## Implementation Checklist\n\n- [ ] `a.py` — **[Modify]**\n- [ ] extra step\n- [ ] `b.py` — **[Delete]**\n", encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(design), "--check", str(pr)]), 1)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(root / "missing.md")]), 2)
+            empty = root / "empty.md"
+            empty.write_text("# No plan here\n", encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(empty)]), 2)
             with redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(pr_checklist.main([str(design)]), 0)
             self.assertIn("- [ ] `b.py`", out.getvalue())

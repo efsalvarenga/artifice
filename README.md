@@ -43,7 +43,7 @@ For incoming feedback, record the source project/branch and date, autonomy mode 
 
 Before promoting feedback into shared guidance, apply the [4-Test Lesson Acceptance Gate](agents/developer-coach/agent.md#4-the-4-test-lesson-acceptance-gate-anti-bloat). Completed entries from the former board remain in Git history.
 
-Micro execution steps live on the PR, not in a shared board: `.github/pull_request_template.md` provides a `## Implementation Checklist` (projected from the design doc's Detailed Implementation Plan) plus the `Design-Review:` field. Tick items as steps land; reviewers re-generate the checklist from the branch's design doc and flag drift.
+Micro execution steps live on the PR, not in a shared board: `.github/pull_request_template.md` provides a `## Implementation Checklist` (generated from the design doc's plan via `scripts/pr_checklist.py`) plus the `Design-Review:` field. Tick items as steps land; reviewers run `pr_checklist.py --check` to flag missing or extra items.
 
 ## Available Agents
 
