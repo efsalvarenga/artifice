@@ -45,6 +45,8 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 
 Micro execution steps live on the PR, not in a shared board: `.github/pull_request_template.md` provides a `## Implementation Checklist` (generated from the design doc's plan via `scripts/pr_checklist.py`) plus the `Design-Review:` field. Tick items as steps land; reviewers run `pr_checklist.py --check` to flag missing or extra items.
 
+Delivery workflow: pick up work from an issue (`gh issue view <N>`), implement against the branch's design doc (`docs/designs/NNN_*.md`) using the PR checklist from `scripts/pr_checklist.py`, record the design in the commit's `Design-Review:` trailer, and close the issue via `Closes #N` in the PR body.
+
 ## Available Agents
 
 ### 1. `code-author`
