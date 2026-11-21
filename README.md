@@ -43,6 +43,8 @@ For incoming feedback, record the source project/branch and date, autonomy mode 
 
 Before promoting feedback into shared guidance, apply the [4-Test Lesson Acceptance Gate](agents/developer-coach/agent.md#4-the-4-test-lesson-acceptance-gate-anti-bloat). Completed entries from the former board remain in Git history.
 
+Micro execution steps live on the PR, not in a shared board: `.github/pull_request_template.md` provides a `## Implementation Checklist` (generated from the design doc's plan via `scripts/pr_checklist.py`) plus the `Design-Review:` field. Tick items as steps land; reviewers run `pr_checklist.py --check` to flag missing or extra items.
+
 ## Available Agents
 
 ### 1. `code-author`
@@ -77,6 +79,7 @@ Before promoting feedback into shared guidance, apply the [4-Test Lesson Accepta
 * `./scripts/lint.sh [target]` (`./scripts/lint.py`): Unified governance runner auditing Markdown heading cleanliness, YAML/adapter frontmatter, relative links, Core Diet ceilings, and Bash syntax. It always checks the canonical global policy from the physical Artifice checkout, even when targeting a consuming project. `GLOBAL_AGENTS_PATH` adds an explicit external policy check; missing, unreadable or oversized policies fail rather than bypassing the canonical check. The target defaults to the current directory; Artifice's unit suite runs only when that target resolves to this checkout.
 * `python3 scripts/validate_provenance.py`: Validates prepared messages or explicitly selected commit history without writing messages, hooks, Git configuration, history, the index or the worktree.
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
+* `python3 scripts/pr_checklist.py <design.md> [--check <pr-body.md>]`: Prints the `## Implementation Checklist` for a PR from the design doc's implementation plan, or verifies a PR body's checklist against it (drift check for reviewers).
 
 ## Shared Governance & Commit Provenance
 

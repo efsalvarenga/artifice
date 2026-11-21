@@ -22,6 +22,52 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import build_review_dossier  # noqa: E402
 import lint  # noqa: E402
+import pr_checklist  # noqa: E402
+
+
+class PrChecklistTests(unittest.TestCase):
+    DESIGN = (
+        "# Design\n\n## Technical Plan (Architecture)\n\n"
+        "- glossary bullet that must NOT appear\n\n"
+        "## Detailed Implementation Plan\n\n### Target Files\n\n"
+        "1. `a.py` — **[Modify]**\n"
+        "   - nested detail that must NOT appear\n"
+        "2. `b.py` — **[Delete]**\n\n"
+        "### Verification Plan\n\n* `./scripts/lint.sh`\n\n## Risks & Mitigations\n\n- none\n"
+    )
+
+    def test_generate_and_drift_check(self):
+        items = pr_checklist.plan_items(self.DESIGN)
+        self.assertEqual(items, ["`a.py` — **[Modify]**", "`b.py` — **[Delete]**"])
+        markdown = pr_checklist.checklist_markdown(items)
+        self.assertTrue(markdown.startswith("## Implementation Checklist\n\n- [ ] `a.py`"))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            design = root / "design.md"
+            design.write_text(self.DESIGN, encoding="utf-8")
+            pr = root / "pr.md"
+            pr.write_text("## Description\n\nx\n\n" + markdown + "\n## Verification\n", encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(design), "--check", str(pr)]), 0)
+            pr.write_text("## Implementation Checklist\n\n- [x] `a.py` — **[Modify]**\n", encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(design), "--check", str(pr)]), 1)
+            pr.write_text("## Implementation Checklist\n\n- [ ] `a.py` — **[Modify]**\n- [ ] extra step\n- [ ] `b.py` — **[Delete]**\n", encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(design), "--check", str(pr)]), 1)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(root / "missing.md")]), 2)
+            empty = root / "empty.md"
+            empty.write_text("# No plan here\n", encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(empty)]), 2)
+            bad = root / "bad.md"
+            bad.write_bytes(b"# \xff\xfe not utf-8\n")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(bad)]), 2)
+            with redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(pr_checklist.main([str(design)]), 0)
+            self.assertIn("- [ ] `b.py`", out.getvalue())
 
 
 class InstallerTests(unittest.TestCase):
