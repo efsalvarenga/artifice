@@ -8,6 +8,8 @@ A curated, version-controlled collection of shared agent skills, procedures, and
 
 ```text
 artifice/
+├── .github/
+│   └── pull_request_template.md  # PR template with Implementation Checklist & Design-Review
 ├── README.md
 ├── agents/
 │   ├── code-author/              # Principal Code Author ("The Craftsman")
@@ -27,6 +29,8 @@ artifice/
 │   ├── install_omp.sh            # Non-overwriting personal omp (oh-my-pi) installer
 │   ├── lint.py                   # Unified static governance & Core Diet linter
 │   ├── lint.sh                   # Execution wrapper for lint.py
+│   ├── mistral_ocr.py            # Mistral OCR utility with privacy policy-marker gate
+│   ├── pr_checklist.py           # Design-plan to PR checklist generator and drift checker
 │   ├── validate_provenance.py    # Explicit, read-only message and commit audit
 │   └── build_review_dossier.py   # Compact repository invariant digest compiler
 ├── skills/
@@ -107,9 +111,7 @@ Existing instruction files, byte-identical copies, directories and mismatched or
 
 Client-root overrides must be normalised absolute paths, without dot, parent or doubled-slash components, and cannot point inside the checkout or resource anchor. Known non-writable parents block new registrations before writes; already-correct readable registrations can be checked without write permission. Policy-symlink Markdown links are checked from the physical policy directory.
 
-Filesystem registration is not proof that a client loaded the policy. The [approved runtime matrix](docs/designs/005_shared_governance_and_commit_provenance.md#fresh-client-acceptance) requires fresh-session inclusion evidence for Antigravity, Copilot CLI, the VS Code Copilot harness, and Copilot CLI with `COPILOT_HOME`. These live checks remain pending separate installation permission. Other relocated client combinations are installer-test-only, not claimed runtime support.
-
-Issue #19 remains open until the required runtime evidence is delivered. Issue #23 remains partial: backup scripts, MCP templates and sidecars are deferred.
+Filesystem registration is not proof that a client loaded the policy; confirm policy loading in a fresh session per the [approved runtime matrix](docs/designs/005_shared_governance_and_commit_provenance.md#fresh-client-acceptance). Default-home Antigravity, `omp`-via-Paseo, and VS Code Copilot are verified (issues `#19` and `#34`, closed); relocated client combinations remain installer-test-only unless separately runtime-verified. Issue `#23` closed after auditing `~/.gemini/config` with nothing to migrate; personal client files remain unmanaged.
 
 ## External Prerequisites (Upstream EGM)
 
