@@ -499,10 +499,10 @@ class LintAndContractTests(unittest.TestCase):
 
         canonical = [
             *(REPO_ROOT / "agents" / r / "agent.md" for r in ("code-author", "code-reviewer", "developer-coach")),
-            *(REPO_ROOT / "skills" / s / "SKILL.md" for s in ("review", "coach-frameworks")),
+            *(REPO_ROOT / "skills" / s / "SKILL.md" for s in ("review", "coach-frameworks", "ship-it")),
         ]
         total_words = sum(len(p.read_text(encoding="utf-8").split()) for p in canonical)
-        self.assertLessEqual(total_words, 3300)
+        self.assertLessEqual(total_words, 3750)
         for path in canonical:
             text = path.read_text(encoding="utf-8")
             self.assertNotIn("/Users/", text)

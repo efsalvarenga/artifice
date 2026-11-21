@@ -32,6 +32,7 @@ artifice/
 ├── skills/
 │   ├── review/                   # Universal 8-Pillar code & architecture review
 │   ├── coach-frameworks/         # Framework evaluation & ecosystem DX coaching
+│   ├── ship-it/                  # Issue-to-ready-PR pipeline (design 009)
 └── tests/                        # Standard-library unit & black-box installer tests
 ```
 
@@ -73,6 +74,11 @@ Micro execution steps live on the PR, not in a shared board: `.github/pull_reque
 
 * **Trigger:** `/coach-frameworks`
 * **Role:** [Strategic framework evaluation](skills/coach-frameworks/SKILL.md), sibling-repository scouting, and developer ergonomics coaching filtered through the 4-Test Lesson Acceptance Gate.
+
+### 3. `ship-it`
+
+* **Trigger:** `/ship-it <issue-number>`
+* **Role:** [Issue-to-ready-PR pipeline](skills/ship-it/SKILL.md) — grill-me clarification, optional EGM design loop (capability-detected), `code-author` implementation, coordinator-created PR, and up to two zero-context review rounds before signalling readiness (design 009, issue #58).
 
 ## Core Scripts & Verification
 
