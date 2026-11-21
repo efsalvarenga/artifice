@@ -31,16 +31,16 @@ Resolve and export `ARTIFICE_ROOT` from its explicit value, otherwise `$HOME/.lo
 ## 2. P1 — Grill-Me
 
 1. Interrogate scope, non-goals, invariants, failure modes, design-doc need (design 002 1A); record decisions; scope change re-opens.
-2. Design doc needed → EGM probe: plugin registration present (agy: `~/.gemini/config/plugins/egm/plugin.json`; omp: `~/.omp/plugins/installed_plugins.json` containing `egm@egm`; copilot: locally confirmed EGM skills dir, upstream `--plugin-dir` checkout) AND `skills/egm-review-loop/SKILL.md` readable under the plugin root. Pass → `/egm-brainstorm` → `/egm-draft` → `/egm-review` → `/egm-review-loop` → `/egm-resolve` to Stage 9 (Implementation Readiness); loop ending without Stage 9 → escalate unless you waive. Fail → logged fallback (grill-me + `review` lenses).
+2. Design doc needed → EGM probe: plugin registration present (agy: `~/.gemini/config/plugins/egm/plugin.json`; omp: `~/.omp/plugins/installed_plugins.json` containing `egm@egm`; copilot: locally confirmed EGM skills dir, upstream `--plugin-dir` checkout) AND `skills/egm-review-loop/SKILL.md` readable under the plugin root. Pass → `/egm-brainstorm` → `/egm-draft` → `/egm-review` → `/egm-review-loop` → `/egm-resolve` to Stage 9 (Implementation Readiness); loop ending without Stage 9 → escalate unless you waive. Fail → logged fallback.
 
 ## 3. P2 — Implement
 
-1. Branch `issue/<N>-<slug>`: slug = `gh issue view <N> --repo owner/repo --json title -q .title`, lowercased, non-alphanumeric runs collapsed to `-`, leading/trailing `-` stripped, then ≤40 chars; empty result → branch `issue/<N>` with no slug.
+1. Branch `issue/<N>-<slug>`: slug = `gh issue view <N> --json title -q .title` (`--repo owner/repo` when the operand is given), lowercased, non-alphanumeric runs collapsed to `-`, leading/trailing `-` stripped, ≤40 chars; empty → branch `issue/<N>`.
 2. Spawn `code-author`: 5-phase TDD; per commit run `python3 "${ARTIFICE_ROOT:-$HOME/Repos/artifice}/scripts/validate_provenance.py" --message-file <file>` (failure blocks the commit); Phase-4 baseline gate 100% green before any PR action.
 
 ## 4. P3 — Create the PR (coordinator only)
 
-Push the branch (`git push -u <remote> <branch>`, remote = origin or resolved from `[owner/repo]`), then `gh pr create --repo owner/repo` with the repo template: Description, `Design-Review:` (Stage 9 or human sign-off), checklist via `scripts/pr_checklist.py <design.md>`, Verification, `Fixes #N`. Bounded gh retry ≤2 after backoff, then notify and stop.
+Push the branch (`git push -u <remote> <branch>`, remote = origin or resolved from `[owner/repo]`), then `gh pr create` (`--repo owner/repo` when given) with the repo template: Description, `Design-Review:` (Stage 9 or human sign-off), checklist via `scripts/pr_checklist.py <design.md>`, Verification, `Fixes #N`. Bounded gh retry ≤2 after backoff, then notify and stop.
 
 ## 5. P4 — Review Rounds (run-log round counter; cap = 2)
 
