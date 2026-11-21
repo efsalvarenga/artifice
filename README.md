@@ -43,7 +43,9 @@ For incoming feedback, record the source project/branch and date, autonomy mode 
 
 Before promoting feedback into shared guidance, apply the [4-Test Lesson Acceptance Gate](agents/developer-coach/agent.md#4-the-4-test-lesson-acceptance-gate-anti-bloat). Completed entries from the former board remain in Git history.
 
-Micro execution steps live on the PR, not in a shared board: `.github/pull_request_template.md` provides a `## Implementation Checklist` (generated from the design doc's plan via `scripts/pr_checklist.py`) plus the `Design-Review:` field. Tick items as steps land; reviewers run `pr_checklist.py --check` to flag missing or extra items.
+Micro execution steps live on the PR, not in a shared board: `.github/pull_request_template.md` provides a `## Implementation Checklist` (generated from the design doc's plan via `scripts/pr_checklist.py`) plus the `## Design-Review` section. Tick items as steps land; reviewers run `pr_checklist.py --check` to flag missing or extra items.
+
+Delivery workflow: pick up an issue (`gh issue view <N>`) → implement against the branch's design doc (`docs/designs/NNN_<slug>.md`; trivial hotfixes may skip it) with the PR checklist from `scripts/pr_checklist.py` → record the design in the commit trailer (`Design-Review: docs/designs/NNN_<slug>.md`; a PR-description entry is an accepted equivalent) → close the issue via `Closes #N` in the PR body.
 
 ## Available Agents
 
