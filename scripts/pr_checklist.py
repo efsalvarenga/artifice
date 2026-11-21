@@ -93,7 +93,7 @@ def main(argv=None) -> int:
 
     try:
         design_text = Path(args.design).read_text(encoding="utf-8")
-    except OSError as error:
+    except (OSError, UnicodeDecodeError) as error:
         print(f"error: cannot read {args.design}: {error}", file=sys.stderr)
         return 2
     items = plan_items(design_text)
@@ -106,7 +106,7 @@ def main(argv=None) -> int:
 
     try:
         pr_items = pr_checklist_items(Path(args.check).read_text(encoding="utf-8"))
-    except OSError as error:
+    except (OSError, UnicodeDecodeError) as error:
         print(f"error: cannot read {args.check}: {error}", file=sys.stderr)
         return 2
     if pr_items == items:

@@ -61,6 +61,10 @@ class PrChecklistTests(unittest.TestCase):
             empty.write_text("# No plan here\n", encoding="utf-8")
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(pr_checklist.main([str(empty)]), 2)
+            bad = root / "bad.md"
+            bad.write_bytes(b"# \xff\xfe not utf-8\n")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(pr_checklist.main([str(bad)]), 2)
             with redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(pr_checklist.main([str(design)]), 0)
             self.assertIn("- [ ] `b.py`", out.getvalue())
