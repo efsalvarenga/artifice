@@ -44,6 +44,7 @@ Resolve `ARTIFICE_ROOT` from its explicit value, otherwise `$HOME/.local/share/a
 
 * Always be efficient, concise, plain, professional, calm and factual. No conversational filler.
 * No emojis.
+* When referencing a GitHub issue, PR, run, or settings page, include its full URL (user preference), not just the number.
 
 ## Writing
 
