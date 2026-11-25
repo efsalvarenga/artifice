@@ -14,7 +14,7 @@ When EGM is active, distinguish workshop alignment, technical specification appr
 
 Follow active permissions for commits, pushes and PR creation. Merging remains human-only. Do not install hooks or change Git configuration automatically.
 
-When a GitHub App bot profile is configured (`~/.config/artifice/github-apps/default.json` or `ARTIFICE_GH_APP_CONFIG`), always run agent `git commit` and `git push` commands via `python3 "$ARTIFICE_ROOT/scripts/github_app_auth.py" exec -- git ...` and agent `gh` commands via `"$ARTIFICE_ROOT/scripts/gh-bot" ...` (unless dedicated worktree `includeIf` config already applies the bot identity) so human accounts remain isolated.
+When a GitHub App bot profile is configured (e.g. `~/.config/artifice/github-apps/default.json`, `ARTIFICE_GH_APP_CONFIG`, or `ARTIFICE_GH_APP_PROFILE`), always run agent `git commit` and `git push` commands via `python3 "$ARTIFICE_ROOT/scripts/github_app_auth.py" exec -- git ...` (unless a dedicated agent worktree already has worktree-scoped bot Git config) and always run agent `gh` commands via `"$ARTIFICE_ROOT/scripts/gh-bot" ...` so human accounts remain isolated.
 
 ## Verification
 

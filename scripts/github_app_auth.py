@@ -38,6 +38,7 @@ USER_AGENT = "artifice-github-app-auth"
 CACHE_MARGIN_SECONDS = 300
 HTTP_TIMEOUT_SECONDS = 15
 OPENSSL_TIMEOUT_SECONDS = 15
+MAX_API_RESPONSE_BYTES = 1024 * 1024
 
 
 class AuthError(Exception):
@@ -64,15 +65,27 @@ class BotConfig:
     def bot_email(self) -> str:
         return f"{self.bot_user_id}+{self.app_slug}[bot]@users.noreply.github.com"
 
-    def resolve_installation_id(self, owner: Optional[str] = None) -> str:
+    def match_installation_id(self, owner: Optional[str] = None) -> Optional[str]:
+        """Return matching installation ID, or None if owner is unmatched in installations."""
         if owner:
             key = owner.strip().lower()
-            if key in self.installations:
-                return self.installations[key]
+            if self.installations:
+                return self.installations.get(key)
+            return self.installation_id
         if self.installation_id:
             return self.installation_id
         if len(self.installations) == 1:
             return next(iter(self.installations.values()))
+        return None
+
+    def resolve_installation_id(self, owner: Optional[str] = None) -> str:
+        resolved = self.match_installation_id(owner)
+        if resolved is not None:
+            return resolved
+        if owner and self.installations:
+            raise AuthError(
+                f"Owner {owner!r} is not configured in 'installations' of {self.config_path}."
+            )
         target = f" for owner '{owner}'" if owner else ""
         raise AuthError(f"No installation_id configured{target} in {self.config_path}.")
 
@@ -116,7 +129,8 @@ def _cache_dir(env: Mapping[str, str]) -> Path:
 
 def _require_regex(value: object, pattern: re.Pattern[str], field: str, source: Path) -> str:
     if not isinstance(value, str) or not pattern.fullmatch(value):
-        raise AuthError(f"Invalid or missing '{field}' in {source}.")
+        hint = " (must be a quoted numeric string)" if pattern is NUMERIC_ID_RE else ""
+        raise AuthError(f"Invalid or missing '{field}' in {source}{hint}.")
     return value
 
 
@@ -125,16 +139,27 @@ def load_config(
     profile: Optional[str] = None,
     env: Optional[Mapping[str, str]] = None,
 ) -> BotConfig:
+    """Load profile config with precedence: --config > --profile > env CONFIG > env PROFILE > default."""
     active_env = env if env is not None else os.environ
-    explicit_raw = config_path if config_path is not None else active_env.get("ARTIFICE_GH_APP_CONFIG")
-    prof_raw = profile if profile is not None else (active_env.get("ARTIFICE_GH_APP_PROFILE") or "default")
-    prof = validate_profile_name(prof_raw)
+    env_cfg = active_env.get("ARTIFICE_GH_APP_CONFIG")
 
-    if explicit_raw:
-        cfg_file = _expand_path(explicit_raw, active_env)
+    if config_path is not None:
+        if not config_path.strip():
+            raise AuthError("Explicit --config path must not be empty.")
+        cfg_file = Path(os.path.abspath(_expand_path(config_path.strip(), active_env)))
+        prof = "custom"
+        explicit = True
+    elif profile is not None:
+        prof = validate_profile_name(profile)
+        cfg_file = Path(os.path.abspath(_config_dir(active_env) / "github-apps" / f"{prof}.json"))
+        explicit = False
+    elif env_cfg:
+        cfg_file = Path(os.path.abspath(_expand_path(env_cfg.strip(), active_env)))
+        prof = "custom"
         explicit = True
     else:
-        cfg_file = _config_dir(active_env) / "github-apps" / f"{prof}.json"
+        prof = validate_profile_name(active_env.get("ARTIFICE_GH_APP_PROFILE") or "default")
+        cfg_file = Path(os.path.abspath(_config_dir(active_env) / "github-apps" / f"{prof}.json"))
         explicit = False
 
     try:
@@ -163,11 +188,16 @@ def load_config(
     inst_map = data.get("installations")
     if inst_map is not None:
         if not isinstance(inst_map, dict):
-            raise AuthError(f"'installations' in {cfg_file} must be an object mapping owner to numeric ID.")
+            raise AuthError(f"'installations' in {cfg_file} must be an object mapping owner to numeric string ID.")
         for owner_key, owner_inst in inst_map.items():
             if not isinstance(owner_key, str) or not owner_key.strip():
                 raise AuthError(f"Empty owner key in 'installations' of {cfg_file}.")
-            installations[owner_key.strip().lower()] = _require_regex(
+            norm = owner_key.strip().lower()
+            if norm in installations:
+                raise AuthError(
+                    f"Duplicate case-insensitive owner key '{owner_key}' in 'installations' of {cfg_file}."
+                )
+            installations[norm] = _require_regex(
                 owner_inst, NUMERIC_ID_RE, f"installations.{owner_key}", cfg_file
             )
 
@@ -177,7 +207,10 @@ def load_config(
     pem_raw = data.get("private_key_path")
     if not isinstance(pem_raw, str) or not pem_raw.strip():
         raise AuthError(f"Missing 'private_key_path' in {cfg_file}.")
-    pem_path = _expand_path(pem_raw.strip(), active_env)
+    pem_expanded = _expand_path(pem_raw.strip(), active_env)
+    if not pem_expanded.is_absolute():
+        pem_expanded = cfg_file.parent / pem_expanded
+    pem_path = Path(os.path.abspath(pem_expanded))
 
     return BotConfig(
         profile=prof,
@@ -193,13 +226,14 @@ def load_config(
 
 
 def _assert_not_inside_git_repo(path: Path) -> None:
-    checked: set[Path] = set()
-    candidates = [path.parent]
+    abs_parent = Path(os.path.abspath(path)).parent
     try:
-        candidates.append(path.parent.resolve())
-    except OSError:
-        pass
-    for start in candidates:
+        resolved_parent = abs_parent.resolve()
+    except OSError as exc:
+        raise AuthError(f"Cannot resolve private key parent directory {abs_parent}: {exc}") from exc
+
+    checked: set[Path] = set()
+    for start in (abs_parent, resolved_parent):
         cur = start
         while True:
             if cur in checked:
@@ -216,7 +250,7 @@ def _assert_not_inside_git_repo(path: Path) -> None:
 
 def validate_and_open_private_key(path: Path) -> int:
     _assert_not_inside_git_repo(path)
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     try:
         fd = os.open(str(path), flags)
     except OSError as exc:
@@ -232,7 +266,8 @@ def validate_and_open_private_key(path: Path) -> int:
             raise AuthError(f"Private key {path} must be owned by the current user.")
         if (st.st_mode & 0o077) != 0:
             raise AuthError(
-                f"Private key {path} has overly permissive mode {oct(stat.S_IMODE(st.st_mode))}; run: chmod 600 {path}"
+                f"Private key {path} has overly permissive mode {oct(stat.S_IMODE(st.st_mode))}; "
+                f"run: chmod 600 {shlex.quote(str(path))}"
             )
         header = os.pread(fd, 4096, 0)
         if b"ENCRYPTED" in header:
@@ -287,23 +322,47 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
         raise HTTPError(newurl, code, f"HTTP redirect blocked ({code})", headers, fp)
 
 
-def _api_request(method: str, url: str, headers: dict[str, str], body: Optional[bytes] = None) -> dict:
+def _api_request(
+    method: str,
+    url: str,
+    bearer_token: str,
+    endpoint_label: str = "request",
+    body: Optional[bytes] = None,
+) -> dict:
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": API_VERSION,
+        "User-Agent": USER_AGENT,
+    }
     opener = urllib.request.build_opener(_NoRedirectHandler())
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
         with opener.open(req, timeout=HTTP_TIMEOUT_SECONDS) as resp:
-            raw = resp.read().decode("utf-8")
+            raw_bytes = resp.read(MAX_API_RESPONSE_BYTES + 1)
     except HTTPError as exc:
-        raise AuthError(f"GitHub API {method} failed with HTTP {exc.code}.") from exc
+        code = exc.code
+        try:
+            exc.close()
+        except Exception:
+            pass
+        hint = ""
+        if code == 401:
+            hint = " (verify app_id, private key, and system clock)"
+        elif code == 404:
+            hint = " (verify installation_id or app_slug)"
+        raise AuthError(f"GitHub API {endpoint_label} failed with HTTP {code}{hint}.") from exc
     except (URLError, TimeoutError, OSError) as exc:
-        raise AuthError(f"GitHub API {method} failed: {exc}") from exc
+        raise AuthError(f"GitHub API {endpoint_label} failed: {exc}") from exc
 
+    if len(raw_bytes) > MAX_API_RESPONSE_BYTES:
+        raise AuthError(f"GitHub API {endpoint_label} response exceeded {MAX_API_RESPONSE_BYTES} bytes.")
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise AuthError("GitHub API returned invalid JSON.") from exc
+        parsed = json.loads(raw_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise AuthError(f"GitHub API {endpoint_label} returned invalid UTF-8 or JSON.") from exc
     if not isinstance(parsed, dict):
-        raise AuthError("GitHub API returned unexpected payload.")
+        raise AuthError(f"GitHub API {endpoint_label} returned unexpected payload.")
     return parsed
 
 
@@ -331,13 +390,7 @@ def exchange_installation_token(
         raise AuthError(f"Invalid installation_id {installation_id!r}.")
     jwt = mint_jwt(app_id, private_key_path)
     url = f"{GITHUB_API_BASE}/app/installations/{installation_id}/access_tokens"
-    headers = {
-        "Authorization": f"Bearer {jwt}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": API_VERSION,
-        "User-Agent": USER_AGENT,
-    }
-    data = _api_request("POST", url, headers=headers, body=b"")
+    data = _api_request("POST", url, bearer_token=jwt, endpoint_label="installation token exchange", body=b"")
     token = data.get("token")
     expires_at = data.get("expires_at")
     if not isinstance(token, str) or not token or not isinstance(expires_at, str) or not expires_at:
@@ -347,31 +400,61 @@ def exchange_installation_token(
     return token, expires_at
 
 
-def _ensure_safe_cache_dir(cache_dir: Path) -> None:
-    if os.path.lexists(cache_dir):
-        st = os.lstat(cache_dir)
-        if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
-            raise AuthError(f"Token cache directory {cache_dir} must be a non-symlink directory.")
+def _verify_and_open_dir(path: Path, create: bool, enforce_private_mode: bool) -> Optional[int]:
+    if create and not os.path.lexists(path):
+        try:
+            os.mkdir(path, 0o700 if enforce_private_mode else 0o755)
+        except FileExistsError:
+            pass
+    dir_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        dir_fd = os.open(str(path), dir_flags)
+    except FileNotFoundError:
+        if not create:
+            return None
+        raise
+    except OSError as exc:
+        if exc.errno in (errno.ELOOP, errno.ENOTDIR):
+            raise AuthError(f"Token cache directory {path} must be a non-symlink directory.") from exc
+        raise AuthError(f"Cannot open token cache directory {path}: {exc}") from exc
+
+    try:
+        st = os.fstat(dir_fd)
+        if not stat.S_ISDIR(st.st_mode):
+            raise AuthError(f"Token cache directory {path} must be a directory.")
         if st.st_uid != os.geteuid():
-            raise AuthError(f"Token cache directory {cache_dir} is not owned by the current user.")
-        if (st.st_mode & 0o077) != 0:
-            os.chmod(cache_dir, 0o700)
-        return
-    cache_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
-    os.chmod(cache_dir, 0o700)
+            raise AuthError(f"Token cache directory {path} is not owned by the current user.")
+        if enforce_private_mode and (st.st_mode & 0o077) != 0:
+            os.fchmod(dir_fd, 0o700)
+    except Exception:
+        os.close(dir_fd)
+        raise
+    return dir_fd
 
 
-def _cache_file_path(cfg: BotConfig, installation_id: str, env: Mapping[str, str]) -> Path:
-    return _cache_dir(env) / f"{cfg.app_id}-{installation_id}.json"
-
-
-def _read_cached_token(path: Path) -> Optional[str]:
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-    try:
-        fd = os.open(str(path), flags)
-    except OSError:
+def _open_safe_cache_dir(cache_dir: Path, create: bool) -> Optional[int]:
+    artifice_dir = cache_dir.parent
+    if create:
+        artifice_dir.parent.mkdir(parents=True, exist_ok=True)
+    parent_fd = _verify_and_open_dir(artifice_dir, create=create, enforce_private_mode=True)
+    if parent_fd is None:
         return None
+    os.close(parent_fd)
+    return _verify_and_open_dir(cache_dir, create=create, enforce_private_mode=True)
+
+
+def _cache_filename(cfg: BotConfig, installation_id: str) -> str:
+    return f"{cfg.app_id}-{installation_id}.json"
+
+
+def _read_cached_token(cache_dir: Path, filename: str) -> Optional[str]:
+    dir_fd = _open_safe_cache_dir(cache_dir, create=False)
+    if dir_fd is None:
+        return None
+    file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    fd = -1
     try:
+        fd = os.open(filename, file_flags, dir_fd=dir_fd)
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid() or (st.st_mode & 0o077) != 0:
             return None
@@ -383,6 +466,7 @@ def _read_cached_token(path: Path) -> Optional[str]:
     finally:
         if fd >= 0:
             os.close(fd)
+        os.close(dir_fd)
 
     if not isinstance(data, dict):
         return None
@@ -390,9 +474,8 @@ def _read_cached_token(path: Path) -> Optional[str]:
     expires_at = data.get("expires_at")
     if not isinstance(token, str) or not token or not isinstance(expires_at, str):
         return None
-    if "\r" in token or "\n" in token or "\x00" in token:
-        return None
     try:
+        _check_no_newlines(token, "cached token")
         exp = _parse_utc(expires_at)
     except AuthError:
         return None
@@ -402,24 +485,30 @@ def _read_cached_token(path: Path) -> Optional[str]:
     return token
 
 
-def _write_cached_token(path: Path, token: str, expires_at: str) -> None:
-    _ensure_safe_cache_dir(path.parent)
-    tmp_path = path.parent / f".{path.name}.{secrets.token_hex(8)}.tmp"
+def _write_cached_token(cache_dir: Path, filename: str, token: str, expires_at: str) -> None:
+    dir_fd = _open_safe_cache_dir(cache_dir, create=True)
+    assert dir_fd is not None
+    tmp_name = f".{filename}.{secrets.token_hex(8)}.tmp"
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-    fd = os.open(str(tmp_path), flags, 0o600)
+    fd = -1
     try:
-        payload = json.dumps({"token": token, "expires_at": expires_at}).encode("utf-8")
-        os.write(fd, payload)
-        os.fsync(fd)
+        fd = os.open(tmp_name, flags, 0o600, dir_fd=dir_fd)
+        with os.fdopen(fd, "wb") as handle:
+            fd = -1
+            handle.write(json.dumps({"token": token, "expires_at": expires_at}).encode("utf-8"))
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_name, filename, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
     except Exception:
-        os.close(fd)
+        if fd >= 0:
+            os.close(fd)
         try:
-            os.unlink(tmp_path)
+            os.unlink(tmp_name, dir_fd=dir_fd)
         except OSError:
             pass
         raise
-    os.close(fd)
-    os.replace(tmp_path, path)
+    finally:
+        os.close(dir_fd)
 
 
 def get_installation_token(
@@ -430,16 +519,20 @@ def get_installation_token(
 ) -> str:
     active_env = env if env is not None else os.environ
     installation_id = cfg.resolve_installation_id(owner)
-    cache_path = _cache_file_path(cfg, installation_id, active_env)
+    cache_dir = _cache_dir(active_env)
+    filename = _cache_filename(cfg, installation_id)
 
     if not no_cache:
-        cached = _read_cached_token(cache_path)
+        cached = _read_cached_token(cache_dir, filename)
         if cached:
             return cached
 
     token, expires_at = exchange_installation_token(cfg.app_id, installation_id, cfg.private_key_path)
     if not no_cache:
-        _write_cached_token(cache_path, token, expires_at)
+        try:
+            _write_cached_token(cache_dir, filename, token, expires_at)
+        except OSError as exc:
+            print(f"warning: could not write token cache ({exc}); continuing uncached.", file=sys.stderr)
     return token
 
 
@@ -449,57 +542,87 @@ def erase_cached_token(
     env: Optional[Mapping[str, str]] = None,
 ) -> None:
     active_env = env if env is not None else os.environ
-    installation_id = cfg.resolve_installation_id(owner)
-    cache_path = _cache_file_path(cfg, installation_id, active_env)
+    installation_id = cfg.match_installation_id(owner)
+    if installation_id is None:
+        return
+    cache_dir = _cache_dir(active_env)
+    dir_fd = _open_safe_cache_dir(cache_dir, create=False)
+    if dir_fd is None:
+        return
     try:
-        os.unlink(cache_path)
+        os.unlink(_cache_filename(cfg, installation_id), dir_fd=dir_fd)
     except FileNotFoundError:
         pass
+    finally:
+        os.close(dir_fd)
 
 
 def fetch_bot_user_id(app_slug: str, token: str) -> str:
     encoded = urllib.parse.quote(f"{app_slug}[bot]", safe="")
     url = f"{GITHUB_API_BASE}/users/{encoded}"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": API_VERSION,
-        "User-Agent": USER_AGENT,
-    }
-    data = _api_request("GET", url, headers=headers)
+    data = _api_request("GET", url, bearer_token=token, endpoint_label="bot user lookup")
     user_id = data.get("id")
-    if not isinstance(user_id, int):
+    if isinstance(user_id, bool) or not isinstance(user_id, int):
         raise AuthError(f"GitHub API did not return a numeric user id for {app_slug}[bot].")
     return str(user_id)
 
 
-def _extract_owner_from_repo_spec(spec: str) -> Optional[str]:
+def _parse_github_host_and_owner(spec: str) -> tuple[Optional[str], Optional[str]]:
+    """Parse (host_lower, owner) from HTTPS/SSH/scp URLs or gh repo specs."""
     text = spec.strip()
-    if text.startswith("https://github.com/"):
-        text = text[len("https://github.com/"):]
-    elif text.startswith("github.com/"):
-        text = text[len("github.com/"):]
-    text = text.lstrip("/")
-    if "/" not in text:
-        return None
-    owner = text.split("/", 1)[0].strip()
-    return owner or None
+    if not text:
+        return None, None
+    if "://" in text:
+        parsed = urllib.parse.urlparse(text)
+        host = (parsed.hostname or "").lower() or None
+        path = parsed.path.lstrip("/")
+        owner = path.split("/", 1)[0].strip() if path else None
+        return host, owner or None
+    scp = re.match(r"^(?:[^/@]+@)?([^:/]+):(.+)$", text)
+    if scp:
+        host = scp.group(1).lower()
+        path = scp.group(2).lstrip("/")
+        owner = path.split("/", 1)[0].strip() if path else None
+        return host, owner or None
+    parts = [p for p in text.lstrip("/").split("/") if p]
+    if len(parts) >= 3 and ("." in parts[0] or ":" in parts[0]):
+        return parts[0].lower(), parts[1]
+    if len(parts) >= 2:
+        return None, parts[0]
+    return None, None
 
 
-def _extract_owner_from_gh_args(args: list[str]) -> Optional[str]:
+def _extract_gh_host_and_owner(args: list[str], env: Mapping[str, str]) -> tuple[Optional[str], Optional[str]]:
+    host: Optional[str] = None
+    repo_spec: Optional[str] = None
     idx = 0
     while idx < len(args):
         arg = args[idx]
         if arg == "--":
             break
         if arg in ("-R", "--repo") and idx + 1 < len(args):
-            return _extract_owner_from_repo_spec(args[idx + 1])
+            repo_spec = args[idx + 1]
+            idx += 2
+            continue
         if arg.startswith("--repo="):
-            return _extract_owner_from_repo_spec(arg.split("=", 1)[1])
-        if arg.startswith("-R") and len(arg) > 2:
-            return _extract_owner_from_repo_spec(arg[2:])
+            repo_spec = arg.split("=", 1)[1]
+        elif arg.startswith("-R") and len(arg) > 2:
+            repo_spec = arg[2:]
+        elif arg == "--hostname" and idx + 1 < len(args):
+            host = args[idx + 1].strip().lower()
+            idx += 2
+            continue
+        elif arg.startswith("--hostname="):
+            host = arg.split("=", 1)[1].strip().lower()
         idx += 1
-    return None
+
+    if repo_spec is None:
+        env_repo = env.get("GH_REPO", "").strip()
+        if env_repo:
+            repo_spec = env_repo
+
+    spec_host, owner = _parse_github_host_and_owner(repo_spec) if repo_spec else (None, None)
+    return host or spec_host, owner
 
 
 def _detect_origin_remote(cwd: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
@@ -516,22 +639,26 @@ def _detect_origin_remote(cwd: Optional[str] = None) -> tuple[Optional[str], Opt
     if res.returncode != 0:
         return None, None
     url = res.stdout.strip()
-    if url.startswith("https://github.com/"):
-        owner = _extract_owner_from_repo_spec(url)
-        return owner, url
-    if url.startswith("git@github.com:"):
-        rest = url[len("git@github.com:"):]
-        owner = rest.split("/", 1)[0].strip() or None
+    host, owner = _parse_github_host_and_owner(url)
+    if host == "github.com":
         return owner, url
     return None, url
 
 
+def _resolve_owner(
+    cfg: BotConfig,
+    explicit_owner: Optional[str],
+    env: Mapping[str, str],
+    gh_owner: Optional[str] = None,
+) -> Optional[str]:
+    owner = explicit_owner or env.get("ARTIFICE_GH_APP_OWNER") or gh_owner
+    if not owner and cfg.installations:
+        owner, _ = _detect_origin_remote()
+    return owner or None
+
+
 def _build_git_credential_helper(cfg: BotConfig) -> str:
-    argv = [sys.executable, str(Path(__file__).resolve()), "git-credential"]
-    if cfg.explicit_config:
-        argv.extend(["--config", str(cfg.config_path)])
-    else:
-        argv.extend(["--profile", cfg.profile])
+    argv = [sys.executable, str(Path(__file__).resolve()), "git-credential", "--config", str(cfg.config_path)]
     return "!" + shlex.join(argv)
 
 
@@ -560,6 +687,7 @@ def run_git_credential(
     stdout: TextIO = sys.stdout,
     env: Optional[Mapping[str, str]] = None,
 ) -> int:
+    active_env = env if env is not None else os.environ
     attrs: dict[str, str] = {}
     for line in stdin:
         stripped = line.rstrip("\r\n")
@@ -572,17 +700,19 @@ def run_git_credential(
     if attrs.get("protocol", "").lower() != "https" or attrs.get("host", "").lower() != "github.com":
         return 0
 
-    owner: Optional[str] = None
     raw_path = attrs.get("path", "").lstrip("/")
-    if raw_path:
-        owner = raw_path.split("/", 1)[0] or None
+    path_owner = raw_path.split("/", 1)[0].strip() if raw_path else None
+    owner = active_env.get("ARTIFICE_GH_APP_OWNER") or path_owner or None
+
+    if owner and cfg.installations and cfg.match_installation_id(owner) is None:
+        return 0
 
     if action == "get":
-        token = _check_no_newlines(get_installation_token(cfg, owner=owner, env=env), "token")
+        token = _check_no_newlines(get_installation_token(cfg, owner=owner, env=active_env), "token")
         stdout.write(f"username=x-access-token\npassword={token}\n")
         return 0
     if action == "erase":
-        erase_cached_token(cfg, owner=owner, env=env)
+        erase_cached_token(cfg, owner=owner, env=active_env)
         return 0
     if action == "store":
         return 0
@@ -591,10 +721,10 @@ def run_git_credential(
 
 def run_git_env(cfg: BotConfig, stdout: TextIO = sys.stdout) -> int:
     pairs = (
-        ("GIT_AUTHOR_NAME", _check_no_newlines(cfg.bot_name, "GIT_AUTHOR_NAME")),
-        ("GIT_AUTHOR_EMAIL", _check_no_newlines(cfg.bot_email, "GIT_AUTHOR_EMAIL")),
-        ("GIT_COMMITTER_NAME", _check_no_newlines(cfg.bot_name, "GIT_COMMITTER_NAME")),
-        ("GIT_COMMITTER_EMAIL", _check_no_newlines(cfg.bot_email, "GIT_COMMITTER_EMAIL")),
+        ("GIT_AUTHOR_NAME", cfg.bot_name),
+        ("GIT_AUTHOR_EMAIL", cfg.bot_email),
+        ("GIT_COMMITTER_NAME", cfg.bot_name),
+        ("GIT_COMMITTER_EMAIL", cfg.bot_email),
     )
     for key, value in pairs:
         stdout.write(f"export {key}={shlex.quote(value)}\n")
@@ -612,10 +742,12 @@ def run_exec(
     if not cmd:
         raise AuthError("exec requires a command after '--'.")
     child_env = dict(env if env is not None else os.environ)
-    child_env["GIT_AUTHOR_NAME"] = _check_no_newlines(cfg.bot_name, "GIT_AUTHOR_NAME")
-    child_env["GIT_AUTHOR_EMAIL"] = _check_no_newlines(cfg.bot_email, "GIT_AUTHOR_EMAIL")
-    child_env["GIT_COMMITTER_NAME"] = _check_no_newlines(cfg.bot_name, "GIT_COMMITTER_NAME")
-    child_env["GIT_COMMITTER_EMAIL"] = _check_no_newlines(cfg.bot_email, "GIT_COMMITTER_EMAIL")
+    child_env["GIT_AUTHOR_NAME"] = cfg.bot_name
+    child_env["GIT_AUTHOR_EMAIL"] = cfg.bot_email
+    child_env["GIT_COMMITTER_NAME"] = cfg.bot_name
+    child_env["GIT_COMMITTER_EMAIL"] = cfg.bot_email
+    if owner:
+        child_env["ARTIFICE_GH_APP_OWNER"] = owner
 
     if not no_git_credential:
         helper_cmd = _build_git_credential_helper(cfg)
@@ -633,18 +765,31 @@ def run_exec(
     if need_token:
         gh_host = child_env.get("GH_HOST", "").strip()
         if gh_host and gh_host.lower() != "github.com":
-            raise AuthError(
-                f"Refusing to inject GitHub.com App token when GH_HOST={gh_host!r}."
-            )
-        resolved_owner = owner or child_env.get("ARTIFICE_GH_APP_OWNER")
-        if not resolved_owner and is_gh:
-            resolved_owner = _extract_owner_from_gh_args(cmd[1:])
-        if not resolved_owner and cfg.installations:
-            resolved_owner, _ = _detect_origin_remote()
+            raise AuthError(f"Refusing to inject GitHub.com App token when GH_HOST={gh_host!r}.")
+        arg_host, gh_owner = _extract_gh_host_and_owner(cmd[1:], child_env) if is_gh else (None, None)
+        if arg_host and arg_host != "github.com":
+            raise AuthError(f"Refusing to inject GitHub.com App token for non-github.com host {arg_host!r}.")
+        resolved_owner = _resolve_owner(cfg, owner, child_env, gh_owner=gh_owner)
         token = get_installation_token(cfg, owner=resolved_owner, env=child_env)
         child_env["GH_TOKEN"] = token
+        child_env.pop("GITHUB_TOKEN", None)
+    elif with_gh_token is False:
+        child_env.pop("GH_TOKEN", None)
+        child_env.pop("GITHUB_TOKEN", None)
 
-    proc = subprocess.run(cmd, env=child_env)
+    try:
+        proc = subprocess.run(cmd, env=child_env)
+    except FileNotFoundError:
+        print(f"error: command not found: {cmd[0]}", file=sys.stderr)
+        return 127
+    except PermissionError:
+        print(f"error: permission denied executing: {cmd[0]}", file=sys.stderr)
+        return 126
+    except OSError as exc:
+        raise AuthError(f"Failed to execute {cmd[0]}: {exc}") from exc
+
+    if proc.returncode < 0:
+        return 128 + abs(proc.returncode)
     return proc.returncode
 
 
@@ -655,8 +800,12 @@ def run_check(
     env: Optional[Mapping[str, str]] = None,
     stream: TextIO = sys.stdout,
 ) -> int:
+    active_env = env if env is not None else os.environ
     fd = validate_and_open_private_key(cfg.private_key_path)
-    os.close(fd)
+    try:
+        key_mode = oct(stat.S_IMODE(os.fstat(fd).st_mode))
+    finally:
+        os.close(fd)
 
     try:
         openssl_proc = subprocess.run(["openssl", "version"], capture_output=True, text=True, timeout=5)
@@ -665,15 +814,19 @@ def run_check(
     if openssl_proc.returncode != 0:
         raise AuthError("openssl version exited non-zero.")
 
-    installation_id = cfg.resolve_installation_id(owner)
-    stream.write(f"Profile: {cfg.profile} ({cfg.config_path})\n")
+    resolved_owner = _resolve_owner(cfg, owner, active_env)
+    installation_id = cfg.resolve_installation_id(resolved_owner)
+    if cfg.explicit_config:
+        stream.write(f"Config: {cfg.config_path}\n")
+    else:
+        stream.write(f"Profile: {cfg.profile} ({cfg.config_path})\n")
     stream.write(f"Bot identity: {cfg.bot_name} <{cfg.bot_email}>\n")
     stream.write(f"App ID: {cfg.app_id} | Installation ID: {installation_id}\n")
-    stream.write(f"Private key: {cfg.private_key_path} (mode 0600, outside Git repo)\n")
+    stream.write(f"Private key: {cfg.private_key_path} (mode {key_mode}, outside Git repo)\n")
 
     if cfg.bot_user_id == cfg.app_id:
         stream.write(
-            "WARNING: bot_user_id equals app_id; verify via `gh api users/<slug>[bot] --jq .id`.\n"
+            f'WARNING: bot_user_id equals app_id; verify via `gh api "users/{cfg.app_slug}[bot]" --jq .id`.\n'
         )
 
     _, remote_url = _detect_origin_remote()
@@ -683,7 +836,7 @@ def run_check(
         )
 
     if live:
-        token = get_installation_token(cfg, owner=owner, env=env, no_cache=True)
+        token = get_installation_token(cfg, owner=resolved_owner, env=active_env, no_cache=True)
         live_user_id = fetch_bot_user_id(cfg.app_slug, token)
         if live_user_id != cfg.bot_user_id:
             raise AuthError(
@@ -701,7 +854,18 @@ def _add_common_flags(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    epilog = (
+        "Environment variables (CLI flags take precedence):\n"
+        "  ARTIFICE_GH_APP_CONFIG       Explicit path to profile JSON file\n"
+        "  ARTIFICE_GH_APP_PROFILE      Named profile (default: 'default')\n"
+        "  ARTIFICE_GH_APP_CONFIG_DIR   Base config directory (default: $XDG_CONFIG_HOME/artifice)\n"
+        "  ARTIFICE_GH_APP_OWNER        Repository owner/org for multi-installation lookup"
+    )
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_token = sub.add_parser("token", help="Mint or read cached installation token")
@@ -716,12 +880,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_env = sub.add_parser("git-env", help="Emit shell export lines for bot GIT_AUTHOR_*/GIT_COMMITTER_*")
     _add_common_flags(p_env)
 
-    p_exec = sub.add_parser("exec", help="Execute a command with bot Git identity and optional GH_TOKEN")
+    p_exec = sub.add_parser(
+        "exec",
+        help="Execute a command with bot Git identity (and GH_TOKEN automatically when command is 'gh')",
+    )
     _add_common_flags(p_exec)
     p_exec.add_argument("--owner", help="Repository owner/org for multi-installation lookup")
     tok_group = p_exec.add_mutually_exclusive_group()
     tok_group.add_argument("--with-gh-token", action="store_true", help="Always mint and inject GH_TOKEN")
-    tok_group.add_argument("--no-gh-token", action="store_true", help="Never mint or inject GH_TOKEN")
+    tok_group.add_argument("--no-gh-token", action="store_true", help="Never mint or inject GH_TOKEN (also strips ambient tokens)")
     p_exec.add_argument("--no-git-credential", action="store_true", help="Do not inject GIT_CONFIG_* credential helper")
     p_exec.add_argument("cmd", nargs=argparse.REMAINDER, help="Command to execute (prefix with '--')")
 
@@ -739,7 +906,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         cfg = load_config(config_path=args.config, profile=args.profile)
         if args.command == "token":
-            owner = args.owner or os.environ.get("ARTIFICE_GH_APP_OWNER")
+            owner = _resolve_owner(cfg, args.owner, os.environ)
             token = get_installation_token(cfg, owner=owner, no_cache=args.no_cache)
             sys.stdout.write(token + "\n")
             return 0
@@ -764,8 +931,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 no_git_credential=args.no_git_credential,
             )
         if args.command == "check":
-            owner = args.owner or os.environ.get("ARTIFICE_GH_APP_OWNER")
-            return run_check(cfg, owner=owner, live=args.live)
+            return run_check(cfg, owner=args.owner, live=args.live)
     except AuthError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

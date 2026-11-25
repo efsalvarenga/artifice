@@ -1,7 +1,7 @@
 # Design 010: Dedicated GitHub App Bot Identity for Agent Commits and PRs
 
 **Author:** efsalvarenga  
-**Status:** Approved (efsalvarenga, 2026-11-25 — human sign-off per #63; single-pass zero-context review applied)  
+**Status:** Approved (efsalvarenga, 2026-11-25 — human sign-off per https://github.com/efsalvarenga/artifice/issues/63; single-pass zero-context review applied)  
 **Date:** 2026-11-25  
 **Tracking issue:** [efsalvarenga/artifice#63](https://github.com/efsalvarenga/artifice/issues/63)
 
@@ -88,7 +88,7 @@ Profile JSON schema and strict validation:
 2. **No secret leakage:** Neither the private key, JWT, nor installation token may appear in stderr errors, `check` output, or child process argv. Reject `\r`/`\n` in any emitted `git-credential` or `git-env` value.
 3. **Host scoping:** `git-credential` responds only to `protocol=https` and `host.lower() == "github.com"`; `exec` fails closed on non-`github.com` `GH_HOST` when minting `GH_TOKEN`.
 4. **Safe cache I/O:** Verify cache directory is not a symlink, is owned by `euid`, and has mode `0700`. Read cache via `O_RDONLY | O_NOFOLLOW` + `fstat` (`S_ISREG`, `euid`, `(mode & 0o077) == 0`). Write via sibling temp file (`O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW`, `0600`) + `os.replace()`.
-5. **Repo-local / worktree opt-in:** `docs/github_app_bot_setup.md` documents zero-config per-command `exec` (recommended for shared human+agent repos), opt-in `git config --local` or `includeIf "gitdir:..."` (for dedicated agent worktrees), and HTTPS remote requirements.
+5. **Dedicated worktree / standalone opt-in:** `docs/github_app_bot_setup.md` documents zero-config per-command `exec` (recommended for all shared checkouts and linked worktrees), opt-in `extensions.worktreeConfig` + `git config --worktree` (for dedicated linked worktrees) or `git config --local` (standalone clones only), and HTTPS remote requirements.
 
 --------------------------------------------------------------------------------
 

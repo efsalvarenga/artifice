@@ -510,10 +510,13 @@ def _is_bash_script(path: str, filename: str) -> bool:
         return False
     try:
         with open(path, "rb") as f:
-            first_line = f.readline(128)
+            first_line = f.readline(128).rstrip(b"\r\n")
     except OSError:
         return False
-    return first_line.startswith((b"#!/usr/bin/env bash", b"#!/bin/bash"))
+    for shebang in (b"#!/usr/bin/env bash", b"#!/bin/bash"):
+        if first_line == shebang or first_line.startswith(shebang + b" ") or first_line.startswith(shebang + b"\t"):
+            return True
+    return False
 
 
 def check_bash_syntax(target_dir: str) -> int:
