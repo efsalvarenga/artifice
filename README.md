@@ -95,7 +95,7 @@ Delivery workflow: pick up an issue (`gh issue view <N>`) → implement against 
 * `python3 scripts/validate_provenance.py`: Validates prepared messages or explicitly selected commit history without writing messages, hooks, Git configuration, history, the index or the worktree.
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
 * `python3 scripts/pr_checklist.py <design.md> [--check <pr-body.md>]`: Prints the `## Implementation Checklist` for a PR from the design doc's implementation plan, or verifies a PR body's checklist against it (drift check for reviewers).
-* `python3 scripts/github_app_auth.py` & `scripts/gh-bot`: Zero-dependency GitHub App bot identity helper (JWT/installation token minting, safe `0600` cache, `git-credential` protocol, offline `exec`, and `check --live`). See [docs/github_app_bot_setup.md](docs/github_app_bot_setup.md).
+* `python3 scripts/github_app_auth.py` & `scripts/gh-bot`: Zero-dependency GitHub App bot identity helper (JWT/installation token minting, safe `0600` cache, `git-credential` protocol, offline-safe `exec`, and `check --live`). See [docs/github_app_bot_setup.md](docs/github_app_bot_setup.md).
 
 ## Shared Governance & Commit Provenance
 

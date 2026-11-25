@@ -6,6 +6,7 @@ Design specification: [010_github_app_bot_identity.md](designs/010_github_app_bo
 
 ## Prerequisites
 
+* Artifice installed at `$HOME/.local/share/artifice` (via `scripts/install_{antigravity,copilot,omp}.sh`) or `ARTIFICE_ROOT` exported to your Artifice checkout.
 * Python 3.8+ (standard library only; no third-party packages).
 * `openssl` CLI on `PATH` and POSIX `/dev/fd` support (Linux/macOS).
 * Git >= 2.31 (required for `GIT_CONFIG_COUNT` in `exec` and `--worktree` config).
@@ -71,7 +72,7 @@ Additional named profiles (e.g. `~/.config/artifice/github-apps/work.json`) can 
 
 ### Per-Command Execution (Recommended for All Checkouts & Linked Worktrees)
 
-Your default `git` identity and `~/.config/gh/hosts.yml` remain bound to your human account. Agents route commands through the helper:
+Your default `git` identity and `~/.config/gh/hosts.yml` remain bound to your human account. `exec` injects bot `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, sets `commit.gpgsign=false` per command (so global personal GPG/SSH signing never prompts or signs bot commits with a human key), and configures `git-credential` lazily for HTTPS pushes:
 
 ```bash
 # Offline commit as <app-slug>[bot] (no network call, no GH_TOKEN exposed to hooks)
@@ -100,7 +101,7 @@ ln -s "${ARTIFICE_ROOT:-$HOME/.local/share/artifice}/scripts/gh-bot" ~/.local/bi
 
 Do **not** use `includeIf "gitdir:..."` for linked worktrees (in Git, `gitdir:` matches the administrative `.git/worktrees/<name>` directory, not the linked checkout path) and do **not** run `git config --local` inside a linked worktree (it writes to the shared main repository's `.git/config` and hijacks human commits/pushes there).
 
-* **Dedicated linked worktree:** enable per-worktree config once, then use `--worktree`:
+* **Dedicated linked worktree:** enable per-worktree config once, then use `--worktree` (setting `commit.gpgsign false` prevents global personal GPG/SSH signing keys from signing bot commits):
 
 ```bash
 HELPER_SCRIPT="${ARTIFICE_ROOT:-$HOME/.local/share/artifice}/scripts/github_app_auth.py"
@@ -117,7 +118,7 @@ git config --worktree --add credential.https://github.com.helper "!python3 '${HE
 
 ### HTTPS Remotes Required
 
-GitHub App installation tokens authenticate over HTTPS (`https://github.com/<owner>/<repo>.git`), not SSH. If `origin` uses SSH (`git@github.com:...`), switch it to HTTPS:
+GitHub App installation tokens authenticate over HTTPS (`https://github.com/<owner>/<repo>.git`), not SSH. If `origin` uses SSH (`git@github.com:...`), switch it to HTTPS (note: in a linked worktree, `git remote set-url` updates the shared repository `.git/config` for the main checkout as well):
 
 ```bash
 git remote set-url origin "https://github.com/<owner>/<repo>.git"
