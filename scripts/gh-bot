@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# gh-bot - Run GitHub CLI (`gh`) under the configured GitHub App bot identity
+# without altering the human's default `gh` authentication session.
+set -euo pipefail
+
+SCRIPT_DIR="$(python3 -c 'import os, sys; print(os.path.dirname(os.path.realpath(sys.argv[1])))' "${BASH_SOURCE[0]}")"
+exec python3 "$SCRIPT_DIR/github_app_auth.py" exec -- gh ${1+"$@"}

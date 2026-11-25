@@ -802,6 +802,21 @@ class BashSyntaxRecursiveTests(unittest.TestCase):
             # All .sh files in forbidden dirs should be skipped, so no errors
             self.assertEqual(errors, 0)
 
+    def test_check_bash_syntax_lints_extensionless_bash_scripts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (scripts / "good-wrapper").write_text("#!/usr/bin/env bash\necho ok\n", encoding="utf-8")
+            (scripts / "good-flags").write_text("#!/bin/bash -e\necho ok\n", encoding="utf-8")
+            (scripts / "bad-wrapper").write_text("#!/usr/bin/env bash\nif [\n", encoding="utf-8")
+            (scripts / "not-bash").write_text("#!/usr/bin/env bashful\nif [\n", encoding="utf-8")
+            (scripts / "python-tool").write_text("#!/usr/bin/env python3\nif True:\n    pass\n", encoding="utf-8")
+
+            with redirect_stdout(io.StringIO()):
+                errors = lint.check_bash_syntax(str(root))
+            self.assertEqual(errors, 1)
+
 
 
 

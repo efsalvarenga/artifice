@@ -263,3 +263,30 @@ class ProvenanceTests(unittest.TestCase):
         result = self.run_validator("--message-file", str(self.message))
         self.assertEqual(result.returncode, 1)
         self.assertIn(self.message.name, result.stderr)
+
+    def test_bot_git_author_passes_and_bot_coauthor_remains_rejected(self):
+        bot_env = dict(
+            self.env,
+            GIT_AUTHOR_NAME="fixture-app[bot]",
+            GIT_AUTHOR_EMAIL="12345+fixture-app[bot]@users.noreply.github.com",
+            GIT_COMMITTER_NAME="fixture-app[bot]",
+            GIT_COMMITTER_EMAIL="12345+fixture-app[bot]@users.noreply.github.com",
+        )
+        self.message.write_text(VALID, encoding="utf-8")
+        res = subprocess.run(
+            ["git", "-C", str(self.repo), "commit", "--allow-empty", "--file", str(self.message)],
+            env=bot_env, text=True, capture_output=True,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        commit = self.git("rev-parse", "HEAD")
+        author = self.git("show", "-s", "--format=%an <%ae>", commit)
+        self.assertEqual(author, "fixture-app[bot] <12345+fixture-app[bot]@users.noreply.github.com>")
+        result = self.run_validator("--repo", str(self.repo), "--commit", commit)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("PASS:", result.stdout)
+
+        bot_coauthor = VALID.replace(
+            TRAILERS[2],
+            "Co-authored-by: fixture-app[bot] <12345+fixture-app[bot]@users.noreply.github.com>",
+        )
+        self.check_message(bot_coauthor, 1)

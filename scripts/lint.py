@@ -503,6 +503,22 @@ def check_core_diet(target_dir: str) -> int:
     return diet_errors
 
 
+def _is_bash_script(path: str, filename: str) -> bool:
+    if filename.endswith(".sh"):
+        return True
+    if "." in filename:
+        return False
+    try:
+        with open(path, "rb") as f:
+            first_line = f.readline(128).rstrip(b"\r\n")
+    except OSError:
+        return False
+    for shebang in (b"#!/usr/bin/env bash", b"#!/bin/bash"):
+        if first_line == shebang or first_line.startswith(shebang + b" ") or first_line.startswith(shebang + b"\t"):
+            return True
+    return False
+
+
 def check_bash_syntax(target_dir: str) -> int:
     """Check native syntax only; disposable runtime tests are separately runnable."""
     errors = 0
@@ -511,9 +527,9 @@ def check_bash_syntax(target_dir: str) -> int:
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
 
         for filename in sorted(files):
-            if not filename.endswith(".sh"):
-                continue
             path = os.path.join(root, filename)
+            if not _is_bash_script(path, filename):
+                continue
             try:
                 result = subprocess.run(["bash", "-n", path], capture_output=True, text=True)
                 if result.returncode == 0:
