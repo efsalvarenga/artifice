@@ -20,10 +20,13 @@ artifice/
 │   └── omp/agents/               # Thin omp task-agent adapters delegating to canonical roles
 ├── docs/
 │   ├── designs/                  # Design specifications (001–004 and 006 are legacy historical records from the retired internal EGM format)
-│   └── reviews/                  # Goldfish reviews (001–004 and 006 are legacy historical records from the retired internal EGM format)
+│   ├── reviews/                  # Goldfish reviews (001–004 and 006 are legacy historical records from the retired internal EGM format)
+│   └── github_app_bot_setup.md   # Operator guide for dedicated GitHub App bot identity (design 010)
 ├── rules/
 │   └── global-agents.md          # Canonical cross-project governance and provenance
 ├── scripts/
+│   ├── gh-bot                    # Thin Bash wrapper running `gh` under the GitHub App bot identity
+│   ├── github_app_auth.py        # Zero-dependency GitHub App JWT/token minter, cache, and Git/gh exec helper
 │   ├── install_antigravity.sh    # Non-overwriting personal Antigravity symlink installer
 │   ├── install_copilot.sh        # Non-overwriting personal Copilot symlink installer
 │   ├── install_omp.sh            # Non-overwriting personal omp (oh-my-pi) installer
@@ -92,6 +95,7 @@ Delivery workflow: pick up an issue (`gh issue view <N>`) → implement against 
 * `python3 scripts/validate_provenance.py`: Validates prepared messages or explicitly selected commit history without writing messages, hooks, Git configuration, history, the index or the worktree.
 * `./scripts/build_review_dossier.py`: Compiles intentional repository invariants for review streams.
 * `python3 scripts/pr_checklist.py <design.md> [--check <pr-body.md>]`: Prints the `## Implementation Checklist` for a PR from the design doc's implementation plan, or verifies a PR body's checklist against it (drift check for reviewers).
+* `python3 scripts/github_app_auth.py` & `scripts/gh-bot`: Zero-dependency GitHub App bot identity helper (JWT/installation token minting, safe `0600` cache, `git-credential` protocol, offline `exec`, and `check --live`). See [docs/github_app_bot_setup.md](docs/github_app_bot_setup.md).
 
 ## Shared Governance & Commit Provenance
 
