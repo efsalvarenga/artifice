@@ -4,7 +4,7 @@ These constraints complement active client and repository instructions. They do 
 
 ## Workspace & Scope
 
-Confirm the target repository and inspect its existing state before editing. Preserve unrelated user changes. Make complete, narrowly scoped changes; do not perform destructive operations or rewrite history without explicit permission.
+At the start of every new conversation, and again before editing, check the git tree state of the current working directory (`git status --branch`, `git log -1 --oneline`) and report it: branch, upstream divergence, and staged, unstaged and untracked changes. If the directory is not a git repository, say so. Never skip the conversation-start check, even when the first request seems unrelated to git. Preserve unrelated user changes. Make complete, narrowly scoped changes; do not perform destructive operations or rewrite history without explicit permission.
 
 Prefer native runtime facilities and existing helpers. Remove speculative abstractions, duplicate workflows and unnecessary files. Keep detailed EGM, TDD, review and model-execution procedures in their existing agents and skills.
 
